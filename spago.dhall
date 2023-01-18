@@ -5,15 +5,18 @@ You can edit this file as you like.
 { name = "ctl-package-example"
 , dependencies =
   [ "aff"
+  , "arrays"
   , "bigints"
   , "cardano-transaction-lib"
   , "datetime"
   , "effect"
+  , "exceptions"
   , "mote"
   , "ordered-collections"
   , "posix-types"
   , "prelude"
   , "spec"
+  , "transformers"
   , "uint"
   ]
 , packages = ./packages.dhall
