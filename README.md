@@ -4,6 +4,7 @@ To start working run `nix develop` (make sure to use Nix v2.8 or later) and then
 
 Please also see the CTL related sources:
 
+- [Documentation](https://github.com/Plutonomicon/cardano-transaction-lib/tree/develop/doc)
 
 - [Generated docs](https://plutonomicon.github.io/cardano-transaction-lib/)
 
