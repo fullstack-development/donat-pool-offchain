@@ -27,13 +27,22 @@ import Contract.TextEnvelope
   ( decodeTextEnvelope
   , plutusScriptV1FromEnvelope
   )
-import Contract.Transaction (TransactionInput, awaitTxConfirmed, submitTxFromConstraints)
+import Contract.Transaction
+  ( TransactionInput
+  , awaitTxConfirmed
+  , submitTxFromConstraints
+  , TransactionOutputWithRefScript
+  )
+import Ctl.Internal.Plutus.Types.Transaction (_amount, _output)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Control.Monad.Error.Class (liftMaybe)
-import Data.Array (head, singleton) as Array
--- import Data.Map (toUnfoldable) as Map
+import Data.Array (head, singleton, filter) as Array
+import Data.BigInt (fromInt)
+import Data.Lens.Getter ((^.))
+import Data.Map (toUnfoldable) as Map
+--import Data.Tuple (Tuble) as Tuple
 import Effect.Exception (error)
 
 data PNftRedeemer = PMintNft Value.TokenName | PBurnNft Value.TokenName
@@ -68,53 +77,57 @@ contract = do
   logInfo' $ "Own address is: " <> show ownAddress
   utxos <- utxosAt ownAddress
   logInfo' $ "UTxOs found on address: " <> show utxos
-  -- oref <-
-  --   liftContractM "Utxo set is empty"
-  --     (fst <$> Array.head (Map.toUnfoldable utxos :: Array _))
-  mp /\ cs <- mkCurrencySymbol mintingPolicy -- (mintingPolicy oref)
+  oref <-
+    liftContractM "Utxo set is empty"
+      (fst <$> Array.head (filterNonCollateral (Map.toUnfoldable utxos :: Array (Tuple TransactionInput TransactionOutputWithRefScript))))
+  mp /\ cs <- mkCurrencySymbol (mintingPolicy oref)
   tn <- mkTokenName "MyLovelyNFT"
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      -- Constraints.mustSpendPubKeyOutput oref
-      Constraints.mustMintValueWithRedeemer
+      Constraints.mustSpendPubKeyOutput oref
+        <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PMintNft tn)
           (Value.singleton cs tn one)
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
-        -- <> Lookups.unspentOutputs utxos
+        <> Lookups.unspentOutputs utxos
 
   txId <- submitTxFromConstraints lookups constraints
 
   awaitTxConfirmed txId
   logInfo' $ "Tx submitted successfully!"
 
+-- NOTE: Nami wallet doesn't allow to spend the collateral UTxO - a special UTxO with 5 Ada balance.
+-- As this UTxO doesn't have any special flags, we get the first UTxO with balance non equal to 5 Ada
+adaCollateralValue :: Value.Value
+adaCollateralValue = Value.singleton Value.adaSymbol Value.adaToken (fromInt 5000000)
+
+checkNonCollateral :: Tuple TransactionInput TransactionOutputWithRefScript -> Boolean
+checkNonCollateral (Tuple _ txOutWithRef) =
+  let
+    utxoValue = (txOutWithRef ^. _output) ^. _amount
+  in
+    utxoValue /= adaCollateralValue
+
+filterNonCollateral
+  :: Array (Tuple TransactionInput TransactionOutputWithRefScript)
+  -> Array (Tuple TransactionInput TransactionOutputWithRefScript)
+filterNonCollateral = Array.filter checkNonCollateral
+
 foreign import nftPolicy :: String
 
-mintingPolicy :: Contract () MintingPolicy
+mintingPolicy :: TransactionInput -> Contract () MintingPolicy
 mintingPolicy =
-  liftMaybe (error "Error decoding alwaysMintsPolicy")
-    alwaysMintsPolicyMaybe
-
--- mintingPolicy :: TransactionInput -> Contract () MintingPolicy
--- mintingPolicy =
---   map PlutusMintingPolicy <<< mintNftPolicyScript
-
-alwaysMintsPolicyMaybe :: Maybe MintingPolicy
-alwaysMintsPolicyMaybe = do
-  envelope <- decodeTextEnvelope nftPolicy
-  PlutusMintingPolicy <$> plutusScriptV1FromEnvelope envelope
-
+  map PlutusMintingPolicy <<< mintNftPolicyScript
 
 mintNftPolicyScript :: TransactionInput -> Contract () PlutusScript
 mintNftPolicyScript txInput = do
-  envelope <- liftMaybe (error "Error decoding text envelope") $ decodeTextEnvelope nftPolicy
-  script <- liftMaybe (error "Error makeing script from envelope") $ plutusScriptV1FromEnvelope envelope
-  -- script <- liftMaybe (error "Error decoding nftPolicy") do
-  --   envelope <- decodeTextEnvelope nftPolicy
-  --   plutusScriptV1FromEnvelope envelope
+  script <- liftMaybe (error "Error decoding nftPolicy") do
+    envelope <- decodeTextEnvelope nftPolicy
+    plutusScriptV1FromEnvelope envelope
   liftContractE $ mkMintNftPolicy script txInput
 
 mkMintNftPolicy
