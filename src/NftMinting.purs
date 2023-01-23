@@ -33,7 +33,7 @@ import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Control.Monad.Error.Class (liftMaybe)
 import Data.Array (head, singleton) as Array
-import Data.Map (toUnfoldable) as Map
+-- import Data.Map (toUnfoldable) as Map
 import Effect.Exception (error)
 
 data PNftRedeemer = PMintNft Value.TokenName | PBurnNft Value.TokenName
@@ -65,24 +65,26 @@ contract = do
   logInfo' "Running mint NFT contract"
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$>
     getWalletAddresses
+  logInfo' $ "Own address is: " <> show ownAddress
   utxos <- utxosAt ownAddress
-  oref <-
-    liftContractM "Utxo set is empty"
-      (fst <$> Array.head (Map.toUnfoldable utxos :: Array _))
-  mp /\ cs <- mkCurrencySymbol (mintingPolicy oref)
-  tn <- mkTokenName "TestNFT"
+  logInfo' $ "UTxOs found on address: " <> show utxos
+  -- oref <-
+  --   liftContractM "Utxo set is empty"
+  --     (fst <$> Array.head (Map.toUnfoldable utxos :: Array _))
+  mp /\ cs <- mkCurrencySymbol mintingPolicy -- (mintingPolicy oref)
+  tn <- mkTokenName "MyLovelyNFT"
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendPubKeyOutput oref
-        <> Constraints.mustMintValueWithRedeemer
+      -- Constraints.mustSpendPubKeyOutput oref
+      Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PMintNft tn)
           (Value.singleton cs tn one)
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
-        <> Lookups.unspentOutputs utxos
+        -- <> Lookups.unspentOutputs utxos
 
   txId <- submitTxFromConstraints lookups constraints
 
@@ -91,15 +93,28 @@ contract = do
 
 foreign import nftPolicy :: String
 
-mintingPolicy :: TransactionInput -> Contract () MintingPolicy
+mintingPolicy :: Contract () MintingPolicy
 mintingPolicy =
-  map PlutusMintingPolicy <<< mintNftPolicyScript
+  liftMaybe (error "Error decoding alwaysMintsPolicy")
+    alwaysMintsPolicyMaybe
+
+-- mintingPolicy :: TransactionInput -> Contract () MintingPolicy
+-- mintingPolicy =
+--   map PlutusMintingPolicy <<< mintNftPolicyScript
+
+alwaysMintsPolicyMaybe :: Maybe MintingPolicy
+alwaysMintsPolicyMaybe = do
+  envelope <- decodeTextEnvelope nftPolicy
+  PlutusMintingPolicy <$> plutusScriptV1FromEnvelope envelope
+
 
 mintNftPolicyScript :: TransactionInput -> Contract () PlutusScript
 mintNftPolicyScript txInput = do
-  script <- liftMaybe (error "Error decoding nftPolicy") do
-    envelope <- decodeTextEnvelope nftPolicy
-    plutusScriptV1FromEnvelope envelope
+  envelope <- liftMaybe (error "Error decoding text envelope") $ decodeTextEnvelope nftPolicy
+  script <- liftMaybe (error "Error makeing script from envelope") $ plutusScriptV1FromEnvelope envelope
+  -- script <- liftMaybe (error "Error decoding nftPolicy") do
+  --   envelope <- decodeTextEnvelope nftPolicy
+  --   plutusScriptV1FromEnvelope envelope
   liftContractE $ mkMintNftPolicy script txInput
 
 mkMintNftPolicy
