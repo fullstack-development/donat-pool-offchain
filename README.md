@@ -34,7 +34,7 @@ docker run -it \
   ```
 2. Ogmios-Datum-Cache
 
-After building project dependencies you have built binary file for Ogmios-Datum-Cache. You may find in in the nix/store/.. folder. Alternatively you may clone the [Ogmios-Datum-Cache](https://github.com/mlabs-haskell/ogmios-datum-cache) repo and build the binary file by yourself with the `cabal install` command. After you have the binary for Ogmios-Datum-Cache you may run the server with the following command:
+After building project dependencies you have built binary file for Ogmios-Datum-Cache. You may find in in the nix/store/.. folder. Alternatively you may clone the [Ogmios-Datum-Cache](https://github.com/mlabs-haskell/ogmios-datum-cache) repo and build the binary file by yourself with the `cabal install` command (make sure to call `nix-shell` or `nix develop` first). After you have the binary for Ogmios-Datum-Cache you may run the server with the following command:
 
 ```
 ogmios-datum-cache \
@@ -43,7 +43,7 @@ ogmios-datum-cache \
   --db-user username \
   --db-password "password" \
   --db-name dbname \
-  --server-port 9999 \ 
+  --server-port 9999 \
   --server-api "" \
   --ogmios-address localhost \
   --ogmios-port 1337 \
@@ -51,7 +51,9 @@ ogmios-datum-cache \
   --log-level debug
 ```
 
-Note: Before starting the service make sure that you have created a Database for it (use PostgreSQL). Also there may be different values for ogmios-address and ogmios-port.
+Notes: 
+- Before starting the service make sure that you have created a Database for it (use PostgreSQL). Also there may be different values for ogmios-address and ogmios-port.
+- Alternatively may call `bash ./environment/preprod/odc.sh` from the project root to run the ODC service for current project configuration.
 
 3. Kupo
 
@@ -67,9 +69,10 @@ kupo \
 ```
 
 Notes: 
+- Alternatively may run `bash ./environment/preprod/kupo.sh` from the project root to run the Kupo service for current project configuration.
 - If it's the first time you run Kupo, you also better to add `--defer-db-indexes` flag to speed up the initial indexer synchronization.
 - You may specify the `since` argument with different value (please see the Kupo [manual](https://cardanosolutions.github.io/kupo/)) 
-- Instead of connecting via Ogmios you may also connect to Cardano-Node directly. In this case replace `--ogmios-host` and `--ogmios-port` arguments with 
+- Instead of connecting via Ogmios you may also connect to Cardano-Node directly. In this case replace `--ogmios-host` and `--ogmios-port` arguments with
 
 ```
   --node-socket some-folder/cardano-node/node.socket \
