@@ -16,6 +16,7 @@ You can edit this file as you like.
   , "posix-types"
   , "prelude"
   , "profunctor-lenses"
+  , "rationals"
   , "spec"
   , "transformers"
   , "uint"
