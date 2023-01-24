@@ -2,22 +2,22 @@ module Protocol.Datum where
 
 
 
+import Ctl.Internal.FromData
+
+import Contract.Address (PaymentPubKeyHash)
 import Contract.PlutusData (class HasPlutusSchema, type (:+), type (:=), type (@@), I, PNil, Z, genericToData)
 import Contract.Prelude (class Generic)
-import Data.BigInt (BigInt)
-import Data.Rational (Ratio)
-import Contract.Address (PaymentPubKeyHash)
 import Contract.Value (CurrencySymbol, TokenName)
+import Ctl.Internal.ToData (class ToData)
+import Ctl.Internal.Types.Transaction (TransactionInput)
+import Data.BigInt (BigInt)
 import Data.Lens (Lens')
-import Prelude (class Eq, class Ord, (<<<))
 import Data.Lens.Iso.Newtype (_Newtype)
 import Data.Lens.Record (prop)
-import Type.Proxy (Proxy(Proxy))
 import Data.Newtype (class Newtype)
-import Ctl.Internal.FromData
-import Ctl.Internal.ToData (class ToData)
-import Ctl.Internal.Types.Transaction (TransactionHash)
-import Data.UInt (UInt)
+import Data.Rational (Ratio)
+import Prelude (class Eq, class Ord, (<<<))
+import Type.Proxy (Proxy(Proxy))
 
 newtype PPoolSizeLimits = PPoolSizeLimits {
     minAmount :: BigInt,
@@ -100,35 +100,9 @@ instance ToData PProtocolConfig where
 instance FromData PProtocolConfig where
   fromData = genericFromData
 
-newtype PTokenOrigin = PTokenOrigin {
-  txId :: TransactionHash,
-  index :: UInt
-}
-
-derive instance Generic PTokenOrigin _
-derive newtype instance Eq PTokenOrigin
-derive newtype instance Ord PTokenOrigin
-
-instance
-  HasPlutusSchema
-    PTokenOrigin
-    ( "PTokenOrigin" :=
-              ( "txId"  := I TransactionHash
-               :+ "index" := I UInt
-              :+ PNil)
-           @@ Z
-        :+ PNil
-    )
-
-instance ToData PTokenOrigin where
-  toData = genericToData
-
-instance FromData PTokenOrigin where
-  fromData = genericFromData
-
 newtype PProtocolConstants = PProtocolConstants {
     managerPkh :: PaymentPubKeyHash,
-    tokenOrigin :: PTokenOrigin,
+    tokenOrigin :: TransactionInput,
     protocolCurrency :: CurrencySymbol,
     protocolTokenName :: TokenName
 }
@@ -142,7 +116,7 @@ instance
     PProtocolConstants
     ( "PProtocolConstants" :=
               ( "managerPkh"  := I PaymentPubKeyHash
-               :+ "tokenOrigin" := I PTokenOrigin
+               :+ "tokenOrigin" := I TransactionInput
                :+ "protocolCurrency" := I CurrencySymbol
                :+ "protocolTokenName" := I TokenName
               :+ PNil)
