@@ -13,6 +13,7 @@ You can edit this file as you like.
   , "ordered-collections"
   , "posix-types"
   , "prelude"
+  , "rationals"
   , "spec"
   , "uint"
   ]
