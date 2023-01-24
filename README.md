@@ -26,12 +26,14 @@ DonationPool is dependent on the services listed below, so for working in blockc
 
 For simplicity you may use Cardano node with Ogmios bundle for the pre-production testnet for docker. Call the following command to download image from dockerhub and run services:
 ```
-docker run -it \
+docker run -it -d \
   --name cardano-node-ogmios \
   -p 1337:1337 \
   -v cardano-node-ogmios-db:/db \
   cardanosolutions/cardano-node-ogmios:latest-preprod
   ```
+You may call the same command with `bash ./environment/preprod/nodeWithOgmios.sh`.
+
 2. Ogmios-Datum-Cache
 
 After building project dependencies you have built binary file for Ogmios-Datum-Cache. You may find in in the nix/store/.. folder. Alternatively you may clone the [Ogmios-Datum-Cache](https://github.com/mlabs-haskell/ogmios-datum-cache) repo and build the binary file by yourself with the `cabal install` command (make sure to call `nix-shell` or `nix develop` first). After you have the binary for Ogmios-Datum-Cache you may run the server with the following command:
