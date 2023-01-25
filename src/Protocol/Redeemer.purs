@@ -1,11 +1,12 @@
 module Protocol.Redeemer where
+
 import Protocol.Datum (PProtocolConfig)
 import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, S, Z, genericToData)
 import Contract.Prelude
 
-data PProtocolRedeemer =
-    PUpdateProtocolConfig PProtocolConfig
-    | PCloseProtocol
+data PProtocolRedeemer
+  = PUpdateProtocolConfig PProtocolConfig
+  | PCloseProtocol
 
 derive instance Generic PProtocolRedeemer _
 
