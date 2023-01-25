@@ -3,8 +3,8 @@ module Protocol.UpdateProtocol where
 import Contract.Monad
 import Contract.Prelude
 import Contract.Transaction
+import Ctl.Internal.Plutus.Types.CurrencySymbol
 import Protocol.Models
-
 import Contract.Address (scriptHashAddress)
 import Contract.Log (logInfo')
 import Contract.PlutusData (PlutusData, Redeemer(Redeemer), fromData, toData)
@@ -14,18 +14,21 @@ import Contract.Scripts (ValidatorHash, validatorHash)
 import Contract.TxConstraints (TxConstraints)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
-import Ctl.Internal.Cardano.Types.Transaction (UtxoMap)
-import Ctl.Internal.Plutus.Types.Transaction (_datum, _amount)
+import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
+import Ctl.Internal.Plutus.Types.Transaction (_datum, _amount, _output)
 import Ctl.Internal.Plutus.Types.Transaction as Tx
-import Ctl.Internal.Plutus.Types.Value (Value)
+import Ctl.Internal.Plutus.Types.Value (Value, valueOf)
 import Ctl.Internal.Types.Datum (Datum(..))
+import Ctl.Internal.Types.TokenName (TokenName, adaToken, mkTokenName)
+import Data.Array (filter)
 import Data.Array (head)
+import Data.BigInt as BigInt
 import Data.Lens (view)
-import Data.Map (Map)
+import Data.Map (Map, toUnfoldable)
 import Protocol.Datum (PProtocolConfig, PProtocolDatum(..), _protocolConstants)
 import Protocol.ProtocolScript (protocolValidatorScript)
 import Protocol.Redeemer (PProtocolRedeemer(..))
-
+import Ctl.Internal.Plutus.Types.Transaction as Tx
 -- main :: Effect Unit
 -- main = example testnetNamiConfig
 
@@ -65,7 +68,7 @@ payToProtocol vhash (Tuple newProtocolDatum value) =
     submitTxFromConstraints lookups constraints
 
 
-makeDatum ∷ PProtocolConfig → Map TransactionInput TransactionOutputWithRefScript → TransactionHash → Contract () PProtocolDatum
+makeDatum ∷ PProtocolConfig → UtxoMap → TransactionHash → Contract () PProtocolDatum
 makeDatum protocolConfig utxos txId  = do
   Tuple pdata _ <- getDatumAndValue utxos txId
   (currentDatum :: PProtocolDatum) <- liftContractM "can't decode datum" $ fromData pdata
@@ -73,7 +76,7 @@ makeDatum protocolConfig utxos txId  = do
   pure $ PProtocolDatum { protocolConstants, protocolConfig }
 
 -- TODO: move to helpers file
-getDatumAndValue ∷ Map TransactionInput TransactionOutputWithRefScript → TransactionHash → Contract () (Tuple PlutusData Value)
+getDatumAndValue ∷ UtxoMap → TransactionHash → Contract () (Tuple PlutusData Value)
 getDatumAndValue utxos txId= do
   txOutputWithRefScript <- liftContractM "no locked output at address"
     (view _output <$> head (lookupTxHash txId utxos))
@@ -82,6 +85,22 @@ getDatumAndValue utxos txId= do
     (outputDatumDatum $ view _datum txOutput)
   let value = view _amount txOutput
   pure $ Tuple pdata value
+
+
+filterUtxosByThreadToken
+  :: CurrencySymbol -> TokenName -> UtxoMap -> Array TransactionUnspentOutput
+filterUtxosByThreadToken currency tokenName utxos =
+  let getValue = snd >>> unwrap >>>  _.output >>> unwrap >>> _.amount
+      getTokenAmount v = valueOf v currency tokenName
+  in map (\(input /\ output) -> TransactionUnspentOutput { input, output })
+    $ filter (getValue >>> getTokenAmount >>> eq (BigInt.fromInt 1))
+    $
+      toUnfoldable utxos
+
+getOnlyOneUtxo :: Array TransactionUnspentOutput -> Contract () TransactionUnspentOutput
+getOnlyOneUtxo [] = throwContractError "no utxos with given thread token on script"
+getOnlyOneUtxo [x] = pure x
+getOnlyOneUtxo _ = throwContractError "many utxos with given thread token on script"
 
 spendProtocol
   :: PProtocol 
