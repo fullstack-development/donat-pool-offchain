@@ -1,63 +1,69 @@
-module InitialConfig.StartProtocol where
+module Protocol.StartProtocol where
 
 import Contract.Prelude
 
-import Contract.Address (getWalletAddresses, ownPaymentPubKeyHash)
-import Contract.Config (ConfigParams, testnetNamiConfig)
+import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..))
+import Contract.Config (ConfigParams, testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, launchAff_, runContract, liftContractM, liftContractE, liftedM)
+import Contract.Monad (Contract, launchAff_, runContract, liftContractM, liftedM, liftedE)
 import Contract.PlutusData
-  ( PlutusData
-  , Redeemer(Redeemer)
-  , genericToData
-  , class ToData
-  , class HasPlutusSchema
-  , type (:+)
-  , type (:=)
-  , type (@@)
-  , PNil
+  ( Redeemer(Redeemer)
+  , Datum(Datum)
   , toData
-  , S
-  , Z
   )
-import Contract.Prim.ByteArray (byteArrayFromAscii)
 import Contract.ScriptLookups as Lookups
-import Contract.Scripts (MintingPolicy(PlutusMintingPolicy), PlutusScript, ApplyArgsError, applyArgs)
-import Contract.TextEnvelope
-  ( decodeTextEnvelope
-  , plutusScriptV1FromEnvelope
-  )
 import Contract.Transaction
-  ( TransactionInput
-  , awaitTxConfirmed
-  , submitTxFromConstraints
-  , TransactionOutputWithRefScript
+  ( awaitTxConfirmed
+  , balanceTxWithConstraints
+  , signTransaction
+  , submit
   )
-import Ctl.Internal.Plutus.Types.Transaction (_amount, _output)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
-import Control.Monad.Error.Class (liftMaybe)
-import Data.Array (head, singleton, filter) as Array
+import Data.Array (head) as Array
 import Data.BigInt (fromInt)
-import Data.Lens.Getter ((^.))
 import Data.Map (toUnfoldable) as Map
-import Data.Rational ((%))
-import Effect.Exception (error)
 import Protocol.UserData (ProtocolConfigParams(..))
-import MintingPolicy.NftRedeemer
+import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.NftMinting as NFT
 import Shared.Helpers as Helpers
 import Protocol.Models (PProtocol(..))
-import Protocol.Datum
+import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript, protocolTokenName)
+import Contract.BalanceTxConstraints
+  ( BalanceTxConstraintsBuilder
+  , mustSendChangeToAddress
+  )
+import Protocol.Datum 
+  ( PDurationLimits(..)
+  , PPoolSizeLimits(..)
+  , PProtocolConfig(..)
+  , PProtocolConstants(..)
+  , PProtocolDatum(..)
+  )
 
-protocolTokenName :: forall (r :: Row Type). Contract r Value.TokenName
-protocolTokenName = Helpers.mkTokenName "DonatPoolProtocol"
+runStartProtocolTest ::  Effect Unit
+runStartProtocolTest = 
+  let 
+    protocolParams = 
+      ProtocolConfigParams
+        { minAmountParam: 50_000_000
+        , maxAmountParam: 1_000_000_000
+        , minDurationParam: 100
+        , maxDurationParam: 1_000
+        , protocolFeeParam: Tuple 10 100
+        }
+   in startProtocol testnetNamiConfig protocolParams
+
+startProtocol ::  ConfigParams () -> ProtocolConfigParams -> Effect Unit
+startProtocol baseConfig protocolConfig = launchAff_ do
+  runContract baseConfig (contract protocolConfig)
 
 contract :: ProtocolConfigParams -> Contract () Unit
 contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
   logInfo' "Running startDonatPool protocol contract"
-  ownPkh <- ownPaymentPubKeyHash >>= liftContractM "Impossible to get own PaymentPubkeyHash"
+  ownHashes <- ownPaymentPubKeysHashes
+  ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
   logInfo' $ "Own Payment pkh is: " <> show ownPkh
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
   logInfo' $ "Own address is: " <> show ownAddress
@@ -81,24 +87,64 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
       { minAmount: fromInt minAmountParam
       , maxAmount: fromInt maxAmountParam
       }
-  let
     protocolDurationLimits = PDurationLimits
       { minDuration: fromInt minDurationParam
       , maxDuration: fromInt maxDurationParam
       }
   fee <- liftContractM "Zero denominator error" $ Helpers.mkRational protocolFeeParam
   let
-    protocolConfig = PProtocolConfig
+    initialConfig = PProtocolConfig
       { protocolFee: fee
       , poolSizeLimits: protocolSizeLimits
       , durationLimits: protocolDurationLimits
       }
-  -- let protocolConstants = PProtocolConstants
-  --         { managerPkh: ownPkh
-  --         , tokenOriginRef :: TxOutRefCache
-  --         , protocolCurrency: : CurrencySymbol
-  --         , protocolTokenName :: TokenName
-  --         }
+    definedConstants = PProtocolConstants
+      { managerPkh: ownPkh
+      , tokenOrigin: oref
+      , protocolCurrency: cs
+      , protocolTokenName: tn
+      }
+    initialProtocolDatum = PProtocolDatum
+      { protocolConstants: definedConstants
+      , protocolConfig: initialConfig
+      }
+    nftValue = Value.singleton cs tn one
+    paymentToProtocol = Value.lovelaceValueOf (fromInt 2000000) <> nftValue
+  protocolValidatorHash <- getProtocolValidatorHash protocol
+  protocolValidator <- protocolValidatorScript protocol
+  let
+    constraints :: Constraints.TxConstraints Void Void
+    constraints =
+      Constraints.mustSpendPubKeyOutput oref
+        <> Constraints.mustMintValueWithRedeemer
+          (Redeemer $ toData $ PMintNft tn)
+          nftValue
+        <> Constraints.mustPayToScript
+          protocolValidatorHash
+          (Datum $ toData initialProtocolDatum)
+          Constraints.DatumWitness
+          paymentToProtocol
 
-  logInfo' "Finished"
+    lookups :: Lookups.ScriptLookups Void
+    lookups =
+      Lookups.mintingPolicy mp
+        <> Lookups.unspentOutputs utxos
+        <> Lookups.validator protocolValidator
+
+  unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
+  let
+    addressWithNetwirkTag =
+      AddressWithNetworkTag
+        { address: ownAddress
+        , networkId: TestnetId
+        }
+
+    balanceTxConstraints :: BalanceTxConstraintsBuilder
+    balanceTxConstraints = mustSendChangeToAddress addressWithNetwirkTag
+  balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
+  balancedSignedTx <- signTransaction balancedTx
+  txId <- submit balancedSignedTx
+  awaitTxConfirmed txId
+
+  logInfo' "Transaction submitted successfully"
 

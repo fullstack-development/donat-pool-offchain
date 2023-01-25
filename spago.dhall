@@ -12,6 +12,7 @@ You can edit this file as you like.
   , "effect"
   , "exceptions"
   , "mote"
+  , "newtype"
   , "ordered-collections"
   , "posix-types"
   , "prelude"
