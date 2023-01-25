@@ -8,10 +8,12 @@ import Contract.Prelude
 -- import Contract.Monad as Contract.Monad
 -- import Scaffold as Scaffold
 import Protocol.StartProtocol as StartProtocol
+import Protocol.CloseProtocol as CloseProtocol
 
 main :: Effect Unit
-main = StartProtocol.runStartProtocolTest
-
+main =
+  CloseProtocol.runCloseProtocolTest
+--StartProtocol.runStartProtocolTest
 
 -- Contract.Monad.launchAff_
 --   $ void

@@ -8,13 +8,19 @@ import Contract.Scripts (MintingPolicy)
 import Contract.Transaction
   ( TransactionInput
   , TransactionOutputWithRefScript
+  , OutputDatum(OutputDatum)
   )
-import Ctl.Internal.Plutus.Types.Transaction (_amount, _output)
+import Ctl.Internal.Plutus.Types.Transaction (_amount, _output, _datum)
 import Contract.Value as Value
 import Data.Array (filter) as Array
 import Data.BigInt (fromInt, BigInt)
 import Data.Lens.Getter ((^.))
 import Data.Rational ((%), Ratio)
+import Contract.PlutusData
+  ( Datum(..)
+  , fromData
+  , class FromData
+  )
 
 mkTokenName :: forall (r :: Row Type). String -> Contract r Value.TokenName
 mkTokenName =
@@ -43,6 +49,26 @@ filterNonCollateral
   :: Array (Tuple TransactionInput TransactionOutputWithRefScript)
   -> Array (Tuple TransactionInput TransactionOutputWithRefScript)
 filterNonCollateral = Array.filter checkNonCollateral
+
+checkTokenInUTxO :: Tuple Value.CurrencySymbol Value.TokenName -> Tuple TransactionInput TransactionOutputWithRefScript -> Boolean
+checkTokenInUTxO (Tuple cs tn) (Tuple _ txOutWithRef) =
+  let
+    utxoValue = (txOutWithRef ^. _output) ^. _amount
+  in
+    Value.valueOf utxoValue cs tn == one
+
+filterByToken
+  :: Tuple Value.CurrencySymbol Value.TokenName
+  -> Array (Tuple TransactionInput TransactionOutputWithRefScript)
+  -> Array (Tuple TransactionInput TransactionOutputWithRefScript)
+filterByToken token = Array.filter (checkTokenInUTxO token)
+
+extractDatumFromUTxO
+  :: forall (datum :: Type). FromData datum => Tuple TransactionInput TransactionOutputWithRefScript -> Maybe datum
+extractDatumFromUTxO (Tuple _ txOutWithRef) =
+  case (txOutWithRef ^. _output) ^. _datum of
+    OutputDatum (Datum datumData) -> fromData datumData
+    _ -> Nothing
 
 mkRational :: Tuple Int Int -> Maybe (Ratio BigInt)
 mkRational (Tuple num den) =
