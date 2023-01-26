@@ -5,6 +5,7 @@ import Contract.Address (PaymentPubKeyHash)
 import Contract.Prelude (class Generic)
 import Prelude (class Eq, class Ord)
 import Contract.PlutusData
+import Data.Newtype (class Newtype)
 
 newtype PProtocol = PProtocol {
     managerPkh :: PaymentPubKeyHash
@@ -26,6 +27,7 @@ instance
         :+ PNil
     )
 
+derive instance Newtype PProtocol _
 derive newtype instance Eq PProtocol
 derive newtype instance Ord PProtocol
 instance ToData PProtocol where

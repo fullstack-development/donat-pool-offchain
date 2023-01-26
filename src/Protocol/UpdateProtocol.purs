@@ -15,7 +15,7 @@ import Contract.TxConstraints (TxConstraints)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
-import Ctl.Internal.Plutus.Types.Transaction (_datum, _amount, _output)
+import Ctl.Internal.Plutus.Types.Transaction (_datum, _amount)
 import Ctl.Internal.Plutus.Types.Transaction as Tx
 import Ctl.Internal.Plutus.Types.Value (Value, valueOf)
 import Ctl.Internal.Types.Datum (Datum(..))
@@ -29,6 +29,7 @@ import Protocol.Datum (PProtocolConfig, PProtocolDatum(..), _protocolConstants)
 import Protocol.ProtocolScript (protocolValidatorScript)
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Ctl.Internal.Plutus.Types.Transaction as Tx
+import Common.UtxoMap
 -- main :: Effect Unit
 -- main = example testnetNamiConfig
 
@@ -68,39 +69,17 @@ payToProtocol vhash (Tuple newProtocolDatum value) =
     submitTxFromConstraints lookups constraints
 
 
-makeDatum ∷ PProtocolConfig → UtxoMap → TransactionHash → Contract () PProtocolDatum
-makeDatum protocolConfig utxos txId  = do
-  Tuple pdata _ <- getDatumAndValue utxos txId
+makeDatum ∷ PProtocol -> PProtocolConfig → UtxoMap → Contract () PProtocolDatum
+makeDatum protocol protocolConfig utxos  = do
+  Tuple pdata _ <- getProtocolUtxo protocol utxos >>= getDatumAndValue
   (currentDatum :: PProtocolDatum) <- liftContractM "can't decode datum" $ fromData pdata
   let protocolConstants = view _protocolConstants currentDatum
   pure $ PProtocolDatum { protocolConstants, protocolConfig }
 
--- TODO: move to helpers file
-getDatumAndValue ∷ UtxoMap → TransactionHash → Contract () (Tuple PlutusData Value)
-getDatumAndValue utxos txId= do
-  txOutputWithRefScript <- liftContractM "no locked output at address"
-    (view _output <$> head (lookupTxHash txId utxos))
-  let txOutput = view Tx._output txOutputWithRefScript
-  Datum pdata <- liftContractM "no datum in protocol utxo"  
-    (outputDatumDatum $ view _datum txOutput)
-  let value = view _amount txOutput
-  pure $ Tuple pdata value
-
-
-filterUtxosByThreadToken
-  :: CurrencySymbol -> TokenName -> UtxoMap -> Array TransactionUnspentOutput
-filterUtxosByThreadToken currency tokenName utxos =
-  let getValue = snd >>> unwrap >>>  _.output >>> unwrap >>> _.amount
-      getTokenAmount v = valueOf v currency tokenName
-  in map (\(input /\ output) -> TransactionUnspentOutput { input, output })
-    $ filter (getValue >>> getTokenAmount >>> eq (BigInt.fromInt 1))
-    $
-      toUnfoldable utxos
-
-getOnlyOneUtxo :: Array TransactionUnspentOutput -> Contract () TransactionUnspentOutput
-getOnlyOneUtxo [] = throwContractError "no utxos with given thread token on script"
-getOnlyOneUtxo [x] = pure x
-getOnlyOneUtxo _ = throwContractError "many utxos with given thread token on script"
+getProtocolUtxo :: PProtocol -> UtxoMap -> Contract () TransactionUnspentOutput
+getProtocolUtxo protocol utxos = 
+  let p = unwrap protocol
+  in getOneUtxoByThreadToken (_.protocolCurrency p) (_.protocolTokenName p) utxos
 
 spendProtocol
   :: PProtocol 
