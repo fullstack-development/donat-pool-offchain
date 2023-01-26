@@ -6,19 +6,19 @@ import Contract.Value (CurrencySymbol, TokenName)
 import Contract.Address (PaymentPubKeyHash)
 import Contract.PlutusData
 
-newtype PProtocol = PProtocol
+newtype Protocol = Protocol
   { managerPkh :: PaymentPubKeyHash
   , protocolCurrency :: CurrencySymbol
   , protocolTokenName :: TokenName
   }
 
-derive newtype instance Show PProtocol
-derive instance Generic PProtocol _
+derive newtype instance Show Protocol
+derive instance Generic Protocol _
 
 instance
   HasPlutusSchema
-    PProtocol
-    ( "PProtocol"
+    Protocol
+    ( "Protocol"
         :=
           ( "managerPkh" := I PaymentPubKeyHash
               :+ "protocolCurrency"
@@ -31,10 +31,10 @@ instance
         :+ PNil
     )
 
-derive newtype instance Eq PProtocol
-derive newtype instance Ord PProtocol
-instance ToData PProtocol where
+derive newtype instance Eq Protocol
+derive newtype instance Ord Protocol
+instance ToData Protocol where
   toData = genericToData
 
-instance FromData PProtocol where
+instance FromData Protocol where
   fromData = genericFromData

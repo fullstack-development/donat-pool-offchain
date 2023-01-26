@@ -28,7 +28,7 @@ import Protocol.UserData (ProtocolConfigParams(..))
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.NftMinting as NFT
 import Shared.Helpers as Helpers
-import Protocol.Models (PProtocol(..))
+import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript, protocolTokenName)
 import Contract.BalanceTxConstraints
   ( BalanceTxConstraintsBuilder
@@ -77,7 +77,7 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   mp /\ cs <- Helpers.mkCurrencySymbol (NFT.mintingPolicy oref)
   tn <- protocolTokenName
   let
-    protocol = PProtocol
+    protocol = Protocol
       { managerPkh: ownPkh
       , protocolCurrency: cs
       , protocolTokenName: tn
@@ -115,12 +115,6 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   protocolValidator <- protocolValidatorScript protocol
 
   let
-    {-
-mustPayToScriptAddress :: forall (i :: Type) (o :: Type). 
-ValidatorHash -> Credential -> Datum -> DatumPresence -> Value -> TxConstraints i o
-
--}
-
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustSpendPubKeyOutput oref
@@ -131,15 +125,8 @@ ValidatorHash -> Credential -> Datum -> DatumPresence -> Value -> TxConstraints 
           protocolValidatorHash
           (ScriptCredential protocolValidatorHash)
           (Datum $ toData initialProtocolDatum)
-          Constraints.DatumWitness
+          Constraints.DatumInline
           paymentToProtocol
-
-    -- <> Constraints.mustPayToScript
-    --   protocolValidatorHash
-    --   (Datum $ toData initialProtocolDatum)
-    --   Constraints.DatumWitness
-    --   paymentToProtocol
-
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
