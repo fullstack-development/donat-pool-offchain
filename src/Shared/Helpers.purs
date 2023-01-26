@@ -15,6 +15,20 @@ import Data.Lens.Getter ((^.))
 import Data.Rational ((%), Ratio)
 import Data.Map as Map
 
+
+-- import Contract.Prim.ByteArray (byteArrayFromAscii)
+-- import Contract.Scripts (MintingPolicy)
+-- import Contract.Transaction
+--   ( TransactionInput
+--   , TransactionOutputWithRefScript
+--   )
+-- import Ctl.Internal.Plutus.Types.Transaction (_amount, _output)
+-- import Contract.Value as Value
+-- import Data.Array (filter) as Array
+-- import Data.BigInt (fromInt, BigInt)
+-- import Data.Lens.Getter ((^.))
+-- import Data.Rational ((%), Ratio)
+
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
 
@@ -34,7 +48,7 @@ mkCurrencySymbol policy = do
 adaCollateralValue :: Value.Value
 adaCollateralValue = Value.singleton Value.adaSymbol Value.adaToken (fromInt 5000000)
 
-checkNonCollateral :: Tuple TransactionInput TransactionOutputWithRefScript -> Boolean
+checkNonCollateral :: UtxoTuple -> Boolean
 checkNonCollateral (Tuple _ txOutWithRef) =
   let
     utxoValue = (txOutWithRef ^. _output) ^. _amount
