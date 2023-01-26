@@ -12,7 +12,6 @@ import Protocol.StartProtocol as StartProtocol
 main :: Effect Unit
 main = StartProtocol.runStartProtocolTest
 
-
 -- Contract.Monad.launchAff_
 --   $ void
 --   $ Contract.Monad.runContract Contract.Config.testnetNamiConfig

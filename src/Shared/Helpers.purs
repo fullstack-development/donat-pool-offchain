@@ -15,7 +15,6 @@ import Data.Lens.Getter ((^.))
 import Data.Rational ((%), Ratio)
 import Data.Map as Map
 
-
 -- import Contract.Prim.ByteArray (byteArrayFromAscii)
 -- import Contract.Scripts (MintingPolicy)
 -- import Contract.Transaction
@@ -70,8 +69,8 @@ filterByToken token = Array.filter (checkTokenInUTxO token)
 
 getUtxoByThreadToken :: TokenTuple -> UtxoMap -> Contract () UtxoTuple
 getUtxoByThreadToken threadToken utxos =
-    liftContractM "Protocol UTxO with current ThreadToken not found"
-      (Array.head (filterByToken threadToken $ Map.toUnfoldable utxos))
+  liftContractM "Protocol UTxO with current ThreadToken not found"
+    (Array.head (filterByToken threadToken $ Map.toUnfoldable utxos))
 
 extractDatumFromUTxO
   :: forall (datum :: Type). FromData datum => UtxoTuple -> Maybe datum

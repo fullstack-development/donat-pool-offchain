@@ -4,8 +4,8 @@ import Contract.Prelude
 
 import Contract.Value (CurrencySymbol, TokenName)
 import Contract.Address (PaymentPubKeyHash)
-import Contract.PlutusData 
-  (class FromData
+import Contract.PlutusData
+  ( class FromData
   , class HasPlutusSchema
   , class ToData
   , type (:+)
@@ -15,8 +15,10 @@ import Contract.PlutusData
   , PNil
   , Z
   , genericFromData
-  , genericToData)
+  , genericToData
+  )
 import Data.Newtype (class Newtype)
+
 newtype PProtocol = PProtocol
   { managerPkh :: PaymentPubKeyHash
   , protocolCurrency :: CurrencySymbol

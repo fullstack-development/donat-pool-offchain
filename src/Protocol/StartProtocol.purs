@@ -34,7 +34,7 @@ import Contract.BalanceTxConstraints
   ( BalanceTxConstraintsBuilder
   , mustSendChangeToAddress
   )
-import Protocol.Datum 
+import Protocol.Datum
   ( PDurationLimits(..)
   , PPoolSizeLimits(..)
   , PProtocolConfig(..)
@@ -42,10 +42,10 @@ import Protocol.Datum
   , PProtocolDatum(..)
   )
 
-runStartProtocolTest ::  Effect Unit
-runStartProtocolTest = 
-  let 
-    protocolParams = 
+runStartProtocolTest :: Effect Unit
+runStartProtocolTest =
+  let
+    protocolParams =
       ProtocolConfigParams
         { minAmountParam: 50_000_000
         , maxAmountParam: 1_000_000_000
@@ -53,9 +53,10 @@ runStartProtocolTest =
         , maxDurationParam: 1_000
         , protocolFeeParam: Tuple 10 100
         }
-   in startProtocol testnetNamiConfig protocolParams
+  in
+    startProtocol testnetNamiConfig protocolParams
 
-startProtocol ::  ConfigParams () -> ProtocolConfigParams -> Effect Unit
+startProtocol :: ConfigParams () -> ProtocolConfigParams -> Effect Unit
 startProtocol baseConfig protocolConfig = launchAff_ do
   runContract baseConfig (contract protocolConfig)
 
