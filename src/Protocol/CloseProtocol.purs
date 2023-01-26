@@ -87,7 +87,7 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
   when (managerPkh /= ownPkh) $ liftEffect $ throw "current user doesn't have permissions to close protocol"
-  
+
   protocolUTxOs <- utxosAt protocolAddress
   logInfo' $ "Protocol UTxOs: " <> show protocolUTxOs
   let protocolNft = Tuple protocolCurrency protocolTokenName

@@ -127,6 +127,7 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
           (Datum $ toData initialProtocolDatum)
           Constraints.DatumInline
           paymentToProtocol
+
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
