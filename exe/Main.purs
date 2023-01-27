@@ -11,8 +11,8 @@ import Protocol.UpdateProtocol as UpdateProtocol
 
 main :: Effect Unit
 -- main = StartProtocol.runStartProtocolTest
-main = UpdateProtocol.runUpdateProtocol
--- main = CloseProtocol.runCloseProtocolTest
+-- main = UpdateProtocol.runUpdateProtocol
+main = CloseProtocol.runCloseProtocolTest
 
 -- Contract.Monad.launchAff_
 --   $ void

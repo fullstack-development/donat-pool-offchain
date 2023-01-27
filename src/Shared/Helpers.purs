@@ -12,8 +12,8 @@ import Ctl.Internal.Plutus.Types.Transaction (UtxoMap, _amount, _datum, _output)
 import Data.Array (filter, head) as Array
 import Data.BigInt (fromInt, BigInt)
 import Data.Lens.Getter ((^.))
-import Data.Rational ((%), Ratio)
 import Data.Map as Map
+import Data.Rational ((%), Ratio)
 
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
@@ -44,6 +44,12 @@ checkNonCollateral (Tuple _ txOutWithRef) =
 
 filterNonCollateral :: Array UtxoTuple -> Array UtxoTuple
 filterNonCollateral = Array.filter checkNonCollateral
+
+getNonCollateralUtxo :: UtxoMap -> Contract () UtxoMap
+getNonCollateralUtxo utxos = do
+  let nonCollateralArray = filterNonCollateral (Map.toUnfoldable utxos)
+  (Tuple walletTxInput walletTxOutputWitRef) <- liftContractM "Failed to get non collateral utxo" $ Array.head nonCollateralArray
+  pure $ Map.singleton walletTxInput walletTxOutputWitRef
 
 checkTokenInUTxO :: TokenTuple -> UtxoTuple -> Boolean
 checkTokenInUTxO (Tuple cs tn) (Tuple _ txOutWithRef) =

@@ -2,52 +2,30 @@ module Protocol.CloseProtocol where
 
 import Contract.Prelude
 
-import Contract.Address
-  ( getWalletAddresses
-  , ownPaymentPubKeyHash
-  , ownPaymentPubKeysHashes
-  , AddressWithNetworkTag(..)
-  , validatorHashBaseAddress
-  , addressToBech32
-  )
+import Contract.Address (getWalletAddresses, ownPaymentPubKeyHash, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress, addressToBech32)
+import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Config (ConfigParams, testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, launchAff_, runContract, liftContractM, liftedM, liftedE)
-import Contract.PlutusData
-  ( Redeemer(Redeemer)
-  , toData
-  )
+import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction
-  ( awaitTxConfirmed
-  , balanceTxWithConstraints
-  , signTransaction
-  , submit
-  )
+import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
+import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
+import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
 import Data.Array (head) as Array
 import Data.BigInt (fromInt)
 import Data.Map (toUnfoldable) as Map
-import MintingPolicy.NftRedeemer (PNftRedeemer(..))
+import Effect.Exception (throw)
 import MintingPolicy.NftMinting as NFT
-import Shared.Helpers as Helpers
+import MintingPolicy.NftRedeemer (PNftRedeemer(..))
+import Protocol.Datum (PProtocolConstants(..), PProtocolDatum(..))
 import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript, protocolTokenName)
-import Contract.BalanceTxConstraints
-  ( BalanceTxConstraintsBuilder
-  , mustSendChangeToAddress
-  )
-import Protocol.Datum
-  ( PProtocolConstants(..)
-  , PProtocolDatum(..)
-  )
-import Effect.Exception (throw)
 import Protocol.Redeemer (PProtocolRedeemer(PCloseProtocol))
---import Ctl.Internal.Types.RawBytes (hexToRawBytesUnsafe)
-import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
-import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
+import Shared.Helpers as Helpers
 
 runCloseProtocolTest :: Effect Unit
 runCloseProtocolTest = do
@@ -64,7 +42,7 @@ getTestProtocol = do
   ownPkh <- ownPaymentPubKeyHash >>= liftContractM "no pkh found"
   cs <-
     liftContractM "Cannot make currency symbol" $
-      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "86a6c9d8a41f4e396620248e6ff4db748fa9522dcdadd57c9481b706")
+      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "a3963fd41c0da7cda3ffe5b832987d881f87d14f8e1b56da93fa74ce")
   tn <- protocolTokenName
   let
     protocol =
@@ -97,13 +75,15 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
   logInfo' $ "Filtered protocol UTxO: " <> show desiredTxOut
   PProtocolDatum protocolDatum <- liftContractM "Impossible to get Protocol Datum" $ Helpers.extractDatumFromUTxO desiredTxOut
   logInfo' $ "Protocol UTxO Datum: " <> show protocolDatum
+
   let
     PProtocolConstants constants = protocolDatum.protocolConstants
     nftOref = constants.tokenOrigin
   mp <- NFT.mintingPolicy nftOref
   protocolValidator <- protocolValidatorScript protocol
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
-  utxos <- utxosAt ownAddress
+  walletUtxo <- utxosAt ownAddress >>= Helpers.getNonCollateralUtxo 
+  
   let
     protocolRedeemer = Redeemer $ toData PCloseProtocol
     nftToBurnValue = Value.singleton protocolCurrency protocolTokenName (fromInt (-1))
@@ -116,12 +96,15 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft protocolTokenName)
           nftToBurnValue
+        <> Constraints.mustPayToPubKey
+          ownPkh
+          (Value.lovelaceValueOf (fromInt 2000000))
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
         <> Lookups.unspentOutputs protocolUTxOs
-        <> Lookups.unspentOutputs utxos
+        <> Lookups.unspentOutputs walletUtxo
         <> Lookups.validator protocolValidator
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
@@ -140,4 +123,3 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
   awaitTxConfirmed txId
 
   logInfo' "closeProtocol finished successfully"
-

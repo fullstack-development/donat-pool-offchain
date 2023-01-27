@@ -22,7 +22,7 @@ import Contract.BalanceTxConstraints
   ( BalanceTxConstraintsBuilder
   , mustSendChangeToAddress
   )
-import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getUtxoByThreadToken)
+import Shared.Helpers (getNonCollateralUtxo, UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getUtxoByThreadToken)
 import Protocol.UserData (ProtocolConfigParams(..), mapToProtocolConfig)
 import Contract.Config (NetworkId(..), testnetNamiConfig)
 import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
@@ -33,7 +33,7 @@ runUpdateProtocol =
   let
     protocolParams =
       ProtocolConfigParams
-        { minAmountParam: 60_000_000
+        { minAmountParam: 70_000_000
         , maxAmountParam: 1_000_000_000
         , minDurationParam: 100
         , maxDurationParam: 1_000
@@ -48,7 +48,7 @@ getTestProtocol = do
   ownPkh <- ownPaymentPubKeyHash >>= liftContractM "no pkh found"
   cs <-
     liftContractM "Cannot make currency symbol" $
-      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "86a6c9d8a41f4e396620248e6ff4db748fa9522dcdadd57c9481b706")
+      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "a3963fd41c0da7cda3ffe5b832987d881f87d14f8e1b56da93fa74ce")
   tn <- protocolTokenName
   let
     protocol =
@@ -67,7 +67,7 @@ updateProtocol baseConfig protocolConfigParams = launchAff_ $ do
 
 contract :: Protocol -> PProtocolConfig -> Contract () Unit
 contract protocol protocolConfig = do
-  logInfo' "Running Examples.AlwaysSucceeds"
+  logInfo' "Running update protocol"
   protocolValidator <- protocolValidatorScript protocol
   protocolValidatorHash <- getProtocolValidatorHash protocol
   protocolAddress <-
@@ -76,7 +76,7 @@ contract protocol protocolConfig = do
   protocolUtxo <- getProtocolUtxo protocol utxos
 
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
-  walletUtxos <- utxosAt ownAddress
+  walletUtxo <- utxosAt ownAddress >>= getNonCollateralUtxo
 
   currentDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
   logInfo' $ "Current datum: " <> show currentDatum
@@ -99,7 +99,7 @@ contract protocol protocolConfig = do
     lookups =
       Lookups.validator protocolValidator
         <> Lookups.unspentOutputs utxos
-        <> Lookups.unspentOutputs walletUtxos
+        <> Lookups.unspentOutputs walletUtxo
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let
