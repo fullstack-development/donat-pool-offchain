@@ -15,21 +15,9 @@ import Data.Lens.Getter ((^.))
 import Data.Rational ((%), Ratio)
 import Data.Map as Map
 
--- import Contract.Prim.ByteArray (byteArrayFromAscii)
--- import Contract.Scripts (MintingPolicy)
--- import Contract.Transaction
---   ( TransactionInput
---   , TransactionOutputWithRefScript
---   )
--- import Ctl.Internal.Plutus.Types.Transaction (_amount, _output)
--- import Contract.Value as Value
--- import Data.Array (filter) as Array
--- import Data.BigInt (fromInt, BigInt)
--- import Data.Lens.Getter ((^.))
--- import Data.Rational ((%), Ratio)
-
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
+
 
 mkTokenName :: forall (r :: Row Type). String -> Contract r Value.TokenName
 mkTokenName =

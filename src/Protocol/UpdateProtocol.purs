@@ -3,8 +3,8 @@ module Protocol.UpdateProtocol where
 import Contract.Prelude
 import Contract.Monad (ConfigParams, Contract, launchAff_, liftContractM, liftedE, liftedM, runContract)
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
-import Protocol.Models (PProtocol(..))
-import Contract.Address (AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeyHash, scriptHashAddress)
+import Protocol.Models (Protocol(..))
+import Contract.Address (validatorHashBaseAddress, AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeyHash)
 import Contract.Log (logInfo')
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
@@ -33,7 +33,7 @@ runUpdateProtocol =
   let
     protocolParams =
       ProtocolConfigParams
-        { minAmountParam: 50_000_000
+        { minAmountParam: 60_000_000
         , maxAmountParam: 1_000_000_000
         , minDurationParam: 100
         , maxDurationParam: 1_000
@@ -43,16 +43,16 @@ runUpdateProtocol =
     updateProtocol testnetNamiConfig protocolParams
 
 -- TODO: pass protocol from frontend
-getTestProtocol :: Contract () PProtocol
+getTestProtocol :: Contract () Protocol
 getTestProtocol = do
   ownPkh <- ownPaymentPubKeyHash >>= liftContractM "no pkh found"
   cs <-
     liftContractM "Cannot make currency symbol" $
-      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "47c97d9f80fc21a3f12a0131c3a80ad181d5d940cf4a22250bd68d26")
+      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "86a6c9d8a41f4e396620248e6ff4db748fa9522dcdadd57c9481b706")
   tn <- protocolTokenName
   let
     protocol =
-      PProtocol
+      Protocol
         { managerPkh: ownPkh
         , protocolCurrency: cs
         , protocolTokenName: tn
@@ -65,33 +65,41 @@ updateProtocol baseConfig protocolConfigParams = launchAff_ $ do
   protocolConfig <- runContract baseConfig (mapToProtocolConfig protocolConfigParams)
   runContract baseConfig (contract protocol protocolConfig)
 
-contract :: PProtocol -> PProtocolConfig -> Contract () Unit
+contract :: Protocol -> PProtocolConfig -> Contract () Unit
 contract protocol protocolConfig = do
   logInfo' "Running Examples.AlwaysSucceeds"
-  validator <- protocolValidatorScript protocol
-  vhash <- getProtocolValidatorHash protocol
-  let scriptAddress = scriptHashAddress vhash Nothing
-  utxos <- utxosAt scriptAddress
+  protocolValidator <- protocolValidatorScript protocol
+  protocolValidatorHash <- getProtocolValidatorHash protocol
+  protocolAddress <-
+    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
+  utxos <- utxosAt protocolAddress
   protocolUtxo <- getProtocolUtxo protocol utxos
 
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
+  walletUtxos <- utxosAt ownAddress
+
   currentDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
+  logInfo' $ "Current datum: " <> show currentDatum
   let value = extractValueFromUTxO protocolUtxo
+  logInfo' $ "Current value: " <> show value
 
   let newDatum = Datum $ toData $ makeDatum currentDatum protocolConfig
+  logInfo' $ "New datum: " <> show newDatum
+
   let updateProtocolRedeemer = Redeemer $ toData $ PUpdateProtocolConfig protocolConfig
 
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustPayToScriptAddress vhash (ScriptCredential vhash) newDatum Constraints.DatumInline value
+      Constraints.mustPayToScriptAddress protocolValidatorHash (ScriptCredential protocolValidatorHash) newDatum Constraints.DatumInline value
         <> Constraints.mustSpendScriptOutput (fst protocolUtxo) updateProtocolRedeemer
 
   let
     lookups :: Lookups.ScriptLookups Void
     lookups =
-      Lookups.validator validator
+      Lookups.validator protocolValidator
         <> Lookups.unspentOutputs utxos
+        <> Lookups.unspentOutputs walletUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let
@@ -115,7 +123,7 @@ makeDatum currentDatum protocolConfig =
   in
     PProtocolDatum { protocolConstants, protocolConfig }
 
-getProtocolUtxo :: PProtocol -> UtxoMap -> Contract () UtxoTuple
+getProtocolUtxo :: Protocol -> UtxoMap -> Contract () UtxoTuple
 getProtocolUtxo protocol utxos =
   let
     p = unwrap protocol

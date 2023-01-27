@@ -3,7 +3,7 @@ module Protocol.Datum where
 import Ctl.Internal.FromData
 import Contract.Address (PaymentPubKeyHash)
 import Contract.PlutusData (class HasPlutusSchema, type (:+), type (:=), type (@@), I, PNil, Z, genericToData)
-import Contract.Prelude (class Generic)
+import Contract.Prelude (class Generic, class Show)
 import Contract.Value (CurrencySymbol, TokenName)
 import Ctl.Internal.ToData (class ToData)
 import Ctl.Internal.Types.Transaction (TransactionInput)
@@ -37,6 +37,7 @@ instance
         :+ PNil
     )
 
+derive newtype instance Show PPoolSizeLimits
 derive newtype instance Eq PPoolSizeLimits
 derive newtype instance Ord PPoolSizeLimits
 instance ToData PPoolSizeLimits where
@@ -66,6 +67,7 @@ instance
         :+ PNil
     )
 
+derive newtype instance Show PDurationLimits
 derive newtype instance Eq PDurationLimits
 derive newtype instance Ord PDurationLimits
 instance ToData PDurationLimits where
@@ -98,6 +100,7 @@ instance
         :+ PNil
     )
 
+derive newtype instance Show PProtocolConfig
 derive newtype instance Eq PProtocolConfig
 derive newtype instance Ord PProtocolConfig
 instance ToData PProtocolConfig where
@@ -114,6 +117,7 @@ newtype PProtocolConstants = PProtocolConstants
   }
 
 derive instance Generic PProtocolConstants _
+derive newtype instance Show PProtocolConstants
 derive newtype instance Eq PProtocolConstants
 derive newtype instance Ord PProtocolConstants
 
@@ -151,6 +155,7 @@ _protocolConstants = _Newtype <<< prop (Proxy :: Proxy "protocolConstants")
 
 derive instance Generic PProtocolDatum _
 derive instance Newtype PProtocolDatum _
+derive newtype instance Show PProtocolDatum
 derive newtype instance Eq PProtocolDatum
 derive newtype instance Ord PProtocolDatum
 
