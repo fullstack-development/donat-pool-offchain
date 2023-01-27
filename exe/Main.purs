@@ -8,7 +8,6 @@ import Protocol.CloseProtocol as CloseProtocol
 import Protocol.StartProtocol as StartProtocol
 import Protocol.UpdateProtocol as UpdateProtocol
 
-
 main :: Effect Unit
 -- main = StartProtocol.runStartProtocolTest
 -- main = UpdateProtocol.runUpdateProtocol

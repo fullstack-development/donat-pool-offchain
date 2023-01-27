@@ -18,7 +18,6 @@ import Data.Rational ((%), Ratio)
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
 
-
 mkTokenName :: forall (r :: Row Type). String -> Contract r Value.TokenName
 mkTokenName =
   liftContractM "Cannot make token name"
