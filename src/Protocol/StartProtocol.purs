@@ -35,11 +35,7 @@ import Contract.BalanceTxConstraints
   , mustSendChangeToAddress
   )
 import Protocol.Datum
-  ( PDurationLimits(..)
-  , PPoolSizeLimits(..)
-  , PProtocolConfig(..)
-  , PProtocolConstants(..)
-  , PProtocolDatum(..)
+  ( PProtocolDatum(..)
   )
 import Contract.Credential (Credential(ScriptCredential))
 
@@ -52,7 +48,7 @@ runStartProtocolTest =
         , maxAmountParam: 1_000_000_000
         , minDurationParam: 100
         , maxDurationParam: 1_000
-        , protocolFeeParam: Tuple 10 100
+        , protocolFeeParam: 10
         }
   in
     startProtocol testnetNamiConfig protocolParams
@@ -82,32 +78,15 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
       , protocolCurrency: cs
       , protocolTokenName: tn
       }
-
   let
-    protocolSizeLimits = PPoolSizeLimits
+    initialProtocolDatum = PProtocolDatum
       { minAmount: fromInt minAmountParam
       , maxAmount: fromInt maxAmountParam
-      }
-    protocolDurationLimits = PDurationLimits
-      { minDuration: fromInt minDurationParam
+      , minDuration: fromInt minDurationParam
       , maxDuration: fromInt maxDurationParam
-      }
-  fee <- liftContractM "Zero denominator error" $ Helpers.mkRational protocolFeeParam
-  let
-    initialConfig = PProtocolConfig
-      { protocolFee: fee
-      , poolSizeLimits: protocolSizeLimits
-      , durationLimits: protocolDurationLimits
-      }
-    definedConstants = PProtocolConstants
-      { managerPkh: ownPkh
-      , tokenOrigin: oref
-      , protocolCurrency: cs
-      , protocolTokenName: tn
-      }
-    initialProtocolDatum = PProtocolDatum
-      { protocolConstants: definedConstants
-      , protocolConfig: initialConfig
+      , protocolFee: fromInt protocolFeeParam
+      , managerPkh: ownPkh
+      , tokenOriginRef: oref
       }
     nftValue = Value.singleton cs tn one
     paymentToProtocol = Value.lovelaceValueOf (fromInt 2000000) <> nftValue

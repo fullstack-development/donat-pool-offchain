@@ -4,7 +4,6 @@ import Ctl.Internal.FromData
 import Contract.Address (PaymentPubKeyHash)
 import Contract.PlutusData (class HasPlutusSchema, type (:+), type (:=), type (@@), I, PNil, Z, genericToData)
 import Contract.Prelude (class Generic, class Show)
-import Contract.Value (CurrencySymbol, TokenName)
 import Ctl.Internal.ToData (class ToData)
 import Ctl.Internal.Types.Transaction (TransactionInput)
 import Data.BigInt (BigInt)
@@ -12,146 +11,39 @@ import Data.Lens (Lens')
 import Data.Lens.Iso.Newtype (_Newtype)
 import Data.Lens.Record (prop)
 import Data.Newtype (class Newtype)
-import Data.Rational (Ratio)
 import Prelude (class Eq, class Ord, (<<<))
 import Type.Proxy (Proxy(Proxy))
 
-newtype PPoolSizeLimits = PPoolSizeLimits
+newtype PProtocolDatum = PProtocolDatum
   { minAmount :: BigInt
   , maxAmount :: BigInt
-  }
-
-derive instance Generic PPoolSizeLimits _
-
-instance
-  HasPlutusSchema
-    PPoolSizeLimits
-    ( "PPoolSizeLimits"
-        :=
-          ( "minAmount" := I BigInt
-              :+ "maxAmount"
-              := I BigInt
-              :+ PNil
-          )
-        @@ Z
-        :+ PNil
-    )
-
-derive newtype instance Show PPoolSizeLimits
-derive newtype instance Eq PPoolSizeLimits
-derive newtype instance Ord PPoolSizeLimits
-instance ToData PPoolSizeLimits where
-  toData = genericToData
-
-instance FromData PPoolSizeLimits where
-  fromData = genericFromData
-
-newtype PDurationLimits = PDurationLimits
-  { minDuration :: BigInt
+  , minDuration :: BigInt
   , maxDuration :: BigInt
+  , protocolFee :: BigInt -- the percentage 
+  , managerPkh :: PaymentPubKeyHash
+  , tokenOriginRef :: TransactionInput
   }
 
-derive instance Generic PDurationLimits _
+_minAmount :: Lens' PProtocolDatum BigInt
+_minAmount = _Newtype <<< prop (Proxy :: Proxy "minAmount")
 
-instance
-  HasPlutusSchema
-    PDurationLimits
-    ( "PDurationLimits"
-        :=
-          ( "minDuration" := I BigInt
-              :+ "maxDuration"
-              := I BigInt
-              :+ PNil
-          )
-        @@ Z
-        :+ PNil
-    )
+_maxAmount :: Lens' PProtocolDatum BigInt
+_maxAmount = _Newtype <<< prop (Proxy :: Proxy "maxAmount")
 
-derive newtype instance Show PDurationLimits
-derive newtype instance Eq PDurationLimits
-derive newtype instance Ord PDurationLimits
-instance ToData PDurationLimits where
-  toData = genericToData
+_minDuration :: Lens' PProtocolDatum BigInt
+_minDuration = _Newtype <<< prop (Proxy :: Proxy "minDuration")
 
-instance FromData PDurationLimits where
-  fromData = genericFromData
+_maxDuration :: Lens' PProtocolDatum BigInt
+_maxDuration = _Newtype <<< prop (Proxy :: Proxy "maxDuration")
 
-newtype PProtocolConfig = PProtocolConfig
-  { protocolFee :: Ratio BigInt
-  , poolSizeLimits :: PPoolSizeLimits
-  , durationLimits :: PDurationLimits
-  }
+_protocolFee :: Lens' PProtocolDatum BigInt
+_protocolFee = _Newtype <<< prop (Proxy :: Proxy "protocolFee")
 
-derive instance Generic PProtocolConfig _
+_managerPkh :: Lens' PProtocolDatum PaymentPubKeyHash
+_managerPkh = _Newtype <<< prop (Proxy :: Proxy "managerPkh")
 
-instance
-  HasPlutusSchema
-    PProtocolConfig
-    ( "PProtocolConfig"
-        :=
-          ( "protocolFee" := I (Ratio BigInt)
-              :+ "poolSizeLimits"
-              := I PPoolSizeLimits
-              :+ "durationLimits"
-              := I PDurationLimits
-              :+ PNil
-          )
-        @@ Z
-        :+ PNil
-    )
-
-derive newtype instance Show PProtocolConfig
-derive newtype instance Eq PProtocolConfig
-derive newtype instance Ord PProtocolConfig
-instance ToData PProtocolConfig where
-  toData = genericToData
-
-instance FromData PProtocolConfig where
-  fromData = genericFromData
-
-newtype PProtocolConstants = PProtocolConstants
-  { managerPkh :: PaymentPubKeyHash
-  , tokenOrigin :: TransactionInput
-  , protocolCurrency :: CurrencySymbol
-  , protocolTokenName :: TokenName
-  }
-
-derive instance Generic PProtocolConstants _
-derive newtype instance Show PProtocolConstants
-derive newtype instance Eq PProtocolConstants
-derive newtype instance Ord PProtocolConstants
-
-instance
-  HasPlutusSchema
-    PProtocolConstants
-    ( "PProtocolConstants"
-        :=
-          ( "managerPkh" := I PaymentPubKeyHash
-              :+ "tokenOrigin"
-              := I TransactionInput
-              :+ "protocolCurrency"
-              := I CurrencySymbol
-              :+ "protocolTokenName"
-              := I TokenName
-              :+ PNil
-          )
-        @@ Z
-        :+ PNil
-    )
-
-instance ToData PProtocolConstants where
-  toData = genericToData
-
-instance FromData PProtocolConstants where
-  fromData = genericFromData
-
-newtype PProtocolDatum = PProtocolDatum
-  { protocolConstants :: PProtocolConstants
-  , protocolConfig :: PProtocolConfig
-  }
-
-_protocolConstants :: Lens' PProtocolDatum PProtocolConstants
-_protocolConstants = _Newtype <<< prop (Proxy :: Proxy "protocolConstants")
+_tokenOriginRef :: Lens' PProtocolDatum TransactionInput
+_tokenOriginRef = _Newtype <<< prop (Proxy :: Proxy "tokenOriginRef")
 
 derive instance Generic PProtocolDatum _
 derive instance Newtype PProtocolDatum _
@@ -164,9 +56,19 @@ instance
     PProtocolDatum
     ( "PProtocolDatum"
         :=
-          ( "protocolConstants" := I PProtocolConstants
-              :+ "protocolConfig"
-              := I PProtocolConfig
+          ( "minAmount" := I BigInt
+              :+ "maxAmount"
+              := I BigInt
+              :+ "minDuration"
+              := I BigInt
+              :+ "maxDuration"
+              := I BigInt
+              :+ "protocolFee"
+              := I BigInt
+              :+ "managerPkh"
+              := I PaymentPubKeyHash
+              :+ "tokenOriginRef"
+              := I TransactionInput
               :+ PNil
           )
         @@ Z
