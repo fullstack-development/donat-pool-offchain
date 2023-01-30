@@ -1,6 +1,6 @@
 module Protocol.Redeemer where
 
-import Protocol.Datum (PProtocolConfig)
+import Protocol.Models (PProtocolConfig)
 import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, S, Z, genericToData)
 import Contract.Prelude
 

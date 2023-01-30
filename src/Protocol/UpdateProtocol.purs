@@ -3,7 +3,7 @@ module Protocol.UpdateProtocol where
 import Contract.Prelude
 import Contract.Monad (ConfigParams, Contract, launchAff_, liftContractM, liftedE, liftedM, runContract)
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
-import Protocol.Models (Protocol(..))
+import Protocol.Models (Protocol(..), PProtocolConfig(..))
 import Contract.Address (validatorHashBaseAddress, AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeyHash)
 import Contract.Log (logInfo')
 import Contract.PlutusData (Redeemer(Redeemer), toData)
@@ -13,7 +13,7 @@ import Contract.Utxos (utxosAt)
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
 import Ctl.Internal.Types.Datum (Datum(..))
 import Data.Lens (view)
-import Protocol.Datum (PProtocolConfig, PProtocolDatum(..), _protocolConstants)
+import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
 import Protocol.ProtocolScript (protocolValidatorScript, getProtocolValidatorHash, protocolTokenName)
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Contract.Credential (Credential(ScriptCredential))
@@ -37,7 +37,7 @@ runUpdateProtocol =
         , maxAmountParam: 1_000_000_000
         , minDurationParam: 100
         , maxDurationParam: 1_000
-        , protocolFeeParam: Tuple 10 100
+        , protocolFeeParam: 10
         }
   in
     updateProtocol testnetNamiConfig protocolParams
@@ -117,11 +117,16 @@ contract protocol protocolConfig = do
   awaitTxConfirmed txId
 
 makeDatum ∷ PProtocolDatum -> PProtocolConfig → PProtocolDatum
-makeDatum currentDatum protocolConfig =
-  let
-    protocolConstants = view _protocolConstants currentDatum
-  in
-    PProtocolDatum { protocolConstants, protocolConfig }
+makeDatum currentDatum (PProtocolConfig { minAmount, maxAmount, minDuration, maxDuration, protocolFee }) =
+  PProtocolDatum
+    { minAmount: minAmount
+    , maxAmount: maxAmount
+    , minDuration: minDuration
+    , maxDuration: maxDuration
+    , protocolFee: protocolFee
+    , managerPkh: view _managerPkh currentDatum
+    , tokenOriginRef: view _tokenOriginRef currentDatum
+    }
 
 getProtocolUtxo :: Protocol -> UtxoMap -> Contract () UtxoTuple
 getProtocolUtxo protocol utxos =

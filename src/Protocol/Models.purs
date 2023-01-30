@@ -18,6 +18,7 @@ import Contract.PlutusData
   , genericToData
   )
 import Data.Newtype (class Newtype)
+import Data.BigInt (BigInt)
 
 newtype Protocol = Protocol
   { managerPkh :: PaymentPubKeyHash
@@ -51,4 +52,44 @@ instance ToData Protocol where
   toData = genericToData
 
 instance FromData Protocol where
+  fromData = genericFromData
+
+newtype PProtocolConfig = PProtocolConfig
+  { minAmount :: BigInt
+  , maxAmount :: BigInt
+  , minDuration :: BigInt
+  , maxDuration :: BigInt
+  , protocolFee :: BigInt
+  }
+
+derive newtype instance Show PProtocolConfig
+derive instance Generic PProtocolConfig _
+derive instance Newtype PProtocolConfig _
+
+instance
+  HasPlutusSchema
+    PProtocolConfig
+    ( "PProtocolConfig"
+        :=
+          ( "minAmount" := I BigInt
+              :+ "maxAmount"
+              := I BigInt
+              :+ "minDuration"
+              := I BigInt
+              :+ "maxDuration"
+              := I BigInt
+              :+ "protocolFee"
+              := I BigInt
+              :+ PNil
+          )
+        @@ Z
+        :+ PNil
+    )
+
+derive newtype instance Eq PProtocolConfig
+derive newtype instance Ord PProtocolConfig
+instance ToData PProtocolConfig where
+  toData = genericToData
+
+instance FromData PProtocolConfig where
   fromData = genericFromData

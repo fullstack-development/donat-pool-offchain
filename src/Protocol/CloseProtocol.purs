@@ -21,7 +21,7 @@ import Data.Map (toUnfoldable) as Map
 import Effect.Exception (throw)
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
-import Protocol.Datum (PProtocolConstants(..), PProtocolDatum(..))
+import Protocol.Datum (PProtocolDatum(..))
 import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript, protocolTokenName)
 import Protocol.Redeemer (PProtocolRedeemer(PCloseProtocol))
@@ -42,7 +42,7 @@ getTestProtocol = do
   ownPkh <- ownPaymentPubKeyHash >>= liftContractM "no pkh found"
   cs <-
     liftContractM "Cannot make currency symbol" $
-      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "a3963fd41c0da7cda3ffe5b832987d881f87d14f8e1b56da93fa74ce")
+      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "79d34f8483f53b74d7e5519b7bd9d26e9b06a2daa4a4e4dfba553a52")
   tn <- protocolTokenName
   let
     protocol =
@@ -75,10 +75,7 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
   logInfo' $ "Filtered protocol UTxO: " <> show desiredTxOut
   PProtocolDatum protocolDatum <- liftContractM "Impossible to get Protocol Datum" $ Helpers.extractDatumFromUTxO desiredTxOut
   logInfo' $ "Protocol UTxO Datum: " <> show protocolDatum
-
-  let
-    PProtocolConstants constants = protocolDatum.protocolConstants
-    nftOref = constants.tokenOrigin
+  let nftOref = protocolDatum.tokenOriginRef
   mp <- NFT.mintingPolicy nftOref
   protocolValidator <- protocolValidatorScript protocol
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
