@@ -2,7 +2,7 @@ module Protocol.StartProtocol where
 
 import Contract.Prelude
 
-import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..))
+import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), addressToBech32, validatorHashBaseAddress)
 import Contract.Config (ConfigParams, testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, launchAff_, runContract, liftContractM, liftedM, liftedE)
@@ -28,34 +28,32 @@ import Protocol.UserData (ProtocolConfigParams(..))
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.NftMinting as NFT
 import Shared.Helpers as Helpers
-import Protocol.Models (PProtocol(..))
+import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript, protocolTokenName)
 import Contract.BalanceTxConstraints
   ( BalanceTxConstraintsBuilder
   , mustSendChangeToAddress
   )
-import Protocol.Datum 
-  ( PDurationLimits(..)
-  , PPoolSizeLimits(..)
-  , PProtocolConfig(..)
-  , PProtocolConstants(..)
-  , PProtocolDatum(..)
+import Protocol.Datum
+  ( PProtocolDatum(..)
   )
+import Contract.Credential (Credential(ScriptCredential))
 
-runStartProtocolTest ::  Effect Unit
-runStartProtocolTest = 
-  let 
-    protocolParams = 
+runStartProtocolTest :: Effect Unit
+runStartProtocolTest =
+  let
+    protocolParams =
       ProtocolConfigParams
         { minAmountParam: 50_000_000
         , maxAmountParam: 1_000_000_000
         , minDurationParam: 100
         , maxDurationParam: 1_000
-        , protocolFeeParam: Tuple 10 100
+        , protocolFeeParam: 10
         }
-   in startProtocol testnetNamiConfig protocolParams
+  in
+    startProtocol testnetNamiConfig protocolParams
 
-startProtocol ::  ConfigParams () -> ProtocolConfigParams -> Effect Unit
+startProtocol :: ConfigParams () -> ProtocolConfigParams -> Effect Unit
 startProtocol baseConfig protocolConfig = launchAff_ do
   runContract baseConfig (contract protocolConfig)
 
@@ -75,43 +73,26 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   mp /\ cs <- Helpers.mkCurrencySymbol (NFT.mintingPolicy oref)
   tn <- protocolTokenName
   let
-    protocol = PProtocol
+    protocol = Protocol
       { managerPkh: ownPkh
       , protocolCurrency: cs
       , protocolTokenName: tn
       }
-  logInfo' $ "Current protocol: " <> show protocol
-
   let
-    protocolSizeLimits = PPoolSizeLimits
+    initialProtocolDatum = PProtocolDatum
       { minAmount: fromInt minAmountParam
       , maxAmount: fromInt maxAmountParam
-      }
-    protocolDurationLimits = PDurationLimits
-      { minDuration: fromInt minDurationParam
+      , minDuration: fromInt minDurationParam
       , maxDuration: fromInt maxDurationParam
-      }
-  fee <- liftContractM "Zero denominator error" $ Helpers.mkRational protocolFeeParam
-  let
-    initialConfig = PProtocolConfig
-      { protocolFee: fee
-      , poolSizeLimits: protocolSizeLimits
-      , durationLimits: protocolDurationLimits
-      }
-    definedConstants = PProtocolConstants
-      { managerPkh: ownPkh
-      , tokenOrigin: oref
-      , protocolCurrency: cs
-      , protocolTokenName: tn
-      }
-    initialProtocolDatum = PProtocolDatum
-      { protocolConstants: definedConstants
-      , protocolConfig: initialConfig
+      , protocolFee: fromInt protocolFeeParam
+      , managerPkh: ownPkh
+      , tokenOriginRef: oref
       }
     nftValue = Value.singleton cs tn one
     paymentToProtocol = Value.lovelaceValueOf (fromInt 2000000) <> nftValue
   protocolValidatorHash <- getProtocolValidatorHash protocol
   protocolValidator <- protocolValidatorScript protocol
+
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
@@ -119,10 +100,11 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PMintNft tn)
           nftValue
-        <> Constraints.mustPayToScript
+        <> Constraints.mustPayToScriptAddress
           protocolValidatorHash
+          (ScriptCredential protocolValidatorHash)
           (Datum $ toData initialProtocolDatum)
-          Constraints.DatumWitness
+          Constraints.DatumInline
           paymentToProtocol
 
     lookups :: Lookups.ScriptLookups Void
@@ -133,18 +115,23 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let
-    addressWithNetwirkTag =
+    addressWithNetworkTag =
       AddressWithNetworkTag
         { address: ownAddress
         , networkId: TestnetId
         }
 
     balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress addressWithNetwirkTag
+    balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
   balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
   balancedSignedTx <- signTransaction balancedTx
   txId <- submit balancedSignedTx
   awaitTxConfirmed txId
 
+  logInfo' $ "Current protocol: " <> show protocol
+  protocolAddress <-
+    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
+  bech32Address <- addressToBech32 protocolAddress
+  logInfo' $ "Current protocol address: " <> show bech32Address
   logInfo' "Transaction submitted successfully"
 

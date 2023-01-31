@@ -6,39 +6,38 @@ module Protocol.ProtocolScript
 
 import Contract.Monad (Contract, liftContractE)
 import Contract.Prelude (Either, bind, pure, ($))
-import Contract.Scripts (Validator(..), PlutusScript, ApplyArgsError, applyArgs)
-import Contract.TextEnvelope (decodeTextEnvelope, plutusScriptV1FromEnvelope)
+import Contract.Scripts (Validator(..), PlutusScript, ApplyArgsError, applyArgs, validatorHash, ValidatorHash)
+import Contract.TextEnvelope (decodeTextEnvelope, plutusScriptV2FromEnvelope)
 import Control.Monad.Error.Class (liftMaybe)
 import Effect.Exception (error)
-import Protocol.Models (PProtocol)
+import Protocol.Models (Protocol)
 import Contract.PlutusData (PlutusData, toData)
 import Data.Array (singleton) as Array
-import Contract.Scripts (validatorHash, ValidatorHash)
 import Contract.Value as Value
 import Shared.Helpers as Helpers
 
 foreign import protocolValidator :: String
 
-protocolValidatorScript :: PProtocol -> Contract () Validator
+protocolValidatorScript :: Protocol -> Contract () Validator
 protocolValidatorScript protocol = do
   script <- liftMaybe (error "Error decoding protocolValidator") do
     envelope <- decodeTextEnvelope protocolValidator
-    plutusScriptV1FromEnvelope envelope
+    plutusScriptV2FromEnvelope envelope
   res <- liftContractE $ mkProtocolValidatorScript script protocol
   pure $ Validator res
 
 mkProtocolValidatorScript
   :: PlutusScript
-  -> PProtocol
+  -> Protocol
   -> Either ApplyArgsError PlutusScript
-mkProtocolValidatorScript unappliedMintingPolicy protocol =
+mkProtocolValidatorScript unappliedValidator protocol =
   let
-    mintingPolicyArgs :: Array PlutusData
-    mintingPolicyArgs = Array.singleton (toData protocol)
+    validatorArgs :: Array PlutusData
+    validatorArgs = Array.singleton (toData protocol)
   in
-    applyArgs unappliedMintingPolicy mintingPolicyArgs
+    applyArgs unappliedValidator validatorArgs
 
-getProtocolValidatorHash :: PProtocol -> Contract () ValidatorHash
+getProtocolValidatorHash :: Protocol -> Contract () ValidatorHash
 getProtocolValidatorHash protocol = do
   validator <- protocolValidatorScript protocol
   pure $ validatorHash validator
