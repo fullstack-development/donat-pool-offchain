@@ -4,6 +4,7 @@ module Scaffold.Main (main) where
 
 import Contract.Prelude
 
+import Common.ConnectWallet as ConnectWallet
 import Protocol.CloseProtocol as CloseProtocol
 import Protocol.StartProtocol as StartProtocol
 import Protocol.UpdateProtocol as UpdateProtocol
@@ -11,7 +12,8 @@ import Protocol.UpdateProtocol as UpdateProtocol
 main :: Effect Unit
 -- main = StartProtocol.runStartProtocolTest
 -- main = UpdateProtocol.runUpdateProtocol
-main = CloseProtocol.runCloseProtocolTest
+-- main = CloseProtocol.runCloseProtocolTest
+main = ConnectWallet.runConnectWallet
 
 -- Contract.Monad.launchAff_
 --   $ void
