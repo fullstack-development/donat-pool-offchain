@@ -4,29 +4,27 @@ import Contract.Prelude
 import Contract.Monad (ConfigParams, Contract, launchAff_, liftContractM, liftedE, liftedM, runContract)
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Protocol.Models (Protocol(..), PProtocolConfig(..))
-import Contract.Address (validatorHashBaseAddress, AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeyHash)
+import Contract.Address (validatorHashBaseAddress, AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes)
+import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
+import Contract.Config (NetworkId(..), testnetNamiConfig)
+import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
+import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
+import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
 import Ctl.Internal.Types.Datum (Datum(..))
+import Data.Array (head) as Array
 import Data.Lens (view)
 import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
+import Effect.Exception (throw)
 import Protocol.ProtocolScript (protocolValidatorScript, getProtocolValidatorHash, protocolTokenName)
 import Protocol.Redeemer (PProtocolRedeemer(..))
-import Contract.Credential (Credential(ScriptCredential))
-import Data.Array (head) as Array
-import Contract.BalanceTxConstraints
-  ( BalanceTxConstraintsBuilder
-  , mustSendChangeToAddress
-  )
-import Shared.Helpers (getNonCollateralUtxo, UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getUtxoByThreadToken)
 import Protocol.UserData (ProtocolConfigParams(..), mapToProtocolConfig)
-import Contract.Config (NetworkId(..), testnetNamiConfig)
-import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
-import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
+import Shared.Helpers (getNonCollateralUtxo, UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getUtxoByThreadToken)
 
 runUpdateProtocol :: Effect Unit
 runUpdateProtocol =
@@ -45,10 +43,11 @@ runUpdateProtocol =
 -- TODO: pass protocol from frontend
 getTestProtocol :: Contract () Protocol
 getTestProtocol = do
-  ownPkh <- ownPaymentPubKeyHash >>= liftContractM "no pkh found"
+  ownHashes <- ownPaymentPubKeysHashes
+  ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
   cs <-
     liftContractM "Cannot make currency symbol" $
-      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "a3963fd41c0da7cda3ffe5b832987d881f87d14f8e1b56da93fa74ce")
+      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "4fcf285d0d75ec4b5077e31e2279b3cc97b996082f185bd7a504a7c0")
   tn <- protocolTokenName
   let
     protocol =
@@ -75,6 +74,11 @@ contract protocol protocolConfig = do
   utxos <- utxosAt protocolAddress
   protocolUtxo <- getProtocolUtxo protocol utxos
 
+  ownHashes <- ownPaymentPubKeysHashes
+  ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
+  let manager = _.managerPkh $ unwrap protocol
+  when (manager /= ownPkh) $ liftEffect $ throw "current user doesn't have permissions to close protocol"
+
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
   walletUtxo <- utxosAt ownAddress >>= getNonCollateralUtxo
 
@@ -91,9 +95,9 @@ contract protocol protocolConfig = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustPayToScriptAddress protocolValidatorHash (ScriptCredential protocolValidatorHash) newDatum Constraints.DatumInline value
-        <> Constraints.mustSpendScriptOutput (fst protocolUtxo) updateProtocolRedeemer
-
+      Constraints.mustSpendScriptOutput (fst protocolUtxo) updateProtocolRedeemer
+        <> Constraints.mustPayToScriptAddress protocolValidatorHash (ScriptCredential protocolValidatorHash) newDatum Constraints.DatumInline value
+        <> Constraints.mustBeSignedBy ownPkh
   let
     lookups :: Lookups.ScriptLookups Void
     lookups =
