@@ -44,11 +44,11 @@ runStartProtocolTest =
   let
     protocolParams =
       ProtocolConfigParams
-        { minAmountParam: 50_000_000
-        , maxAmountParam: 1_000_000_000
-        , minDurationParam: 100
-        , maxDurationParam: 1_000
-        , protocolFeeParam: 10
+        { minAmountParam: fromInt 50_000_000
+        , maxAmountParam: fromInt 1_000_000_000
+        , minDurationParam: fromInt 100
+        , maxDurationParam: fromInt 1_000
+        , protocolFeeParam: fromInt 10
         }
   in
     startProtocol testnetNamiConfig protocolParams
@@ -80,11 +80,11 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
       }
   let
     initialProtocolDatum = PProtocolDatum
-      { minAmount: fromInt minAmountParam
-      , maxAmount: fromInt maxAmountParam
-      , minDuration: fromInt minDurationParam
-      , maxDuration: fromInt maxDurationParam
-      , protocolFee: fromInt protocolFeeParam
+      { minAmount: minAmountParam
+      , maxAmount: maxAmountParam
+      , minDuration: minDurationParam
+      , maxDuration: maxDurationParam
+      , protocolFee: protocolFeeParam
       , managerPkh: ownPkh
       , tokenOriginRef: oref
       }

@@ -1,41 +1,43 @@
 module Protocol.UpdateProtocol where
 
 import Contract.Prelude
-import Contract.Monad (ConfigParams, Contract, launchAff_, liftContractM, liftedE, liftedM, runContract)
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
-import Protocol.Models (Protocol(..), PProtocolConfig(..))
+
 import Contract.Address (validatorHashBaseAddress, AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Config (NetworkId(..), testnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
+import Contract.Monad (ConfigParams, Contract, launchAff_, liftContractM, liftedE, liftedM, runContract)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
+import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
-import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
 import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
 import Ctl.Internal.Types.Datum (Datum(..))
 import Data.Array (head) as Array
 import Data.Lens (view)
-import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
 import Effect.Exception (throw)
+import Info.Protocol (getProtocolUtxo)
+import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
+import Protocol.Models (Protocol(..), PProtocolConfig(..))
 import Protocol.ProtocolScript (protocolValidatorScript, getProtocolValidatorHash, protocolTokenName)
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolConfigParams(..), mapToProtocolConfig)
-import Shared.Helpers (getNonCollateralUtxo, UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getUtxoByThreadToken)
+import Shared.Helpers (getNonCollateralUtxo, extractDatumFromUTxO, extractValueFromUTxO)
+import Data.BigInt (fromInt)
 
 runUpdateProtocol :: Effect Unit
 runUpdateProtocol =
   let
     protocolParams =
       ProtocolConfigParams
-        { minAmountParam: 70_000_000
-        , maxAmountParam: 1_000_000_000
-        , minDurationParam: 100
-        , maxDurationParam: 1_000
-        , protocolFeeParam: 10
+        { minAmountParam: fromInt 70_000_000
+        , maxAmountParam: fromInt 1_000_000_000
+        , minDurationParam: fromInt 100
+        , maxDurationParam: fromInt 1_000
+        , protocolFeeParam: fromInt 10
         }
   in
     updateProtocol testnetNamiConfig protocolParams
@@ -61,7 +63,7 @@ getTestProtocol = do
 updateProtocol :: ConfigParams () -> ProtocolConfigParams -> Effect Unit
 updateProtocol baseConfig protocolConfigParams = launchAff_ $ do
   protocol <- runContract baseConfig getTestProtocol
-  protocolConfig <- runContract baseConfig (mapToProtocolConfig protocolConfigParams)
+  let protocolConfig = mapToProtocolConfig protocolConfigParams
   runContract baseConfig (contract protocol protocolConfig)
 
 contract :: Protocol -> PProtocolConfig -> Contract () Unit
@@ -131,10 +133,3 @@ makeDatum currentDatum (PProtocolConfig { minAmount, maxAmount, minDuration, max
     , managerPkh: view _managerPkh currentDatum
     , tokenOriginRef: view _tokenOriginRef currentDatum
     }
-
-getProtocolUtxo :: Protocol -> UtxoMap -> Contract () UtxoTuple
-getProtocolUtxo protocol utxos =
-  let
-    p = unwrap protocol
-  in
-    getUtxoByThreadToken (Tuple (_.protocolCurrency p) (_.protocolTokenName p)) utxos
