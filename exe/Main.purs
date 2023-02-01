@@ -9,13 +9,19 @@ import Protocol.CloseProtocol as CloseProtocol
 import Protocol.StartProtocol as StartProtocol
 import Protocol.UpdateProtocol as UpdateProtocol
 
+-- uncomment to run getProtocolInfo
+-- import Info.Protocol as ProtocolInfo
+-- import Effect.Aff (Fiber)
+-- import Protocol.Datum
+-- import Contract.Value as Value
+-- import Protocol.Models (Protocol)
+
 main :: Effect Unit
--- main = StartProtocol.runStartProtocolTest
+main = StartProtocol.runStartProtocolTest
 -- main = UpdateProtocol.runUpdateProtocol
 -- main = CloseProtocol.runCloseProtocolTest
-main = ConnectWallet.runConnectWallet
+-- main = ConnectWallet.runConnectWallet
 
--- Contract.Monad.launchAff_
---   $ void
---   $ Contract.Monad.runContract Contract.Config.testnetNamiConfig
---   $ Scaffold.contract
+-- runGetProtocolInfo with parameter and not unit-type returning value
+-- main :: Protocol -> Effect (Fiber (Tuple PProtocolDatum Value.Value))
+-- main = ProtocolInfo.runGetProtocolInfo

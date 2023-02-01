@@ -1,7 +1,6 @@
 module Protocol.UserData where
 
 import Contract.Prelude
-import Contract.Monad (Contract)
 import Protocol.Models (PProtocolConfig(..))
 import Data.BigInt (fromInt)
 
@@ -16,12 +15,22 @@ newtype ProtocolConfigParams = ProtocolConfigParams
 derive newtype instance Show ProtocolConfigParams
 derive newtype instance Eq ProtocolConfigParams
 
-mapToProtocolConfig :: ProtocolConfigParams -> Contract () PProtocolConfig
+mapToProtocolConfig :: ProtocolConfigParams -> PProtocolConfig
 mapToProtocolConfig (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
-  pure $ PProtocolConfig
+  PProtocolConfig
     { minAmount: fromInt minAmountParam
     , maxAmount: fromInt maxAmountParam
     , minDuration: fromInt minDurationParam
     , maxDuration: fromInt maxDurationParam
     , protocolFee: fromInt protocolFeeParam
     }
+
+-- mapFromProtocolConfig :: PProtocolConfig -> ProtocolConfigParams
+-- mapFromProtocolConfig (PProtocolConfig config) =
+--   ProtocolConfigParams {
+--     minAmountParam: toInt config.minAmount,
+--     maxAmountParam: config.maxAmount,
+--     minDurationParam: config.minDuration,
+--     maxDurationParam: config.maxDuration,
+--     protocolFeeParam: config.protocolFee
+--   }
