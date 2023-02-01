@@ -2,35 +2,36 @@ module Protocol.UserData where
 
 import Contract.Prelude
 import Protocol.Models (PProtocolConfig(..))
-import Data.BigInt (fromInt)
+import Protocol.Datum (PProtocolDatum(..))
+import Data.BigInt (BigInt)
 
 newtype ProtocolConfigParams = ProtocolConfigParams
-  { minAmountParam :: Int
-  , maxAmountParam :: Int
-  , minDurationParam :: Int
-  , maxDurationParam :: Int
-  , protocolFeeParam :: Int -- percentage
+  { minAmountParam :: BigInt
+  , maxAmountParam :: BigInt
+  , minDurationParam :: BigInt
+  , maxDurationParam :: BigInt
+  , protocolFeeParam :: BigInt -- percentage
   }
 
 derive newtype instance Show ProtocolConfigParams
 derive newtype instance Eq ProtocolConfigParams
 
 mapToProtocolConfig :: ProtocolConfigParams -> PProtocolConfig
-mapToProtocolConfig (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
+mapToProtocolConfig (ProtocolConfigParams configParams) = do
   PProtocolConfig
-    { minAmount: fromInt minAmountParam
-    , maxAmount: fromInt maxAmountParam
-    , minDuration: fromInt minDurationParam
-    , maxDuration: fromInt maxDurationParam
-    , protocolFee: fromInt protocolFeeParam
+    { minAmount: configParams.minAmountParam
+    , maxAmount: configParams.maxAmountParam
+    , minDuration: configParams.minDurationParam
+    , maxDuration: configParams.maxDurationParam
+    , protocolFee: configParams.protocolFeeParam
     }
 
--- mapFromProtocolConfig :: PProtocolConfig -> ProtocolConfigParams
--- mapFromProtocolConfig (PProtocolConfig config) =
---   ProtocolConfigParams {
---     minAmountParam: toInt config.minAmount,
---     maxAmountParam: config.maxAmount,
---     minDurationParam: config.minDuration,
---     maxDurationParam: config.maxDuration,
---     protocolFeeParam: config.protocolFee
---   }
+mapFromProtocolDatum :: PProtocolDatum -> ProtocolConfigParams
+mapFromProtocolDatum (PProtocolDatum datum) =
+  ProtocolConfigParams {
+    minAmountParam: datum.minAmount,
+    maxAmountParam: datum.maxAmount,
+    minDurationParam: datum.minDuration,
+    maxDurationParam: datum.maxDuration,
+    protocolFeeParam: datum.protocolFee
+  }

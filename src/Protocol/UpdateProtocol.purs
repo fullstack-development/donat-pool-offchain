@@ -26,17 +26,18 @@ import Protocol.ProtocolScript (protocolValidatorScript, getProtocolValidatorHas
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolConfigParams(..), mapToProtocolConfig)
 import Shared.Helpers (getNonCollateralUtxo, extractDatumFromUTxO, extractValueFromUTxO)
+import Data.BigInt (fromInt)
 
 runUpdateProtocol :: Effect Unit
 runUpdateProtocol =
   let
     protocolParams =
       ProtocolConfigParams
-        { minAmountParam: 70_000_000
-        , maxAmountParam: 1_000_000_000
-        , minDurationParam: 100
-        , maxDurationParam: 1_000
-        , protocolFeeParam: 10
+        { minAmountParam: fromInt 70_000_000
+        , maxAmountParam: fromInt 1_000_000_000
+        , minDurationParam: fromInt 100
+        , maxDurationParam: fromInt 1_000
+        , protocolFeeParam: fromInt 10
         }
   in
     updateProtocol testnetNamiConfig protocolParams

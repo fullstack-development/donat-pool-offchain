@@ -9,18 +9,18 @@ import Contract.Config (NetworkId(..), testnetNamiConfig)
 import Contract.Log (logInfo')
 import Contract.Utxos (utxosAt)
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
-import Protocol.Datum (PProtocolDatum)
 import Protocol.ProtocolScript (getProtocolValidatorHash)
 import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByThreadToken)
+import Protocol.UserData (ProtocolConfigParams, mapFromProtocolDatum)
 
-runGetProtocolInfo :: Protocol -> Effect (Fiber PProtocolDatum)
+runGetProtocolInfo :: Protocol -> Effect (Fiber ProtocolConfigParams)
 runGetProtocolInfo protocol = (getProtocolInfo protocol) testnetNamiConfig
 
-getProtocolInfo :: Protocol -> ConfigParams () -> Effect (Fiber PProtocolDatum)
+getProtocolInfo :: Protocol -> ConfigParams () -> Effect (Fiber ProtocolConfigParams)
 getProtocolInfo protocol baseConfig = launchAff $ do
   runContract baseConfig (protocolInfoContract protocol)
 
-protocolInfoContract :: Protocol -> Contract () PProtocolDatum
+protocolInfoContract :: Protocol -> Contract () ProtocolConfigParams
 protocolInfoContract protocol = do
   logInfo' "Running get protocol info"
   protocolValidatorHash <- getProtocolValidatorHash protocol
@@ -31,7 +31,7 @@ protocolInfoContract protocol = do
 
   currentDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
   logInfo' $ "Current datum: " <> show currentDatum
-  pure currentDatum
+  pure $ mapFromProtocolDatum currentDatum
 
 getProtocolUtxo :: Protocol -> UtxoMap -> Contract () UtxoTuple
 getProtocolUtxo protocol utxos =
