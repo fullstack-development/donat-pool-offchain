@@ -7,66 +7,34 @@ import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChang
 import Contract.Config (NetworkId(..), testnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
-import Contract.Monad (ConfigParams, Contract, launchAff_, liftContractM, liftedE, liftedM, runContract)
+import Contract.Monad (ConfigParams, Contract, liftContractM, liftedE, liftedM, runContract)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
-import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
-import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
 import Ctl.Internal.Types.Datum (Datum(..))
 import Data.Array (head) as Array
 import Data.Lens (view)
 import Effect.Exception (throw)
 import Info.Protocol (getProtocolUtxo)
 import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
-import Protocol.Models (Protocol(..), PProtocolConfig(..))
-import Protocol.ProtocolScript (protocolValidatorScript, getProtocolValidatorHash, protocolTokenName)
+import Protocol.Models (PProtocolConfig(..), Protocol)
+import Protocol.ProtocolScript (protocolValidatorScript, getProtocolValidatorHash)
 import Protocol.Redeemer (PProtocolRedeemer(..))
-import Protocol.UserData (ProtocolConfigParams(..), mapToProtocolConfig)
+import Protocol.UserData (ProtocolConfigParams, mapToProtocolConfig, mapFromProtocolDatum)
 import Shared.Helpers (getNonCollateralUtxo, extractDatumFromUTxO, extractValueFromUTxO)
-import Data.BigInt (fromInt)
+import Effect.Aff (launchAff, Fiber)
 
-runUpdateProtocol :: Effect Unit
-runUpdateProtocol =
-  let
-    protocolParams =
-      ProtocolConfigParams
-        { minAmountParam: fromInt 70_000_000
-        , maxAmountParam: fromInt 1_000_000_000
-        , minDurationParam: fromInt 100
-        , maxDurationParam: fromInt 1_000
-        , protocolFeeParam: fromInt 10
-        }
-  in
-    updateProtocol testnetNamiConfig protocolParams
+runUpdateProtocol :: Protocol -> ProtocolConfigParams -> Effect (Fiber ProtocolConfigParams)
+runUpdateProtocol = updateProtocol testnetNamiConfig
 
--- TODO: pass protocol from frontend
-getTestProtocol :: Contract () Protocol
-getTestProtocol = do
-  ownHashes <- ownPaymentPubKeysHashes
-  ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
-  cs <-
-    liftContractM "Cannot make currency symbol" $
-      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "4fcf285d0d75ec4b5077e31e2279b3cc97b996082f185bd7a504a7c0")
-  tn <- protocolTokenName
-  let
-    protocol =
-      Protocol
-        { managerPkh: ownPkh
-        , protocolCurrency: cs
-        , protocolTokenName: tn
-        }
-  pure protocol
-
-updateProtocol :: ConfigParams () -> ProtocolConfigParams -> Effect Unit
-updateProtocol baseConfig protocolConfigParams = launchAff_ $ do
-  protocol <- runContract baseConfig getTestProtocol
+updateProtocol :: ConfigParams () -> Protocol -> ProtocolConfigParams -> Effect (Fiber ProtocolConfigParams)
+updateProtocol baseConfig protocol protocolConfigParams = launchAff $ do
   let protocolConfig = mapToProtocolConfig protocolConfigParams
   runContract baseConfig (contract protocol protocolConfig)
 
-contract :: Protocol -> PProtocolConfig -> Contract () Unit
+contract :: Protocol -> PProtocolConfig -> Contract () ProtocolConfigParams
 contract protocol protocolConfig = do
   logInfo' "Running update protocol"
   protocolValidator <- protocolValidatorScript protocol
@@ -89,8 +57,9 @@ contract protocol protocolConfig = do
   let value = extractValueFromUTxO protocolUtxo
   logInfo' $ "Current value: " <> show value
 
-  let newDatum = Datum $ toData $ makeDatum currentDatum protocolConfig
+  let newDatum = makeDatum currentDatum protocolConfig
   logInfo' $ "New datum: " <> show newDatum
+  let newPDatum = Datum $ toData $ makeDatum currentDatum protocolConfig
 
   let updateProtocolRedeemer = Redeemer $ toData $ PUpdateProtocolConfig protocolConfig
 
@@ -98,7 +67,7 @@ contract protocol protocolConfig = do
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustSpendScriptOutput (fst protocolUtxo) updateProtocolRedeemer
-        <> Constraints.mustPayToScriptAddress protocolValidatorHash (ScriptCredential protocolValidatorHash) newDatum Constraints.DatumInline value
+        <> Constraints.mustPayToScriptAddress protocolValidatorHash (ScriptCredential protocolValidatorHash) newPDatum Constraints.DatumInline value
         <> Constraints.mustBeSignedBy ownPkh
   let
     lookups :: Lookups.ScriptLookups Void
@@ -121,6 +90,7 @@ contract protocol protocolConfig = do
   balancedSignedTx <- signTransaction balancedTx
   txId <- submit balancedSignedTx
   awaitTxConfirmed txId
+  pure $ mapFromProtocolDatum newDatum
 
 makeDatum ∷ PProtocolDatum -> PProtocolConfig → PProtocolDatum
 makeDatum currentDatum (PProtocolConfig { minAmount, maxAmount, minDuration, maxDuration, protocolFee }) =

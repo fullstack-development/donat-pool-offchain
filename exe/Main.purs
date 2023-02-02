@@ -1,26 +1,31 @@
 -- | This module, when bundled, executes the default contract in the browser or
 -- | the Node.
-module Scaffold.Main (main) where
+module Scaffold.Main (main, Contracts) where
 
 import Contract.Prelude
 
 import Common.ConnectWallet as ConnectWallet
+import Effect.Aff (Fiber)
+import Info.Protocol as ProtocolInfo
 import Protocol.CloseProtocol as CloseProtocol
+import Protocol.Models (Protocol)
 import Protocol.StartProtocol as StartProtocol
 import Protocol.UpdateProtocol as UpdateProtocol
+import Protocol.UserData (ProtocolConfigParams)
 
--- uncomment to run getProtocolInfo
--- import Info.Protocol as ProtocolInfo
--- import Effect.Aff (Fiber)
--- import Protocol.Models (Protocol)
--- import Protocol.UserData (ProtocolConfigParams)
+data Contracts = Contracts
+  { connectWallet :: Effect Unit
+  , startProtocol :: ProtocolConfigParams -> Effect (Fiber Protocol)
+  , updateProtocol :: Protocol -> ProtocolConfigParams -> Effect (Fiber ProtocolConfigParams)
+  , closeProtocol :: Protocol -> Effect Unit
+  , getProtocolInfo :: Protocol -> Effect (Fiber ProtocolConfigParams)
+  }
 
-main :: Effect Unit
-main = StartProtocol.runStartProtocolTest
--- main = UpdateProtocol.runUpdateProtocol
--- main = CloseProtocol.runCloseProtocolTest
--- main = ConnectWallet.runConnectWallet
-
--- runGetProtocolInfo with parameter and not unit-type returning value
--- main :: Protocol -> Effect (Fiber ProtocolConfigParams)
--- main = ProtocolInfo.runGetProtocolInfo
+main :: Effect Contracts
+main = pure $ Contracts
+  { connectWallet: ConnectWallet.runConnectWallet
+  , startProtocol: StartProtocol.runStartProtocol
+  , updateProtocol: UpdateProtocol.runUpdateProtocol
+  , closeProtocol: CloseProtocol.runCloseProtocolTest
+  , getProtocolInfo: ProtocolInfo.runGetProtocolInfo
+  }
