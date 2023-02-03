@@ -1,13 +1,13 @@
 let script;
 if (typeof BROWSER_RUNTIME != "undefined" && BROWSER_RUNTIME) {
-  script = require("Scripts/nftPolicy.plutus");
+  script = require("Scripts/verTokenPolicy.plutus");
 } else {
   const fs = require("fs");
   const path = require("path");
   script = fs.readFileSync(
-    path.resolve(__dirname, "../../scripts/nftPolicy.plutus"),
+    path.resolve(__dirname, "../../scripts/verTokenPolicy.plutus"),
     "utf8"
   );
 }
 
-exports.nftPolicy = script;
+exports.verTokenPolicy = script;
