@@ -49,7 +49,7 @@ getTestProtocol = do
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
   cs <-
     liftContractM "Cannot make currency symbol" $
-      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "4fcf285d0d75ec4b5077e31e2279b3cc97b996082f185bd7a504a7c0")
+      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "5a074408f14247a45e781c4b72154d653031471fb1244477051d1bf5")
   tn <- protocolTokenName
   let
     protocol =
