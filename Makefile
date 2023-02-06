@@ -8,11 +8,11 @@ e2e-entrypoint := Scaffold.Test.E2E.Serve
 ps-bundle = spago bundle-module -m ${ps-entrypoint} --to output.js
 
 run-dev:
-	@${ps-bundle} && BROWSER_RUNTIME=1 webpack-dev-server --progress
+	@${ps-bundle} && BROWSER_RUNTIME=1 webpack serve --config ./webpack/webpack.offchain.config.js --progress
 
 e2e-serve:
 	spago bundle-module -m ${e2e-entrypoint} --to output.js
-	BROWSER_RUNTIME=1 webpack-dev-server --progress
+	BROWSER_RUNTIME=1 webpack serve --config ./webpack/webpack.offchain.config.js --progress
 
 run-build:
 	@${ps-bundle} && BROWSER_RUNTIME=1 webpack --mode=production
