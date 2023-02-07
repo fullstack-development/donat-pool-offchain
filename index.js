@@ -1,1 +1,1 @@
-import('./output').then(m => window.offchain = m.default.main.value0)
+window.offchain = import('./output').then(m => m.default.main.value0)
