@@ -13,7 +13,6 @@ module.exports = {
     layers: false,
     lazyCompilation: false,
     syncWebAssembly: true,
-    outputModule: true,
     topLevelAwait: true,
   },
 
@@ -39,9 +38,6 @@ module.exports = {
 
   output: {
     path: path.resolve(__dirname, "dist"),
-    library: {
-      type: 'commonjs2',
-    },
     filename: 'index.js'
   },
 
@@ -92,11 +88,11 @@ module.exports = {
     new webpack.LoaderOptionsPlugin({
       debug: true,
     }),
-    // new HtmlWebpackPlugin({
-    //   title: "ctl-scaffold",
-    //   template: "./index.html",
-    //   inject: false, // See stackoverflow.com/a/38292765/3067181
-    // }),
+    new HtmlWebpackPlugin({
+      title: "ctl-scaffold",
+      template: "./index.html",
+      inject: 'body', // See stackoverflow.com/a/38292765/3067181
+    }),
     new webpack.ProvidePlugin({
       Buffer: ["buffer", "Buffer"],
     }),
