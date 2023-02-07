@@ -16,7 +16,7 @@
     "e2e-unpack-settings": "source ./test/e2e.env && spago run --main Scaffold.Test.E2E -a 'e2e-test unpack'",
     "dev": "make run-dev",
     "build": "make run-build",
-    "serve": "spago bundle-module -m Scaffold.Main --to output/index.js && BROWSER_RUNTIME=1 webpack serve --config webpack/webpack.ui.config.ts"
+    "serve": "BROWSER_RUNTIME=1 webpack serve --config webpack/webpack.ui.config.ts"
   },
   "author": "",
   "license": "MIT",

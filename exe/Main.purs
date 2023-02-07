@@ -20,8 +20,8 @@ data Contracts = Contracts
   , getProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   }
 
-main :: Effect Contracts
-main = pure $ Contracts
+main :: Contracts
+main = Contracts
   { connectWallet: ConnectWallet.runConnectWallet
   , startProtocol: StartProtocol.runStartProtocol
   , updateProtocol: UpdateProtocol.runUpdateProtocol
