@@ -7,7 +7,7 @@ import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChang
 import Contract.Config (NetworkId(..), testnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
-import Contract.Monad (ConfigParams, Contract, liftContractM, liftedE, liftedM, runContract)
+import Contract.Monad (Contract, liftContractM, liftedE, liftedM, runContract)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
@@ -16,7 +16,6 @@ import Contract.Utxos (utxosAt)
 import Ctl.Internal.Types.Datum (Datum(..))
 import Data.Array (head) as Array
 import Data.Lens (view)
-import Effect.Exception (throw)
 import Info.Protocol (getProtocolUtxo)
 import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
 import Protocol.Models (PProtocolConfig(..), Protocol)
@@ -24,15 +23,17 @@ import Protocol.ProtocolScript (protocolValidatorScript, getProtocolValidatorHas
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolConfigParams, mapToProtocolConfig, mapFromProtocolDatum)
 import Shared.Helpers (getNonCollateralUtxo, extractDatumFromUTxO, extractValueFromUTxO)
-import Effect.Aff (launchAff, Fiber)
+import Effect.Aff (runAff_)
+import Effect.Exception (Error, message, throw)
 
-runUpdateProtocol :: Protocol -> ProtocolConfigParams -> Effect (Fiber ProtocolConfigParams)
-runUpdateProtocol = updateProtocol testnetNamiConfig
-
-updateProtocol :: ConfigParams () -> Protocol -> ProtocolConfigParams -> Effect (Fiber ProtocolConfigParams)
-updateProtocol baseConfig protocol protocolConfigParams = launchAff $ do
-  let protocolConfig = mapToProtocolConfig protocolConfigParams
-  runContract baseConfig (contract protocol protocolConfig)
+runUpdateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> ProtocolConfigParams -> Effect Unit
+runUpdateProtocol onComplete onError protocol params = runAff_ handler $ do
+  let protocolConfig = mapToProtocolConfig params
+  runContract testnetNamiConfig (contract protocol protocolConfig)
+  where
+  handler :: Either Error ProtocolConfigParams -> Effect Unit
+  handler (Right protocolConfigParams) = onComplete protocolConfigParams
+  handler (Left error) = onError $ message error
 
 contract :: Protocol -> PProtocolConfig -> Contract () ProtocolConfigParams
 contract protocol protocolConfig = do

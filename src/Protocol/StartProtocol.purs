@@ -3,7 +3,7 @@ module Protocol.StartProtocol where
 import Contract.Prelude
 
 import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), addressToBech32, validatorHashBaseAddress)
-import Contract.Config (ConfigParams, testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
 import Contract.PlutusData
@@ -38,14 +38,16 @@ import Protocol.Datum
   ( PProtocolDatum(..)
   )
 import Contract.Credential (Credential(ScriptCredential))
-import Effect.Aff (launchAff, Fiber)
+import Effect.Aff (runAff_)
+import Effect.Exception (Error, message)
 
-runStartProtocol :: ProtocolConfigParams -> Effect (Fiber Protocol)
-runStartProtocol = startProtocol testnetNamiConfig
-
-startProtocol :: ConfigParams () -> ProtocolConfigParams -> Effect (Fiber Protocol)
-startProtocol baseConfig protocolConfig = launchAff do
-  runContract baseConfig (contract protocolConfig)
+runStartProtocol :: (Protocol -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
+runStartProtocol onComplete onError params = runAff_ handler $
+  runContract testnetNamiConfig (contract params)
+  where
+  handler :: Either Error Protocol -> Effect Unit
+  handler (Right protocol) = onComplete protocol
+  handler (Left error) = onError $ message error
 
 contract :: ProtocolConfigParams -> Contract () Protocol
 contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
