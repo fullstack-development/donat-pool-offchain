@@ -5,8 +5,8 @@
 dbPort=5432
 dbHost=localhost
 dbUser=user
-dbPassword="password"
-dbName=dbName
+dbPassword="1234"
+dbName=odc
 ogmiosAddress=localhost
 ogmiosPort=1337
 
