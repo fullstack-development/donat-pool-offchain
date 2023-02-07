@@ -20,3 +20,5 @@ test-data/preview
 /dist/
 output.js
 *.plutus
+kupo_db
+/environment/preprod

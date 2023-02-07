@@ -32,11 +32,20 @@ const config: Configuration = {
     open: false,
     host: 'localhost',
     hot: true,
-    port: 8000,
+    port: 4008,
     client: {
       overlay: {
         warnings: false,
         errors: true,
+      },
+    },
+    proxy: {
+      "/kupo": {
+        // KUPO_HOST env variable must be set to the base URL of the Kupo
+        // service, otherwise all requests to Kupo will fail.
+        target: process.env.KUPO_HOST || "http://localhost:1442",
+        changeOrigin: true,
+        pathRewrite: { "^/kupo": "" },
       },
     },
   },
@@ -105,7 +114,7 @@ const config: Configuration = {
       child_process: false,
     },
     alias: {
-      Scripts: path.resolve(__dirname, "scripts"),
+      Scripts: path.resolve(__dirname, "../scripts"),
     },
     plugins: [
       new TsconfigPathsPlugin({
