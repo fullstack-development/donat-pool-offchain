@@ -1,12 +1,17 @@
-import path from 'path';
-import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import NodePolyfillWebpackPlugin from 'node-polyfill-webpack-plugin';
-import { Configuration, ContextReplacementPlugin, DefinePlugin, ProvidePlugin } from 'webpack';
+import path from 'path';
+import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
+import {
+  type Configuration,
+  ContextReplacementPlugin,
+  DefinePlugin,
+  ProvidePlugin,
+} from 'webpack';
 import 'webpack-dev-server';
 
-const isProduction = process.env.NODE_ENV == 'production';
+const isProduction = process.env.NODE_ENV === 'production';
 
 const stylesHandler = isProduction
   ? MiniCssExtractPlugin.loader
@@ -40,12 +45,12 @@ const config: Configuration = {
       },
     },
     proxy: {
-      "/kupo": {
+      '/kupo': {
         // KUPO_HOST env variable must be set to the base URL of the Kupo
         // service, otherwise all requests to Kupo will fail.
-        target: process.env.KUPO_HOST || "http://localhost:1442",
+        target: process.env.KUPO_HOST ?? 'http://localhost:1442',
         changeOrigin: true,
-        pathRewrite: { "^/kupo": "" },
+        pathRewrite: { '^/kupo': '' },
       },
     },
   },
@@ -58,7 +63,7 @@ const config: Configuration = {
       template: 'index.html',
     }),
     new ProvidePlugin({
-      Buffer: ["buffer", "Buffer"],
+      Buffer: ['buffer', 'Buffer'],
     }),
     new ContextReplacementPlugin(/cardano-serialization-lib-browser/),
     new ContextReplacementPlugin(/cardano-serialization-lib-nodejs/),
@@ -74,7 +79,11 @@ const config: Configuration = {
             loader: 'babel-loader',
             options: {
               cacheDirectory: true,
-              presets: ['@babel/preset-env', ['@babel/preset-react', { runtime: 'automatic' }], '@babel/preset-typescript'],
+              presets: [
+                '@babel/preset-env',
+                ['@babel/preset-react', { runtime: 'automatic' }],
+                '@babel/preset-typescript',
+              ],
               plugins: ['@babel/plugin-transform-runtime'],
             },
           },
@@ -82,7 +91,7 @@ const config: Configuration = {
       },
       {
         test: /\.plutus$/i,
-        type: "asset/source",
+        type: 'asset/source',
       },
       {
         test: /\.css$/i,
@@ -95,10 +104,10 @@ const config: Configuration = {
     ],
   },
   resolve: {
-    modules: [process.env.NODE_PATH],
+    modules: [process.env.NODE_PATH ?? ' '],
     extensions: ['.tsx', '.ts', '.jsx', '.js'],
     fallback: {
-      buffer: require.resolve("buffer/"),
+      buffer: require.resolve('buffer/'),
       http: false,
       url: false,
       stream: false,
@@ -114,7 +123,7 @@ const config: Configuration = {
       child_process: false,
     },
     alias: {
-      Scripts: path.resolve(__dirname, "../scripts"),
+      Scripts: path.resolve(__dirname, '../scripts'),
     },
     plugins: [
       new TsconfigPathsPlugin({
