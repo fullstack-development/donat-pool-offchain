@@ -2,7 +2,7 @@ module Protocol.CloseProtocol where
 
 import Contract.Prelude
 
-import Contract.Address (getWalletAddresses, ownPaymentPubKeyHash, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress, addressToBech32)
+import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress, addressToBech32)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Config (ConfigParams, testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Log (logInfo')
@@ -13,8 +13,6 @@ import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTra
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
-import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
-import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
 import Data.Array (head) as Array
 import Data.BigInt (fromInt)
 import Data.Map (toUnfoldable) as Map
@@ -23,35 +21,16 @@ import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Datum (PProtocolDatum(..))
 import Protocol.Models (Protocol(..))
-import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript, protocolTokenName)
+import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
 import Protocol.Redeemer (PProtocolRedeemer(PCloseProtocol))
 import Shared.Helpers as Helpers
 
-runCloseProtocolTest :: Effect Unit
-runCloseProtocolTest = do
-  closeProtocol testnetNamiConfig
+runCloseProtocolTest :: Protocol -> Effect Unit
+runCloseProtocolTest = closeProtocol testnetNamiConfig
 
-closeProtocol :: ConfigParams () -> Effect Unit
-closeProtocol baseConfig = launchAff_ do
-  protocol <- runContract baseConfig getTestProtocol
+closeProtocol :: ConfigParams () -> Protocol -> Effect Unit
+closeProtocol baseConfig protocol = launchAff_ do
   runContract baseConfig (contract protocol)
-
--- NOTE: provide protocol fields with correct values
-getTestProtocol :: Contract () Protocol
-getTestProtocol = do
-  ownPkh <- ownPaymentPubKeyHash >>= liftContractM "no pkh found"
-  cs <-
-    liftContractM "Cannot make currency symbol" $
-      CurrencySymbol.mkCurrencySymbol (hexToByteArrayUnsafe "5a074408f14247a45e781c4b72154d653031471fb1244477051d1bf5")
-  tn <- protocolTokenName
-  let
-    protocol =
-      Protocol
-        { managerPkh: ownPkh
-        , protocolCurrency: cs
-        , protocolTokenName: tn
-        }
-  pure protocol
 
 contract :: Protocol -> Contract () Unit
 contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName }) = do

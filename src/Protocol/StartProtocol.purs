@@ -3,9 +3,9 @@ module Protocol.StartProtocol where
 import Contract.Prelude
 
 import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), addressToBech32, validatorHashBaseAddress)
-import Contract.Config (ConfigParams, testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, launchAff_, runContract, liftContractM, liftedM, liftedE)
+import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
 import Contract.PlutusData
   ( Redeemer(Redeemer)
   , Datum(Datum)
@@ -38,26 +38,18 @@ import Protocol.Datum
   ( PProtocolDatum(..)
   )
 import Contract.Credential (Credential(ScriptCredential))
+import Effect.Aff (runAff_)
+import Effect.Exception (Error, message)
 
-runStartProtocolTest :: Effect Unit
-runStartProtocolTest =
-  let
-    protocolParams =
-      ProtocolConfigParams
-        { minAmountParam: fromInt 50_000_000
-        , maxAmountParam: fromInt 1_000_000_000
-        , minDurationParam: fromInt 100
-        , maxDurationParam: fromInt 1_000
-        , protocolFeeParam: fromInt 10
-        }
-  in
-    startProtocol testnetNamiConfig protocolParams
+runStartProtocol :: (Protocol -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
+runStartProtocol onComplete onError params = runAff_ handler $
+  runContract testnetNamiConfig (contract params)
+  where
+  handler :: Either Error Protocol -> Effect Unit
+  handler (Right protocol) = onComplete protocol
+  handler (Left error) = onError $ message error
 
-startProtocol :: ConfigParams () -> ProtocolConfigParams -> Effect Unit
-startProtocol baseConfig protocolConfig = launchAff_ do
-  runContract baseConfig (contract protocolConfig)
-
-contract :: ProtocolConfigParams -> Contract () Unit
+contract :: ProtocolConfigParams -> Contract () Protocol
 contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
   logInfo' "Running startDonatPool protocol contract"
   ownHashes <- ownPaymentPubKeysHashes
@@ -134,4 +126,5 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   bech32Address <- addressToBech32 protocolAddress
   logInfo' $ "Current protocol address: " <> show bech32Address
   logInfo' "Transaction submitted successfully"
+  pure protocol
 

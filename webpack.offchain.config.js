@@ -5,19 +5,18 @@ const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 
-module.exports = {
-  mode: "development",
+module.exports = (env, argv) => ({
+  mode: argv.mode === 'development' ? 'development' : 'production',
 
   experiments: {
     asyncWebAssembly: false,
     layers: false,
     lazyCompilation: false,
-    outputModule: true,
     syncWebAssembly: true,
     topLevelAwait: true,
   },
 
-  devtool: "eval-source-map",
+  devtool: argv.mode === 'development' ? "eval-source-map" : false,
 
   stats: { errorDetails: true },
 
@@ -39,7 +38,7 @@ module.exports = {
 
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "bundle.js",
+    filename: 'index.js'
   },
 
   module: {
@@ -89,15 +88,15 @@ module.exports = {
     new webpack.LoaderOptionsPlugin({
       debug: true,
     }),
-    new HtmlWebpackPlugin({
+    argv.mode === 'development'  && new HtmlWebpackPlugin({
       title: "ctl-scaffold",
       template: "./index.html",
-      inject: false, // See stackoverflow.com/a/38292765/3067181
+      inject: 'body',
     }),
     new webpack.ProvidePlugin({
       Buffer: ["buffer", "Buffer"],
     }),
     new webpack.ContextReplacementPlugin(/cardano-serialization-lib-browser/),
     new webpack.ContextReplacementPlugin(/cardano-serialization-lib-nodejs/),
-  ],
-};
+  ].filter(Boolean),
+});
