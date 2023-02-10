@@ -20,3 +20,4 @@ test-data/preview
 output.js
 *.plutus
 kupo_db
+package-lock.json
