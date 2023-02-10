@@ -28,7 +28,8 @@
       "@offchain/*": [
         "output/*"
       ],
-    }
+    },
+    "strictNullChecks": true
   },
   "ts-node": {
     "compilerOptions": {
