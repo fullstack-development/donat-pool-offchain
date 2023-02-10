@@ -41,12 +41,16 @@ const App = () => {
       protocol
     )(updatedParams)();
   };
+  const onCloseProtocolClick = () => {
+    a.main.value0.closeProtocol(protocol)();
+  };
 
   return (
     <div>
       <h1>Offchain integration</h1>
       <button onClick={onStartProtocolClick}>Start Protocol</button>
       <button onClick={onUpdateProtocolClick}>Update Protocol</button>
+      <button onClick={onCloseProtocolClick}>Close Protocol</button>
     </div>
   );
 };
