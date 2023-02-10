@@ -60,10 +60,10 @@ checkTokenInUTxO (Tuple cs tn) (Tuple _ txOutWithRef) =
 filterByToken :: TokenTuple -> Array UtxoTuple -> Array UtxoTuple
 filterByToken token = Array.filter (checkTokenInUTxO token)
 
-getUtxoByThreadToken :: TokenTuple -> UtxoMap -> Contract () UtxoTuple
-getUtxoByThreadToken threadToken utxos =
-  liftContractM "Protocol UTxO with current ThreadToken not found"
-    (Array.head (filterByToken threadToken $ Map.toUnfoldable utxos))
+getUtxoByNFT :: String -> TokenTuple -> UtxoMap -> Contract () UtxoTuple
+getUtxoByNFT scriptName nft utxos =
+  liftContractM (scriptName <> " UTxO with given nft not found")
+    (Array.head (filterByToken nft $ Map.toUnfoldable utxos))
 
 extractDatumFromUTxO
   :: forall (datum :: Type). FromData datum => UtxoTuple -> Maybe datum

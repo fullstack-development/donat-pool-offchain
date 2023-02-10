@@ -5,12 +5,15 @@ module Scaffold.Main (main, Contracts) where
 import Contract.Prelude
 
 import Common.ConnectWallet as ConnectWallet
+import Data.BigInt (BigInt)
+import Fundraising.Models (Fundraising)
 import Info.Protocol as ProtocolInfo
 import Protocol.CloseProtocol as CloseProtocol
 import Protocol.Models (Protocol)
 import Protocol.StartProtocol as StartProtocol
 import Protocol.UpdateProtocol as UpdateProtocol
 import Protocol.UserData (ProtocolConfigParams)
+import Fundraising.Donate as Donate
 
 data Contracts = Contracts
   { connectWallet :: Effect Unit
@@ -18,6 +21,7 @@ data Contracts = Contracts
   , updateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> ProtocolConfigParams -> Effect Unit
   , closeProtocol :: Protocol -> Effect Unit
   , getProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
+  , donate :: Fundraising -> BigInt -> Effect Unit
   }
 
 main :: Contracts
@@ -27,4 +31,5 @@ main = Contracts
   , updateProtocol: UpdateProtocol.runUpdateProtocol
   , closeProtocol: CloseProtocol.runCloseProtocolTest
   , getProtocolInfo: ProtocolInfo.runGetProtocolInfo
+  , donate: Donate.runDonate
   }
