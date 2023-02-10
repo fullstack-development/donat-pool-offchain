@@ -2,23 +2,12 @@ module Protocol.Models where
 
 import Contract.Prelude
 
-import Contract.Value (CurrencySymbol, TokenName)
 import Contract.Address (PaymentPubKeyHash)
-import Contract.PlutusData
-  ( class FromData
-  , class HasPlutusSchema
-  , class ToData
-  , type (:+)
-  , type (:=)
-  , type (@@)
-  , I
-  , PNil
-  , Z
-  , genericFromData
-  , genericToData
-  )
-import Data.Newtype (class Newtype)
+import Contract.PlutusData (class FromData, class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), I, PNil, Z, genericFromData, genericToData)
+import Contract.Value (CurrencySymbol, TokenName)
+import Ctl.Internal.Serialization.Address (Address)
 import Data.BigInt (BigInt)
+import Data.Newtype (class Newtype)
 
 newtype Protocol = Protocol
   { managerPkh :: PaymentPubKeyHash
@@ -92,4 +81,47 @@ instance ToData PProtocolConfig where
   toData = genericToData
 
 instance FromData PProtocolConfig where
+  fromData = genericFromData
+
+newtype PFundriseConfig = PFundriseConfig
+  { scriptAddress :: Address
+  , verCurrencySymbol :: CurrencySymbol
+  , verTokenName :: TokenName
+  , threadCurrencySymbol :: CurrencySymbol
+  , threadTokenName :: TokenName
+  , startedAt :: BigInt
+  }
+
+derive newtype instance Show PFundriseConfig
+derive instance Generic PFundriseConfig _
+derive instance Newtype PFundriseConfig _
+
+instance
+  HasPlutusSchema
+    PFundriseConfig
+    ( "PFundriseConfig"
+        :=
+          ( "scriptAddress" := I Address
+              :+ "verCurrencySymbol"
+              := I CurrencySymbol
+              :+ "verTokenName"
+              := I TokenName
+              :+ "threadCurrencySymbol"
+              := I CurrencySymbol
+              :+ "threadTokenName"
+              := I TokenName
+              :+ "startedAt"
+              := I BigInt
+              :+ PNil
+          )
+        @@ Z
+        :+ PNil
+    )
+
+derive newtype instance Eq PFundriseConfig
+derive newtype instance Ord PFundriseConfig
+instance ToData PFundriseConfig where
+  toData = genericToData
+
+instance FromData PFundriseConfig where
   fromData = genericFromData

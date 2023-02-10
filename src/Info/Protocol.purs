@@ -1,8 +1,8 @@
 module Info.Protocol where
 
 import Contract.Prelude
-import Contract.Monad (ConfigParams, Contract, liftContractM, runContract)
-import Effect.Aff (launchAff, Fiber)
+import Contract.Monad (Contract, liftContractM, runContract)
+import Effect.Aff (runAff_)
 import Protocol.Models (Protocol)
 import Contract.Address (validatorHashBaseAddress)
 import Contract.Config (NetworkId(..), testnetNamiConfig)
@@ -12,13 +12,15 @@ import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
 import Protocol.ProtocolScript (getProtocolValidatorHash)
 import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByThreadToken)
 import Protocol.UserData (ProtocolConfigParams, mapFromProtocolDatum)
+import Effect.Exception (Error, message)
 
-runGetProtocolInfo :: Protocol -> Effect (Fiber ProtocolConfigParams)
-runGetProtocolInfo protocol = (getProtocolInfo protocol) testnetNamiConfig
-
-getProtocolInfo :: Protocol -> ConfigParams () -> Effect (Fiber ProtocolConfigParams)
-getProtocolInfo protocol baseConfig = launchAff $ do
-  runContract baseConfig (protocolInfoContract protocol)
+runGetProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
+runGetProtocolInfo onComplete onError protocol = runAff_ handler $ do
+  runContract testnetNamiConfig (protocolInfoContract protocol)
+  where
+  handler :: Either Error ProtocolConfigParams -> Effect Unit
+  handler (Right protocolConfigParams) = onComplete protocolConfigParams
+  handler (Left error) = onError $ message error
 
 protocolInfoContract :: Protocol -> Contract () ProtocolConfigParams
 protocolInfoContract protocol = do
