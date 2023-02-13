@@ -17,6 +17,7 @@ result-*
 test-data/chrome-user-data
 test-data/preview
 .projectile
-/dist/
 output.js
 *.plutus
+kupo_db
+package-lock.json
