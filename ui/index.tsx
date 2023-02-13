@@ -22,7 +22,7 @@ const App = () => {
     protocolFeeParam: 9,
   };
   const createFundraisingParams = {
-    description: "Donate to feed stray cats",
+    description: 'Donate to feed stray cats',
     amount: 188,
     duration: 101
   }
@@ -59,7 +59,7 @@ const App = () => {
   const onCreateFundraisingClick = () => {
     a.main.value0.createFundraising(onCreateFundraisingComplete)(console.log)(
       protocol
-    )(createFundraisingParams)
+    )(createFundraisingParams)();
   };
 
   return (

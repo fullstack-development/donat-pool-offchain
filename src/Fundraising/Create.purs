@@ -46,7 +46,7 @@ import Contract.Credential (Credential(ScriptCredential))
 import Fundraising.UserData (CreateFundraisingParams(..))
 import Fundraising.FundraisingScript (fundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
 import Info.Protocol (getProtocolUtxo)
-import Ctl.Internal.Types.ByteArray (hexToByteArray)
+import Ctl.Internal.Types.ByteArray (byteArrayFromAscii)
 import Data.Lens (view)
 import Effect.Exception (throw, Error, message)
 import Contract.Chain (currentTime)
@@ -59,7 +59,7 @@ import Effect.Aff (runAff_)
 runCreateFundraising :: (Fundraising -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocol params = runAff_ handler $
   runContract testnetNamiConfig (contract protocol params)
-  where 
+  where
   handler :: Either Error Fundraising -> Effect Unit
   handler (Right fundraising) = onComplete fundraising
   handler (Left err) = onError $ message err
@@ -78,19 +78,28 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   oref <-
     liftContractM "Utxo set is empty"
       (fst <$> Array.head (Helpers.filterNonCollateral $ Map.toUnfoldable ownUtxos))
+  logInfo' $ "Desired user UTxO is: " <> show oref
   nftMp /\ nftCs <- Helpers.mkCurrencySymbol (NFT.mintingPolicy oref)
+  logInfo' $ "NFT currency symbol: " <> show nftCs
   nftTn <- fundraisingTokenName
+  logInfo' $ "NFT token name: " <> show nftTn
 
   verTokenMp /\ verTokenCs <- Helpers.mkCurrencySymbol (VerToken.mintingPolicy givenProtocol)
+  logInfo' $ "VerToken currency symbol: " <> show verTokenCs
   verTn <- VerToken.verTokenName
+  logInfo' $ "Ver token name: " <> show verTn
 
   protocolValidator <- protocolValidatorScript givenProtocol
   protocolValidatorHash <- getProtocolValidatorHash givenProtocol
   protocolAddress <-
     liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
+  logInfo' $ "Protocol validator address: " <> show protocolAddress
   protocolUtxos <- utxosAt protocolAddress
+  logInfo' $ "Protocol UTxOs list: " <> show protocolUtxos
   protocolUtxo <- getProtocolUtxo givenProtocol protocolUtxos
+  logInfo' $ "Desired protocol UTxO: " <> show protocolUtxo
   protocolDatum <- liftContractM "Impossible to get Protocol Datum" $ Helpers.extractDatumFromUTxO protocolUtxo
+  logInfo' $ "Protocol Datum: " <> show protocolDatum
 
   let
     minAmount = view _minAmount protocolDatum
@@ -111,7 +120,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   now@(POSIXTime now') <- currentTime
   let deadline = Helpers.addTimes now (Helpers.daysToPosixTime duration)
 
-  desc <- liftContractM "Impossible to serialize description" $ hexToByteArray description
+  desc <- liftContractM "Impossible to serialize description" $ byteArrayFromAscii description
 
   let
     initialFrDatum = PFundraisingDatum
@@ -183,6 +192,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
       Lookups.mintingPolicy nftMp
         <> Lookups.mintingPolicy verTokenMp
         <> Lookups.unspentOutputs ownUtxos
+        <> Lookups.unspentOutputs protocolUtxos
         <> Lookups.validator protocolValidator
         <> Lookups.validator frValidator
 
