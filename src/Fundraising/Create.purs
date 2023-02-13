@@ -2,7 +2,7 @@ module Fundraising.Create where
 
 import Contract.Prelude
 
-import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress)
+import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress, addressToBech32)
 import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
@@ -53,8 +53,9 @@ import Contract.Chain (currentTime)
 import Contract.Time (POSIXTime(..))
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Fundraising.Models (Fundraising(..))
-import Fundraising.Datum (PFundraisingDatum(..))
+import Fundraising.Datum (PFundraisingDatum(..), descLength)
 import Effect.Aff (runAff_)
+import Data.String (take)
 
 runCreateFundraising :: (Fundraising -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocol params = runAff_ handler $
@@ -120,7 +121,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   now@(POSIXTime now') <- currentTime
   let deadline = Helpers.addTimes now (Helpers.daysToPosixTime duration)
 
-  desc <- liftContractM "Impossible to serialize description" $ byteArrayFromAscii description
+  desc <- liftContractM "Impossible to serialize description" $ byteArrayFromAscii (take descLength description)
 
   let
     initialFrDatum = PFundraisingDatum
@@ -215,5 +216,8 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   logInfo' "Fundraising created successfully"
 
   logInfo' $ "Current fundraising: " <> show fundraising
+
+  bech32Address <- addressToBech32 frAddress
+  logInfo' $ "Current fundraising address: " <> show bech32Address
 
   pure fundraising

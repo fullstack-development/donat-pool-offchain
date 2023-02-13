@@ -12,10 +12,13 @@ import Prelude (class Eq, class Ord)
 import Ctl.Internal.Types.ByteArray (ByteArray)
 import Contract.Time (POSIXTime)
 
+descLength :: Int
+descLength = 35
+
 newtype PFundraisingDatum = PFundraisingDatum
   { creatorPkh :: PaymentPubKeyHash
   , tokenOrigin :: TransactionInput
-  , frDesc :: ByteArray
+  , frDesc :: ByteArray --  descLength is set to limit the description size 
   , frAmount :: BigInt -- amount to raise in Lovelace
   , frDeadline :: POSIXTime
   , frFee :: BigInt -- percentage
