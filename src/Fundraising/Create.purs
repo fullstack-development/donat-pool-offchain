@@ -2,10 +2,10 @@ module Fundraising.Create where
 
 import Contract.Prelude
 
-import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), addressToBech32, validatorHashBaseAddress)
-import Contract.Config (ConfigParams, testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress)
+import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, launchAff_, runContract, liftContractM, liftedM, liftedE)
+import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
 import Contract.PlutusData
   ( Redeemer(Redeemer)
   , Datum(Datum)
@@ -48,12 +48,21 @@ import Fundraising.FundraisingScript (fundraisingTokenName, fundraisingValidator
 import Info.Protocol (getProtocolUtxo)
 import Ctl.Internal.Types.ByteArray (hexToByteArray)
 import Data.Lens (view)
-import Effect.Exception (throw)
+import Effect.Exception (throw, Error, message)
 import Contract.Chain (currentTime)
 import Contract.Time (POSIXTime(..))
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Fundraising.Models (Fundraising(..))
 import Fundraising.Datum (PFundraisingDatum(..))
+import Effect.Aff (runAff_)
+
+runCreateFundraising :: (Fundraising -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
+runCreateFundraising onComplete onError protocol params = runAff_ handler $
+  runContract testnetNamiConfig (contract protocol params)
+  where 
+  handler :: Either Error Fundraising -> Effect Unit
+  handler (Right fundraising) = onComplete fundraising
+  handler (Left err) = onError $ message err
 
 contract :: Protocol -> CreateFundraisingParams -> Contract () Fundraising
 contract givenProtocol (CreateFundraisingParams { description, amount, duration }) = do
@@ -86,7 +95,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   let
     minAmount = view _minAmount protocolDatum
     maxAmount = view _maxAmount protocolDatum
-    currentAmount = fromInt amount
+    currentAmount = fromInt amount * fromInt 1_000_000
 
   when (currentAmount < minAmount) $ liftEffect $ throw ("Fundraising amount too small. It must be greater than " <> show minAmount <> ".")
   when (currentAmount > maxAmount) $ liftEffect $ throw ("Fundraising amount too big. It must be less than " <> show maxAmount <> ".")

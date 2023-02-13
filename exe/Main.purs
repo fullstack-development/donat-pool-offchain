@@ -11,6 +11,9 @@ import Protocol.Models (Protocol)
 import Protocol.StartProtocol as StartProtocol
 import Protocol.UpdateProtocol as UpdateProtocol
 import Protocol.UserData (ProtocolConfigParams)
+import Fundraising.Create as CreateFundraising
+import Fundraising.UserData (CreateFundraisingParams)
+import Fundraising.Models (Fundraising)
 
 data Contracts = Contracts
   { connectWallet :: Effect Unit
@@ -18,6 +21,7 @@ data Contracts = Contracts
   , updateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> ProtocolConfigParams -> Effect Unit
   , closeProtocol :: Protocol -> Effect Unit
   , getProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
+  , createFundraising :: (Fundraising -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
   }
 
 main :: Contracts
@@ -27,4 +31,5 @@ main = Contracts
   , updateProtocol: UpdateProtocol.runUpdateProtocol
   , closeProtocol: CloseProtocol.runCloseProtocolTest
   , getProtocolInfo: ProtocolInfo.runGetProtocolInfo
+  , createFundraising: CreateFundraising.runCreateFundraising
   }

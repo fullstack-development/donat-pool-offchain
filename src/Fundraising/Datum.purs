@@ -16,7 +16,7 @@ newtype PFundraisingDatum = PFundraisingDatum
   { creatorPkh :: PaymentPubKeyHash
   , tokenOrigin :: TransactionInput
   , frDesc :: ByteArray
-  , frAmount :: BigInt
+  , frAmount :: BigInt    -- amount to raise in Lovelace
   , frDeadline :: POSIXTime
   , frFee :: BigInt -- percentage
   }
