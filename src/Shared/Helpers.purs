@@ -14,6 +14,7 @@ import Data.BigInt (fromInt, BigInt)
 import Data.Lens.Getter ((^.))
 import Data.Map as Map
 import Data.Rational ((%), Ratio)
+import Contract.Time (POSIXTime(..))
 
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
@@ -79,3 +80,13 @@ mkRational :: Tuple Int Int -> Maybe (Ratio BigInt)
 mkRational (Tuple num den) =
   if den == 0 then Nothing
   else Just (fromInt num % fromInt den)
+
+daysToPosixTime :: Int -> POSIXTime
+daysToPosixTime days =
+  let
+    milliseconds = fromInt days * fromInt 24 * fromInt 60 * fromInt 60 * fromInt 1000
+  in
+    POSIXTime milliseconds
+
+addTimes :: POSIXTime -> POSIXTime -> POSIXTime
+addTimes (POSIXTime time1) (POSIXTime time2) = POSIXTime (time1 + time2)

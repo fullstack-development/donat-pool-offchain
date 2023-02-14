@@ -19,6 +19,7 @@ You can edit this file as you like.
   , "profunctor-lenses"
   , "rationals"
   , "spec"
+  , "strings"
   , "transformers"
   , "uint"
   ]
