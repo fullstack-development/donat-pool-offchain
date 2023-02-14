@@ -4,7 +4,7 @@ import Contract.Prelude
 
 newtype CreateFundraisingParams = CreateFundraisingParams
   { description :: String -- 35 symbols max
-  , amount :: Int -- Ada amount ot raise
+  , amount :: Int -- amount to raise in Ada (not Lovelace)
   , duration :: Int -- Fundraising duration in days
   }
 
