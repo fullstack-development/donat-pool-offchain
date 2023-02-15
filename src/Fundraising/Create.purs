@@ -138,6 +138,8 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
       { protocol: givenProtocol
       , verTokenCurrency: verTokenCs
       , verTokenName: verTn
+      , threadTokenCurrency: nftCs
+      , threadTokenName: nftTn
       }
 
   frValidator <- fundraisingValidatorScript fundraising

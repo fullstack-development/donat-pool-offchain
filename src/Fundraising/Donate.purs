@@ -54,7 +54,7 @@ contract fundrising'@(Fundraising fundrising) amount = do
   let newDatum = Datum $ toData currentDatum'
   let donaition = Value.singleton Value.adaSymbol Value.adaToken amount
   let newValue = currentFunds <> donaition
-  let donateRedeemer = Redeemer $ toData $ PDonate (_.verTokenCurrency fundrising) (_.verTokenName fundrising) amount
+  let donateRedeemer = Redeemer $ toData $ PDonate amount
 
   let
     constraints :: Constraints.TxConstraints Void Void

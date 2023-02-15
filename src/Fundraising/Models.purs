@@ -23,6 +23,8 @@ newtype Fundraising = Fundraising
   { protocol :: Protocol
   , verTokenCurrency :: CurrencySymbol
   , verTokenName :: TokenName
+  , threadTokenCurrency :: CurrencySymbol
+  , threadTokenName :: TokenName
   }
 
 derive newtype instance Show Fundraising
@@ -38,6 +40,10 @@ instance
               :+ "verTokenCurrency"
               := I CurrencySymbol
               :+ "verTokenName"
+              := I TokenName
+              :+ "threadTokenCurrency"
+              := I CurrencySymbol
+              :+ "threadTokenName"
               := I TokenName
               :+ PNil
           )
