@@ -52,8 +52,8 @@ contract fundrising'@(Fundraising fundrising) amount = do
   donatorUtxo <- utxosAt donatorAddress >>= getNonCollateralUtxo
 
   let newDatum = Datum $ toData currentDatum'
-  let donaition = Value.singleton Value.adaSymbol Value.adaToken amount
-  let newValue = currentFunds <> donaition
+  let donation = Value.singleton Value.adaSymbol Value.adaToken amount
+  let newValue = currentFunds <> donation
   let donateRedeemer = Redeemer $ toData $ PDonate amount
 
   let
