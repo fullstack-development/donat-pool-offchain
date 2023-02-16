@@ -2,28 +2,29 @@ module Fundraising.Donate where
 
 import Contract.Prelude
 
+import Ctl.Internal.Types.Interval (Interval(..))
 import Contract.Address (AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes, validatorHashBaseAddress)
+import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
+import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Credential (Credential(ScriptCredential))
+import Contract.Log (logInfo')
 import Contract.Monad (Contract, launchAff_, liftContractM, liftedE, liftedM, runContract)
+import Contract.PlutusData (Redeemer(Redeemer), toData)
+import Contract.ScriptLookups as Lookups
+import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
+import Contract.TxConstraints as Constraints
+import Contract.Utxos (utxosAt)
+import Contract.Value as Value
+import Ctl.Internal.Types.Datum (Datum(..))
+import Data.Array (head) as Array
 import Data.BigInt (BigInt)
+import Effect.Exception (throw)
+import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
-import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT)
-import Contract.Log (logInfo')
-import Contract.Utxos (utxosAt)
-import Data.Array (head) as Array
-import Effect.Exception (throw)
-import Ctl.Internal.Types.Datum (Datum(..))
-import Contract.PlutusData (Redeemer(Redeemer), toData)
-import Contract.Value as Value
-import Contract.TxConstraints as Constraints
-import Contract.Credential (Credential(ScriptCredential))
-import Contract.ScriptLookups as Lookups
-import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
-import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
 
 runDonate :: Fundraising -> BigInt -> Effect Unit
 runDonate fundrising amount = launchAff_ do
@@ -44,7 +45,8 @@ contract fundrising'@(Fundraising fundrising) amount = do
   logInfo' $ "Current funds: " <> show currentFunds
 
   now <- currentTime
-  when (now > _.frDeadline currentDatum) $ liftEffect $ throw "Fundrising time is over"
+  let deadline = _.frDeadline currentDatum
+  when (now > deadline) $ liftEffect $ throw "Fundrising time is over"
 
   donatorHashes <- ownPaymentPubKeysHashes
   donatorPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head donatorHashes
@@ -55,6 +57,7 @@ contract fundrising'@(Fundraising fundrising) amount = do
   let donation = Value.singleton Value.adaSymbol Value.adaToken amount
   let newValue = currentFunds <> donation
   let donateRedeemer = Redeemer $ toData $ PDonate amount
+  let donationTimeRange = FiniteInterval now deadline
 
   let
     constraints :: Constraints.TxConstraints Void Void
@@ -62,6 +65,7 @@ contract fundrising'@(Fundraising fundrising) amount = do
       Constraints.mustSpendScriptOutput (fst frUtxo) donateRedeemer
         <> Constraints.mustPayToScriptAddress frValidatorHash (ScriptCredential frValidatorHash) newDatum Constraints.DatumInline newValue
         <> Constraints.mustBeSignedBy donatorPkh
+        <> Constraints.mustValidateIn donationTimeRange
 
   let
     lookups :: Lookups.ScriptLookups Void

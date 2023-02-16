@@ -10,21 +10,21 @@ const App = () => {
   const startProtocolParams = {
     minAmountParam: 50000000,
     maxAmountParam: 1000000000,
-    minDurationParam: 100,
-    maxDurationParam: 1000,
+    minDurationParam: 1,
+    maxDurationParam: 90,
     protocolFeeParam: 10,
   };
   const updatedParams = {
     minAmountParam: 50000000,
     maxAmountParam: 1000000000,
-    minDurationParam: 100,
-    maxDurationParam: 1000,
+    minDurationParam: 1,
+    maxDurationParam: 90,
     protocolFeeParam: 9,
   };
   const createFundraisingParams = {
     description: 'Donate to feed stray cats',
     amount: 188,
-    duration: 101
+    duration: 2
   }
 
   const [protocol, setProtocol] = useState();
