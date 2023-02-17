@@ -35,7 +35,7 @@ contract fundrising'@(Fundraising fundrising) amount = do
   logInfo' "Running donate"
   frValidator <- fundraisingValidatorScript fundrising'
   frValidatorHash <- getFundraisingValidatorHash fundrising'
-  frAddress <- liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId frValidatorHash
+  frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
   frUtxos <- utxosAt frAddress
   frUtxo <- getUtxoByNFT "Fundraising" (Tuple (_.verTokenCurrency fundrising) (_.verTokenName fundrising)) frUtxos
 
