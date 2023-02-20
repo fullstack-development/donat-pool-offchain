@@ -38,9 +38,9 @@ import Shared.Helpers
   , getNonCollateralUtxo
   , getUtxoByNFT
   , bigIntRatioToNumber
+  , roundToBigInt
   )
-import Shared.MinAda (minAda, minAdaInt)
-import Data.Int (round)
+import Shared.MinAda (minAda)
 
 runReceiveFunds :: Protocol -> Fundraising -> Effect Unit
 runReceiveFunds protocol fundrising = launchAff_ do
@@ -126,9 +126,8 @@ calcFee feePercent funds' = do
   let funds = funds' % fromInt 1
   let res = fee * funds
   let res' = bigIntRatioToNumber res
-  -- TODO: Warning! This can be a source of errors: round :: Number -> Int
-  -- But should be used roundToBigInt from Helpers
-  -- can't import Number.round
-  pure $ fromInt $ max (round res') minAdaInt
+  rounded <- maybe roundErr pure $ roundToBigInt res' 
+  pure $ max rounded minAda
   where
   rationalErr = liftEffect $ throw "Can't make rational fee"
+  roundErr = liftEffect $ throw "Can't create BigInt after round"

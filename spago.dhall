@@ -11,7 +11,7 @@ You can edit this file as you like.
   , "datetime"
   , "effect"
   , "exceptions"
-  , "integers"
+  , "math"
   , "mote"
   , "newtype"
   , "numbers"

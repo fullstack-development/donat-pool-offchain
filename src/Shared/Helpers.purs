@@ -16,6 +16,7 @@ import Data.BigInt as BigInt
 import Data.Lens.Getter ((^.))
 import Data.Map as Map
 import Data.Rational ((%), Ratio, numerator, denominator)
+import Math as Math
 
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
@@ -90,9 +91,8 @@ mkBigIntRational (Tuple num den) =
 bigIntRatioToNumber :: Ratio BigInt -> Number
 bigIntRatioToNumber x = BigInt.toNumber (numerator x) / BigInt.toNumber (denominator x)
 
--- TODO: import round from numbers
--- roundToBigInt :: Number -> BigInt
--- roundToBigInt num = BigInt.fromNumber $ Number.round num
+roundToBigInt :: Number -> Maybe BigInt
+roundToBigInt num = BigInt.fromNumber $ Math.round num
 
 daysToPosixTime :: Int -> POSIXTime
 daysToPosixTime days =
