@@ -27,6 +27,7 @@ import Effect.Exception (throw)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
+import Fundraising.UserData (FundraisingData(..))
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.VerTokenMinting as VerToken
@@ -42,18 +43,24 @@ import Shared.Helpers
   )
 import Shared.MinAda (minAda)
 
-runReceiveFunds :: Protocol -> Fundraising -> Effect Unit
-runReceiveFunds protocol fundrising = launchAff_ do
-  runContract testnetNamiConfig (contract protocol fundrising)
+runReceiveFunds :: Protocol -> FundraisingData -> Effect Unit
+runReceiveFunds protocol fundraisingData = launchAff_ do
+  runContract testnetNamiConfig (contract protocol fundraisingData)
 
-contract :: Protocol -> Fundraising -> Contract () Unit
-contract protocol'@(Protocol protocol) fundrising'@(Fundraising fundrising) = do
+contract :: Protocol -> FundraisingData -> Contract () Unit
+contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
+  -- TODO: use mustPayToPubKeyAddress
   logInfo' "Running receive funds"
-  frValidator <- fundraisingValidatorScript fundrising'
-  frValidatorHash <- getFundraisingValidatorHash fundrising'
+
+  let fundraising'@(Fundraising fundraising) = fundraisingData.fundraising
+  let threadTokenCurrency = fundraisingData.frThreadTokenCurrency
+  let threadTokenName = fundraisingData.frThreadTokenName
+
+  frValidator <- fundraisingValidatorScript fundraising'
+  frValidatorHash <- getFundraisingValidatorHash fundraising'
   frAddress <- liftContractM "Impossible to get Fundrising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
   frUtxos <- utxosAt frAddress
-  frUtxo <- getUtxoByNFT "Fundraising" (fundrising.verTokenCurrency /\ fundrising.verTokenName) frUtxos
+  frUtxo <- getUtxoByNFT "Fundraising" (fundraising.verTokenCurrency /\ fundraising.verTokenName) frUtxos
 
   (PFundraisingDatum currentDatum) <- liftContractM "Impossible to get Fundraising Datum" $ extractDatumFromUTxO frUtxo
   logInfo' $ "Current datum: " <> show currentDatum
@@ -62,21 +69,21 @@ contract protocol'@(Protocol protocol) fundrising'@(Fundraising fundrising) = do
 
   now <- currentTime
   let donatedAmount = Value.valueOf currentFunds adaSymbol adaToken - minAda
-  when (now <= currentDatum.frDeadline && donatedAmount /= currentDatum.frAmount) $ liftEffect $ throw "Can't receive funds while fundrising is in process"
+  when (now <= currentDatum.frDeadline && donatedAmount /= currentDatum.frAmount) $ liftEffect $ throw "Can't receive funds while fundraising is in process"
 
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
-  when (ownPkh /= currentDatum.creatorPkh) $ liftEffect $ throw "Only fundrising creator can receive funds"
+  when (ownPkh /= currentDatum.creatorPkh) $ liftEffect $ throw "Only fundraising creator can receive funds"
 
   ownAddress <- liftedM "Failed to get donator address" $ Array.head <$> getWalletAddresses
   ownUtxo <- utxosAt ownAddress >>= getNonCollateralUtxo
 
-  let donateRedeemer = Redeemer $ toData PReceiveFunds
+  let donateRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
   let donationTimeRange = FiniteInterval now currentDatum.frDeadline
   let amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - currentDatum.frFee)
 
-  let verTokenToBurnValue = Value.singleton fundrising.verTokenCurrency fundrising.verTokenName (fromInt (-1))
-  let threadTokenToBurnValue = Value.singleton fundrising.threadTokenCurrency fundrising.threadTokenName (fromInt (-1))
+  let verTokenToBurnValue = Value.singleton fundraising.verTokenCurrency fundraising.verTokenName (fromInt (-1))
+  let threadTokenToBurnValue = Value.singleton threadTokenCurrency threadTokenName (fromInt (-1))
   threadTokenMintingPolicy <- NFT.mintingPolicy currentDatum.tokenOrigin
   verTokenMintingPolicy <- VerToken.mintingPolicy protocol'
   feeByFundrising <- calcFee currentDatum.frFee donatedAmount
@@ -88,10 +95,10 @@ contract protocol'@(Protocol protocol) fundrising'@(Fundraising fundrising) = do
         <> Constraints.mustBeSignedBy currentDatum.creatorPkh
         <> Constraints.mustValidateIn donationTimeRange
         <> Constraints.mustMintValueWithRedeemer
-          (Redeemer $ toData $ PBurnNft fundrising.threadTokenName)
+          (Redeemer $ toData $ PBurnNft threadTokenName)
           threadTokenToBurnValue
         <> Constraints.mustMintValueWithRedeemer
-          (Redeemer $ toData $ PBurnNft fundrising.verTokenName)
+          (Redeemer $ toData $ PBurnNft fundraising.verTokenName)
           verTokenToBurnValue
         <> Constraints.mustPayToPubKey ownPkh amountToReceiver
         <> Constraints.mustPayToPubKey protocol.managerPkh (Value.lovelaceValueOf feeByFundrising)
@@ -126,7 +133,7 @@ calcFee feePercent funds' = do
   let funds = funds' % fromInt 1
   let res = fee * funds
   let res' = bigIntRatioToNumber res
-  rounded <- maybe roundErr pure $ roundToBigInt res' 
+  rounded <- maybe roundErr pure $ roundToBigInt res'
   pure $ max rounded minAda
   where
   rationalErr = liftEffect $ throw "Can't make rational fee"

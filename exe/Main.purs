@@ -7,6 +7,7 @@ import Contract.Prelude
 import Common.ConnectWallet as ConnectWallet
 import Fundraising.Create as CreateFundraising
 import Fundraising.Donate as Donate
+import Fundraising.ReceiveFunds as ReceiveFunds
 import Fundraising.UserData (CreateFundraisingParams, FundraisingData)
 import Info.Protocol as ProtocolInfo
 import Protocol.CloseProtocol as CloseProtocol
@@ -24,7 +25,7 @@ data Contracts = Contracts
   , getProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , createFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
   , donate :: FundraisingData -> BigInt -> Effect Unit
-  , receiveFunds :: Protocol -> Fundraising -> Effect Unit
+  , receiveFunds :: Protocol -> FundraisingData -> Effect Unit
   }
 
 main :: Contracts

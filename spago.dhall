@@ -14,7 +14,6 @@ You can edit this file as you like.
   , "math"
   , "mote"
   , "newtype"
-  , "numbers"
   , "ordered-collections"
   , "posix-types"
   , "prelude"
