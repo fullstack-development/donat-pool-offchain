@@ -59,8 +59,11 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
   frValidatorHash <- getFundraisingValidatorHash fundraising'
   frAddress <- liftContractM "Impossible to get Fundrising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
   frUtxos <- utxosAt frAddress
-  frUtxo <- getUtxoByNFT "Fundraising" (fundraising.verTokenCurrency /\ fundraising.verTokenName) frUtxos
 
+  -- TODO: refactor checks for frUtxo (similar check in donate endpoint)
+  frUtxo <- getUtxoByNFT "Fundraising" (threadTokenCurrency /\ threadTokenName) frUtxos
+  let isVerTokenInUtxo = checkTokenInUTxO (fundraising.verTokenCurrency /\ fundraising.verTokenName) frUtxo
+  unless isVerTokenInUtxo $ throw >>> liftEffect $ "verToken is not in fundraising utxo"
   (PFundraisingDatum currentDatum) <- liftContractM "Impossible to get Fundraising Datum" $ extractDatumFromUTxO frUtxo
   logInfo' $ "Current datum: " <> show currentDatum
   let currentFunds = extractValueFromUTxO frUtxo
