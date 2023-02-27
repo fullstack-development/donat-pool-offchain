@@ -25,19 +25,21 @@ import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraising
 import Fundraising.Models (Fundraising(..))
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT)
+import Fundraising.UserData (FundraisingData(..))
 
-runDonate :: Fundraising -> BigInt -> Effect Unit
-runDonate fundrising amount = launchAff_ do
-  runContract testnetNamiConfig (contract fundrising amount)
+runDonate :: FundraisingData -> BigInt -> Effect Unit
+runDonate fundraisingData amount = launchAff_ do
+  runContract testnetNamiConfig (contract fundraisingData amount)
 
-contract :: Fundraising -> BigInt -> Contract () Unit
-contract fundrising'@(Fundraising fundrising) amount = do
+contract :: FundraisingData -> BigInt -> Contract () Unit
+contract (FundraisingData fundraisingData) amount = do
   logInfo' "Running donate"
-  frValidator <- fundraisingValidatorScript fundrising'
-  frValidatorHash <- getFundraisingValidatorHash fundrising'
+  let fundraising'@(Fundraising fundraising) = fundraisingData.fundraising
+  frValidator <- fundraisingValidatorScript fundraising'
+  frValidatorHash <- getFundraisingValidatorHash fundraising'
   frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
   frUtxos <- utxosAt frAddress
-  frUtxo <- getUtxoByNFT "Fundraising" (Tuple (_.verTokenCurrency fundrising) (_.verTokenName fundrising)) frUtxos
+  frUtxo <- getUtxoByNFT "Fundraising" (Tuple (_.verTokenCurrency fundraising) (_.verTokenName fundraising)) frUtxos
 
   currentDatum'@(PFundraisingDatum currentDatum) <- liftContractM "Impossible to get Fundraising Datum" $ extractDatumFromUTxO frUtxo
   logInfo' $ "Current datum: " <> show currentDatum
@@ -46,7 +48,7 @@ contract fundrising'@(Fundraising fundrising) amount = do
 
   now <- currentTime
   let deadline = _.frDeadline currentDatum
-  when (now > deadline) $ liftEffect $ throw "Fundrising time is over"
+  when (now > deadline) $ liftEffect $ throw "fundraising time is over"
 
   donatorHashes <- ownPaymentPubKeysHashes
   donatorPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head donatorHashes
@@ -56,7 +58,7 @@ contract fundrising'@(Fundraising fundrising) amount = do
   let newDatum = Datum $ toData currentDatum'
   let donation = Value.singleton Value.adaSymbol Value.adaToken amount
   let newValue = currentFunds <> donation
-  let donateRedeemer = Redeemer $ toData $ PDonate amount
+  let donateRedeemer = Redeemer $ toData $ PDonate fundraisingData.frThreadTokenCurrency fundraisingData.frThreadTokenName amount
   let donationTimeRange = FiniteInterval now deadline
 
   let

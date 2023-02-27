@@ -1,12 +1,14 @@
 module Fundraising.Redeemer where
 
-import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, S, Z, genericToData)
 import Contract.Prelude
+
+import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, S, Z, genericToData)
 import Data.BigInt (BigInt)
+import Contract.Value (CurrencySymbol, TokenName)
 
 data PFundraisingRedeemer
-  = PDonate BigInt
-  | PReceiveFunds
+  = PDonate CurrencySymbol TokenName BigInt
+  | PReceiveFunds CurrencySymbol TokenName
 
 derive instance Generic PFundraisingRedeemer _
 

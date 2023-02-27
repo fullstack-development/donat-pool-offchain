@@ -29,8 +29,8 @@ const App = () => {
   }
 
   const [protocol, setProtocol] = useState();
-  const [fundraising, setFundraising] = useState();
-
+  const [fundraisingData, setFundraisingData] = useState ();
+ 
   const onStartProtocolComplete = completedProtocol => {
     console.log(completedProtocol);
     setProtocol(completedProtocol);
@@ -40,9 +40,9 @@ const App = () => {
     console.log('update success');
   };
 
-  const onCreateFundraisingComplete = createdFundraising => {
-    console.log(createdFundraising);
-    setFundraising(createdFundraising);
+  const onCreateFundraisingComplete = createdFundraisingResponse => {
+    setFundraisingData(createdFundraisingResponse);
+   
   };
 
   const onStartProtocolClick = () => {
@@ -65,12 +65,12 @@ const App = () => {
     )(createFundraisingParams)();
   };
 
-  const onDonate = () => {
-    a.main.value0.donate(fundraising)(100_000_000)();
+  const onDonate = () => {   
+    a.main.value0.donate(fundraisingData)(100_000_000)();
   };
 
   const onReceiveFunds = () => {
-    a.main.value0.receiveFunds(protocol)(fundraising)();
+    a.main.value0.receiveFunds(protocol)(fundraisingData)();
   };
 
   return (
