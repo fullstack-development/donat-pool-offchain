@@ -80,3 +80,7 @@ Notes:
   --node-socket some-folder/cardano-node/node.socket \
   --node-config some-folder/cardano-node/config.json \
 ```
+
+4. Create new dist for frontend:
+
+Run `sh build.sh` from project root
