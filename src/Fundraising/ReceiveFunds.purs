@@ -38,8 +38,7 @@ import Shared.Helpers
   , extractValueFromUTxO
   , getNonCollateralUtxo
   , getUtxoByNFT
-  , bigIntRatioToNumber
-  , roundToBigInt
+  , roundBigIntRatio
   )
 import Shared.MinAda (minAda)
 
@@ -80,13 +79,13 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
 
   let donateRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
   let donationTimeRange = FiniteInterval now currentDatum.frDeadline
-  let amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - currentDatum.frFee)
 
   let verTokenToBurnValue = Value.singleton fundraising.verTokenCurrency fundraising.verTokenName (fromInt (-1))
   let threadTokenToBurnValue = Value.singleton threadTokenCurrency threadTokenName (fromInt (-1))
   threadTokenMintingPolicy <- NFT.mintingPolicy currentDatum.tokenOrigin
   verTokenMintingPolicy <- VerToken.mintingPolicy protocol'
   feeByFundrising <- calcFee currentDatum.frFee donatedAmount
+  let amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - feeByFundrising)
 
   let
     constraints :: Constraints.TxConstraints Void Void
@@ -129,12 +128,11 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
 
 calcFee :: BigInt -> BigInt -> Contract () BigInt
 calcFee feePercent funds' = do
-  fee <- maybe rationalErr pure $ mkBigIntRational (feePercent /\ funds')
-  let funds = funds' % fromInt 1
-  let res = fee * funds
-  let res' = bigIntRatioToNumber res
-  rounded <- maybe roundErr pure $ roundToBigInt res'
-  pure $ max rounded minAda
+  fee <- maybe rationalErr pure $ mkBigIntRational (feePercent * funds' /\ fromInt 100)
+  rounded <- maybe roundErr pure $ roundBigIntRatio fee
+  let feeAmount = max rounded minAda
+  logInfo' $ "FeeAmount: " <> show feeAmount
+  pure feeAmount
   where
   rationalErr = liftEffect $ throw "Can't make rational fee"
   roundErr = liftEffect $ throw "Can't create BigInt after round"

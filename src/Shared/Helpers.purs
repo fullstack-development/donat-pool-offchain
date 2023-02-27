@@ -1,4 +1,5 @@
-module Shared.Helpers where
+module Shared.Helpers
+  where
 
 import Contract.Prelude
 
@@ -88,11 +89,11 @@ mkBigIntRational (Tuple num den) =
   if den == fromInt 0 then Nothing
   else Just (num % den)
 
+roundBigIntRatio :: Ratio BigInt -> Maybe BigInt
+roundBigIntRatio frac = Math.round >>> BigInt.fromNumber $ bigIntRatioToNumber frac 
+
 bigIntRatioToNumber :: Ratio BigInt -> Number
 bigIntRatioToNumber x = BigInt.toNumber (numerator x) / BigInt.toNumber (denominator x)
-
-roundToBigInt :: Number -> Maybe BigInt
-roundToBigInt num = BigInt.fromNumber $ Math.round num
 
 daysToPosixTime :: Int -> POSIXTime
 daysToPosixTime days =
