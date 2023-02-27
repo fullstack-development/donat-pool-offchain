@@ -59,7 +59,7 @@ contract (FundraisingData fundraisingData) amount = do
   let currentDonationsAmount = Value.valueToCoin' currentFunds - Value.valueToCoin' minAdaValue
   when (now > deadline) $ throw >>> liftEffect $ "fundraising time is over"
   when (currentDonationsAmount >= amountToRaise) $ throw >>> liftEffect $ "fundraising goal is already completed"
-  when (currentDonationsAmount + amount >= amountToRaise) $ throw >>> liftEffect $ "your donation exceeds the fundraising goal"
+  when (currentDonationsAmount + amount > amountToRaise) $ throw >>> liftEffect $ "your donation exceeds the fundraising goal"
 
   donatorHashes <- ownPaymentPubKeysHashes
   donatorPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head donatorHashes
