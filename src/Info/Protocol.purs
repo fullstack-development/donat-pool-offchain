@@ -10,7 +10,7 @@ import Contract.Log (logInfo')
 import Contract.Utxos (utxosAt)
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
 import Protocol.ProtocolScript (getProtocolValidatorHash)
-import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByThreadToken)
+import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
 import Protocol.UserData (ProtocolConfigParams, mapFromProtocolDatum)
 import Effect.Exception (Error, message)
 
@@ -40,4 +40,4 @@ getProtocolUtxo protocol utxos =
   let
     p = unwrap protocol
   in
-    getUtxoByThreadToken (Tuple (_.protocolCurrency p) (_.protocolTokenName p)) utxos
+    getUtxoByNFT "Protocol" (Tuple (_.protocolCurrency p) (_.protocolTokenName p)) utxos

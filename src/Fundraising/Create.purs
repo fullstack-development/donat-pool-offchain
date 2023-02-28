@@ -3,69 +3,51 @@ module Fundraising.Create where
 import Contract.Prelude
 
 import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress, addressToBech32)
+import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
+import Contract.Chain (currentTime)
 import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
-import Contract.PlutusData
-  ( Redeemer(Redeemer)
-  , Datum(Datum)
-  , toData
-  )
+import Contract.PlutusData (Redeemer(Redeemer), Datum(Datum), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction
-  ( awaitTxConfirmed
-  , balanceTxWithConstraints
-  , signTransaction
-  , submit
-  )
+import Contract.Time (POSIXTime(..))
+import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
+import Ctl.Internal.Types.ByteArray (byteArrayFromAscii)
 import Data.Array (head) as Array
 import Data.BigInt (fromInt)
+import Data.Lens (view)
 import Data.Map (toUnfoldable) as Map
-import MintingPolicy.NftRedeemer (PNftRedeemer(..))
+import Data.String (take)
+import Effect.Aff (runAff_)
+import Effect.Exception (throw, Error, message)
+import Fundraising.Datum (PFundraisingDatum(..), descLength)
+import Fundraising.FundraisingScript (fundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
+import Fundraising.Models (Fundraising(..))
+import Fundraising.UserData (CreateFundraisingParams(..), FundraisingData(..))
+import Info.Protocol (getProtocolUtxo)
 import MintingPolicy.NftMinting as NFT
+import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import MintingPolicy.VerTokenRedeemers (PVerTokenRedeemer(..))
-import Shared.Helpers as Helpers
+import Protocol.Datum (_protocolFee, _minDuration, _maxDuration, _minAmount, _maxAmount)
 import Protocol.Models (Protocol, PFundriseConfig(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
-import Contract.BalanceTxConstraints
-  ( BalanceTxConstraintsBuilder
-  , mustSendChangeToAddress
-  )
-import Protocol.Datum
-  ( _protocolFee
-  , _minDuration
-  , _maxDuration
-  , _minAmount
-  , _maxAmount
-  )
-import Contract.Credential (Credential(ScriptCredential))
-import Fundraising.UserData (CreateFundraisingParams(..))
-import Fundraising.FundraisingScript (fundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
-import Info.Protocol (getProtocolUtxo)
-import Ctl.Internal.Types.ByteArray (byteArrayFromAscii)
-import Data.Lens (view)
-import Effect.Exception (throw, Error, message)
-import Contract.Chain (currentTime)
-import Contract.Time (POSIXTime(..))
 import Protocol.Redeemer (PProtocolRedeemer(..))
-import Fundraising.Models (Fundraising(..))
-import Fundraising.Datum (PFundraisingDatum(..), descLength)
-import Effect.Aff (runAff_)
-import Data.String (take)
+import Shared.Helpers as Helpers
 
-runCreateFundraising :: (Fundraising -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
+runCreateFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocol params = runAff_ handler $
   runContract testnetNamiConfig (contract protocol params)
   where
-  handler :: Either Error Fundraising -> Effect Unit
-  handler (Right fundraising) = onComplete fundraising
+  handler :: Either Error FundraisingData -> Effect Unit
+  handler (Right response) = onComplete response
   handler (Left err) = onError $ message err
 
-contract :: Protocol -> CreateFundraisingParams -> Contract () Fundraising
+contract :: Protocol -> CreateFundraisingParams -> Contract () FundraisingData
 contract givenProtocol (CreateFundraisingParams { description, amount, duration }) = do
   logInfo' "Running Create Fundraising contract"
   ownHashes <- ownPaymentPubKeysHashes
@@ -220,4 +202,8 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   bech32Address <- addressToBech32 frAddress
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
-  pure fundraising
+  pure $ FundraisingData
+    { fundraising: fundraising
+    , frThreadTokenCurrency: nftCs
+    , frThreadTokenName: nftTn
+    }

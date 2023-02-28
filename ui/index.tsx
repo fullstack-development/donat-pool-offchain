@@ -10,26 +10,26 @@ const App = () => {
   const startProtocolParams = {
     minAmountParam: 50000000,
     maxAmountParam: 1000000000,
-    minDurationParam: 100,
-    maxDurationParam: 1000,
+    minDurationParam: 1,
+    maxDurationParam: 90,
     protocolFeeParam: 10,
   };
   const updatedParams = {
     minAmountParam: 50000000,
     maxAmountParam: 1000000000,
-    minDurationParam: 100,
-    maxDurationParam: 1000,
+    minDurationParam: 1,
+    maxDurationParam: 90,
     protocolFeeParam: 9,
   };
   const createFundraisingParams = {
     description: 'Donate to feed stray cats',
     amount: 188,
-    duration: 101
+    duration: 2
   }
 
   const [protocol, setProtocol] = useState();
-  const [fundraising, setFundraising] = useState();
-
+  const [fundraisingData, setFundraisingData] = useState ();
+ 
   const onStartProtocolComplete = completedProtocol => {
     setProtocol(completedProtocol);
   };
@@ -38,8 +38,9 @@ const App = () => {
     console.log('update success');
   };
 
-  const onCreateFundraisingComplete = createdFundraising => {
-    setFundraising(createdFundraising);
+  const onCreateFundraisingComplete = createdFundraisingResponse => {
+    setFundraisingData(createdFundraisingResponse);
+   
   };
 
   const onStartProtocolClick = () => {
@@ -62,6 +63,10 @@ const App = () => {
     )(createFundraisingParams)();
   };
 
+  const onDonate = () => {   
+    a.main.value0.donate(fundraisingData)(100_000_000)();
+  };
+
   return (
     <div>
       <h1>Offchain integration</h1>
@@ -69,6 +74,7 @@ const App = () => {
       <button onClick={onUpdateProtocolClick}>Update Protocol</button>
       <button onClick={onCloseProtocolClick}>Close Protocol</button>
       <button onClick={onCreateFundraisingClick}>Create fundraising</button>
+      <button onClick={onDonate}>Donate 100 Ada</button>
     </div>
   );
 };
