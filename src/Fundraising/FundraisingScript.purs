@@ -1,7 +1,7 @@
 module Fundraising.FundraisingScript where
 
-import Contract.Monad (Contract, liftContractE)
-import Contract.Prelude (Either, bind, pure, ($))
+import Contract.Monad (Contract, liftContractE, liftContractM)
+import Contract.Prelude
 import Contract.Scripts (Validator(..), PlutusScript, ApplyArgsError, applyArgs, validatorHash, ValidatorHash)
 import Contract.TextEnvelope (decodeTextEnvelope, plutusScriptV2FromEnvelope)
 import Control.Monad.Error.Class (liftMaybe)
@@ -35,5 +35,8 @@ getFundraisingValidatorHash fundraising = do
   validator <- fundraisingValidatorScript fundraising
   pure $ validatorHash validator
 
-fundraisingTokenName :: forall (r :: Row Type). Contract r Value.TokenName
+getFundraisingTokenName :: forall (r :: Row Type). Contract r Value.TokenName
+getFundraisingTokenName = liftContractM "Cannot make Fundraising token name" $ fundraisingTokenName
+
+fundraisingTokenName :: Maybe Value.TokenName
 fundraisingTokenName = Helpers.mkTokenName "FundraisingThreadToken"

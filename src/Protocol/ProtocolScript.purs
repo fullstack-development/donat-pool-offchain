@@ -43,4 +43,4 @@ getProtocolValidatorHash protocol = do
   pure $ validatorHash validator
 
 protocolTokenName :: forall (r :: Row Type). Contract r Value.TokenName
-protocolTokenName = Helpers.mkTokenName "DonatPoolProtocol"
+protocolTokenName = Helpers.runMkTokenName "DonatPoolProtocol"
