@@ -9,7 +9,7 @@ import Ctl.Internal.Types.ByteArray (ByteArray(..))
 import Data.Array as Array
 import Data.BigInt (BigInt)
 import Fundraising.Datum (PFundraisingDatum(..))
-import Fundraising.FundraisingScript (fundraisingTokenNamePure)
+import Fundraising.FundraisingScript (fundraisingTokenName)
 import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getCurrencyByTokenName)
 import Shared.MinAda (minAdaValue)
 import Data.TextDecoder (decodeUtf8)
@@ -20,7 +20,7 @@ newtype FundraisingInfo = FundraisingInfo
   , goal :: BigInt -- Goal in lovelaces
   , raisedAmt :: BigInt -- Raised amount in lovelaces
   , deadline :: POSIXTime
-  , threadTokenCyrrency :: Value.CurrencySymbol
+  , threadTokenCurrency :: Value.CurrencySymbol
   , threadTokenName :: Value.TokenName
   }
 
@@ -34,7 +34,7 @@ mapToFundraisingInfo utxo = do
   let currentFunds = Value.valueToCoin' frVal - Value.valueToCoin' minAdaValue
   let ByteArray unwrappedDesc = currentDatum.frDesc
   desc <- either (const Nothing) Just $ decodeUtf8 unwrappedDesc
-  frTokenName <- fundraisingTokenNamePure
+  frTokenName <- fundraisingTokenName
   cs <- getCurrencyByTokenName frVal frTokenName
   pure $ FundraisingInfo
     { creator: currentDatum.creatorPkh
@@ -42,7 +42,7 @@ mapToFundraisingInfo utxo = do
     , goal: currentDatum.frAmount
     , raisedAmt: currentFunds
     , deadline: currentDatum.frDeadline
-    , threadTokenCyrrency: cs
+    , threadTokenCurrency: cs
     , threadTokenName: frTokenName
     }
 
