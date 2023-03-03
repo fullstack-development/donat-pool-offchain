@@ -8,7 +8,8 @@ import Contract.Value as Value
 import Ctl.Internal.Types.ByteArray (ByteArray(..))
 import Data.BigInt (BigInt)
 import Fundraising.Datum (PFundraisingDatum(..))
-import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO)
+import Fundraising.FundraisingScript (fundraisingTokenNamePure)
+import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getCurrencyByTokenName)
 import Shared.MinAda (minAdaValue)
 import Data.TextDecoder (decodeUtf8)
 
@@ -17,7 +18,9 @@ newtype FundraisingInfo = FundraisingInfo
   , description :: String
   , goal :: BigInt -- Goal in lovelaces
   , raisedAmt :: BigInt -- Raised amount in lovelaces
-  , deadline :: POSIXTime -- Probably will be able to find a function to convert POSIXTime to real time, or do it on frontend
+  , deadline :: POSIXTime
+  , threadTokenCyrrency :: Value.CurrencySymbol
+  , threadTokenName :: Value.TokenName
   }
 
 derive newtype instance Show FundraisingInfo
@@ -30,10 +33,14 @@ mapToFundraisingInfo utxo = do
   let currentFunds = Value.valueToCoin' frVal - Value.valueToCoin' minAdaValue
   let ByteArray unwrappedDesc = currentDatum.frDesc
   desc <- either (const Nothing) Just $ decodeUtf8 unwrappedDesc
+  frTokenName <- fundraisingTokenNamePure
+  cs <- getCurrencyByTokenName frVal frTokenName
   pure $ FundraisingInfo
     { creator: currentDatum.creatorPkh
     , description: desc
     , goal: currentDatum.frAmount
     , raisedAmt: currentFunds
     , deadline: currentDatum.frDeadline
+    , threadTokenCyrrency: cs
+    , threadTokenName: frTokenName
     }

@@ -19,10 +19,13 @@ import Contract.Time (POSIXTime(..))
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
 
+mkTokenNamePure :: String -> Maybe Value.TokenName
+mkTokenNamePure = Value.mkTokenName <=< byteArrayFromAscii
+
 mkTokenName :: forall (r :: Row Type). String -> Contract r Value.TokenName
 mkTokenName =
   liftContractM "Cannot make token name"
-    <<< (Value.mkTokenName <=< byteArrayFromAscii)
+    <<< mkTokenNamePure
 
 mkCurrencySymbol :: forall (r :: Row Type). Contract r MintingPolicy -> Contract r (MintingPolicy /\ Value.CurrencySymbol)
 mkCurrencySymbol policy = do
@@ -75,6 +78,17 @@ extractDatumFromUTxO (Tuple _ txOutWithRef) =
 
 extractValueFromUTxO :: UtxoTuple -> Value.Value
 extractValueFromUTxO (Tuple _ txOutWithRef) = (txOutWithRef ^. _output) ^. _amount
+
+getCurrencyByTokenName :: Value.Value -> Value.TokenName -> Maybe Value.CurrencySymbol
+getCurrencyByTokenName val tokenName =
+  let
+    tokens = Value.flattenNonAdaAssets val
+  in
+    case filterByName tokens of
+      [ cs /\ _ /\ _ ] -> Just cs
+      _ -> Nothing
+  where
+  filterByName = Array.filter (\(_ /\ tn /\ _) -> tn == tokenName)
 
 mkRational :: Tuple Int Int -> Maybe (Ratio BigInt)
 mkRational (Tuple num den) =
