@@ -39,6 +39,7 @@ import Shared.Helpers
   , getNonCollateralUtxo
   , getUtxoByNFT
   , roundBigIntRatio
+  , checkTokenInUTxO
   )
 import Shared.MinAda (minAda)
 
