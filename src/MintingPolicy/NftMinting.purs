@@ -28,7 +28,7 @@ import Data.Array (head, singleton) as Array
 import Data.Map (toUnfoldable) as Map
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Effect.Exception (error)
-import Shared.Helpers (mkTokenName, mkCurrencySymbol, filterNonCollateral, filterByToken)
+import Shared.Helpers (runMkTokenName, mkCurrencySymbol, filterNonCollateral, filterByToken)
 import Data.BigInt (fromInt)
 import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
 import Data.UInt as UInt
@@ -66,7 +66,7 @@ contract = do
     liftContractM "Utxo set is empty"
       (fst <$> Array.head (filterNonCollateral (Map.toUnfoldable utxos :: Array (Tuple TransactionInput TransactionOutputWithRefScript))))
   mp /\ cs <- mkCurrencySymbol (mintingPolicy oref)
-  tn <- mkTokenName "MyLovelyNFT"
+  tn <- runMkTokenName "MyLovelyNFT"
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
@@ -94,7 +94,7 @@ burnNftContract txInput = do
     getWalletAddresses
   logInfo' $ "Own address is: " <> show ownAddress
   mp /\ cs <- mkCurrencySymbol (mintingPolicy txInput)
-  tn <- mkTokenName "MyLovelyNFT"
+  tn <- runMkTokenName "MyLovelyNFT"
   let nft = Tuple cs tn
   utxos <- utxosAt ownAddress
   logInfo' $ "UTxOs found on address: " <> show utxos

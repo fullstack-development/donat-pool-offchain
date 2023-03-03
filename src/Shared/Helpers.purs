@@ -19,13 +19,11 @@ import Contract.Time (POSIXTime(..))
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
 
-mkTokenNamePure :: String -> Maybe Value.TokenName
-mkTokenNamePure = Value.mkTokenName <=< byteArrayFromAscii
+mkTokenName :: String -> Maybe Value.TokenName
+mkTokenName = Value.mkTokenName <=< byteArrayFromAscii
 
-mkTokenName :: forall (r :: Row Type). String -> Contract r Value.TokenName
-mkTokenName =
-  liftContractM "Cannot make token name"
-    <<< mkTokenNamePure
+runMkTokenName :: forall (r :: Row Type). String -> Contract r Value.TokenName
+runMkTokenName = liftContractM "Cannot make token name" <<< mkTokenName
 
 mkCurrencySymbol :: forall (r :: Row Type). Contract r MintingPolicy -> Contract r (MintingPolicy /\ Value.CurrencySymbol)
 mkCurrencySymbol policy = do

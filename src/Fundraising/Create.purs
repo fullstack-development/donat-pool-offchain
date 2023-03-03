@@ -25,7 +25,7 @@ import Data.String (take)
 import Effect.Aff (runAff_)
 import Effect.Exception (throw, Error, message)
 import Fundraising.Datum (PFundraisingDatum(..), descLength)
-import Fundraising.FundraisingScript (fundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
+import Fundraising.FundraisingScript (getFundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
 import Fundraising.UserData (CreateFundraisingParams(..), FundraisingData(..))
 import Info.Protocol (getProtocolUtxo)
@@ -64,7 +64,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   logInfo' $ "Desired user UTxO is: " <> show oref
   nftMp /\ nftCs <- Helpers.mkCurrencySymbol (NFT.mintingPolicy oref)
   logInfo' $ "NFT currency symbol: " <> show nftCs
-  nftTn <- fundraisingTokenName
+  nftTn <- getFundraisingTokenName
   logInfo' $ "NFT token name: " <> show nftTn
 
   verTokenMp /\ verTokenCs <- Helpers.mkCurrencySymbol (VerToken.mintingPolicy givenProtocol)

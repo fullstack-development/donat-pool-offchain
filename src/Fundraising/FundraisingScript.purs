@@ -35,8 +35,8 @@ getFundraisingValidatorHash fundraising = do
   validator <- fundraisingValidatorScript fundraising
   pure $ validatorHash validator
 
-fundraisingTokenName :: forall (r :: Row Type). Contract r Value.TokenName
-fundraisingTokenName = liftContractM "Cannot make Fundraising token name" $ fundraisingTokenNamePure
+getFundraisingTokenName :: forall (r :: Row Type). Contract r Value.TokenName
+getFundraisingTokenName = liftContractM "Cannot make Fundraising token name" $ fundraisingTokenName
 
-fundraisingTokenNamePure :: Maybe Value.TokenName
-fundraisingTokenNamePure = Helpers.mkTokenNamePure "FundraisingThreadToken"
+fundraisingTokenName :: Maybe Value.TokenName
+fundraisingTokenName = Helpers.mkTokenName "FundraisingThreadToken"
