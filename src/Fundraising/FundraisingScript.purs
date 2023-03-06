@@ -1,16 +1,16 @@
 module Fundraising.FundraisingScript where
 
 import Contract.Monad (Contract, liftContractE, liftContractM)
+import Contract.PlutusData (PlutusData, toData)
 import Contract.Prelude
 import Contract.Scripts (Validator(..), PlutusScript, ApplyArgsError, applyArgs, validatorHash, ValidatorHash)
 import Contract.TextEnvelope (decodeTextEnvelope, plutusScriptV2FromEnvelope)
-import Control.Monad.Error.Class (liftMaybe)
-import Effect.Exception (error)
-import Contract.PlutusData (PlutusData, toData)
-import Data.Array (singleton) as Array
 import Contract.Value as Value
-import Shared.Helpers as Helpers
+import Control.Monad.Error.Class (liftMaybe)
+import Data.Array (singleton) as Array
+import Effect.Exception (error)
 import Fundraising.Models (Fundraising)
+import Shared.Helpers as Helpers
 
 foreign import fundraisingValidator :: String
 

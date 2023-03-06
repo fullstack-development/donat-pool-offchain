@@ -2,7 +2,6 @@ module Fundraising.Models where
 
 import Contract.Prelude
 
-import Contract.Value (CurrencySymbol, TokenName)
 import Contract.PlutusData
   ( class FromData
   , class HasPlutusSchema
@@ -16,6 +15,7 @@ import Contract.PlutusData
   , genericFromData
   , genericToData
   )
+import Contract.Value (CurrencySymbol, TokenName)
 import Data.Newtype (class Newtype)
 import Protocol.Models (Protocol)
 

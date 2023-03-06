@@ -71,6 +71,10 @@ const App = () => {
     a.main.value0.getAllFundraisings(console.log)(console.log)(protocol)();
   };
 
+  const onGetUserRelatedFundraisings = () => {
+    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocol)();
+  };
+
   return (
     <div>
       <h1>Offchain integration</h1>
@@ -79,7 +83,8 @@ const App = () => {
       <button onClick={onCloseProtocolClick}>Close Protocol</button>
       <button onClick={onCreateFundraisingClick}>Create fundraising</button>
       <button onClick={onDonate}>Donate 100 Ada</button>
-      <button onClick={onGetAllFundraising}>Get All Fundraising</button>
+      <button onClick={onGetAllFundraising}>Get All Fundraisings</button>
+      <button onClick={onGetUserRelatedFundraisings}>Get User related Fundraisings</button>
     </div>
   );
 };

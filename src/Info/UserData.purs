@@ -6,6 +6,7 @@ import Contract.Address (PaymentPubKeyHash)
 import Contract.Time (POSIXTime)
 import Contract.Value as Value
 import Ctl.Internal.Types.ByteArray (ByteArray(..))
+import Data.Array as Array
 import Data.BigInt (BigInt)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingTokenName)
@@ -44,3 +45,8 @@ mapToFundraisingInfo utxo = do
     , threadTokenCurrency: cs
     , threadTokenName: frTokenName
     }
+
+filterByPkh :: PaymentPubKeyHash -> Array FundraisingInfo -> Array FundraisingInfo
+filterByPkh pkh = Array.filter belongsToUser
+  where
+  belongsToUser (FundraisingInfo frInfo) = frInfo.creator == pkh
