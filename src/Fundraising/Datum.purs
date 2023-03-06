@@ -1,16 +1,16 @@
 module Fundraising.Datum where
 
-import Ctl.Internal.FromData
 import Contract.Address (PaymentPubKeyHash)
+import Contract.Time (POSIXTime)
 import Contract.PlutusData (class HasPlutusSchema, type (:+), type (:=), type (@@), I, PNil, Z, genericToData)
 import Contract.Prelude (class Generic, class Show)
+import Ctl.Internal.FromData
 import Ctl.Internal.ToData (class ToData)
+import Ctl.Internal.Types.ByteArray (ByteArray)
 import Ctl.Internal.Types.Transaction (TransactionInput)
 import Data.BigInt (BigInt)
 import Data.Newtype (class Newtype)
 import Prelude (class Eq, class Ord)
-import Ctl.Internal.Types.ByteArray (ByteArray)
-import Contract.Time (POSIXTime)
 
 descLength :: Int
 descLength = 35
