@@ -4,8 +4,6 @@ module Fundraising.ReceiveFunds
 
 import Contract.Prelude
 
-import Data.Ratio ((%))
-import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Contract.Address (AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes, validatorHashBaseAddress)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
@@ -19,7 +17,7 @@ import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.CurrencySymbol (adaSymbol)
-import Ctl.Internal.Types.Interval (Interval(..))
+import Ctl.Internal.Types.Interval (Interval(..), from)
 import Ctl.Internal.Types.TokenName (adaToken)
 import Data.Array (head) as Array
 import Data.BigInt (BigInt, fromInt)
@@ -27,20 +25,13 @@ import Effect.Exception (throw)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
-import Fundraising.UserData (FundraisingData(..))
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
+import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.NftMinting as NFT
+import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.Models (Protocol(..))
-import Shared.Helpers
-  ( mkBigIntRational
-  , extractDatumFromUTxO
-  , extractValueFromUTxO
-  , getNonCollateralUtxo
-  , getUtxoByNFT
-  , roundBigIntRatio
-  , checkTokenInUTxO
-  )
+import Shared.Helpers (mkBigIntRational, extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT, roundBigIntRatio, checkTokenInUTxO)
 import Shared.MinAda (minAda)
 
 runReceiveFunds :: Protocol -> FundraisingData -> Effect Unit
@@ -81,9 +72,8 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
   ownAddress <- liftedM "Failed to get donator address" $ Array.head <$> getWalletAddresses
   ownUtxo <- utxosAt ownAddress >>= getNonCollateralUtxo
 
-  let donateRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
-  let donationTimeRange = FiniteInterval now currentDatum.frDeadline
-
+  let redeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
+  let receiveFundsTimeRange = StartAt currentDatum.frDeadline 
   let verTokenToBurnValue = Value.singleton fundraising.verTokenCurrency fundraising.verTokenName (fromInt (-1))
   let threadTokenToBurnValue = Value.singleton threadTokenCurrency threadTokenName (fromInt (-1))
   threadTokenMintingPolicy <- NFT.mintingPolicy currentDatum.tokenOrigin
@@ -94,9 +84,9 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput (fst frUtxo) donateRedeemer
+      Constraints.mustSpendScriptOutput (fst frUtxo) redeemer
         <> Constraints.mustBeSignedBy currentDatum.creatorPkh
-        <> Constraints.mustValidateIn donationTimeRange
+        <> Constraints.mustValidateIn receiveFundsTimeRange
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft threadTokenName)
           threadTokenToBurnValue
