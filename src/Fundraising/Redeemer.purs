@@ -3,8 +3,8 @@ module Fundraising.Redeemer where
 import Contract.Prelude
 
 import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, S, Z, genericToData)
-import Data.BigInt (BigInt)
 import Contract.Value (CurrencySymbol, TokenName)
+import Data.BigInt (BigInt)
 
 data PFundraisingRedeemer
   = PDonate CurrencySymbol TokenName BigInt
