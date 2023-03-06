@@ -16,7 +16,7 @@ import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Ctl.Internal.Types.Datum (Datum(..))
-import Ctl.Internal.Types.Interval (from)
+import Ctl.Internal.Types.Interval (mkFiniteInterval)
 import Data.Array (head) as Array
 import Data.BigInt (BigInt)
 import Effect.Exception (throw)
@@ -81,7 +81,7 @@ contract (FundraisingData fundraisingData) amount = do
   let donation = Value.singleton Value.adaSymbol Value.adaToken amount
   let newValue = currentFunds <> donation
   let donateRedeemer = Redeemer $ toData $ PDonate threadTokenCurrency threadTokenName amount
-  let donationTimeRange = from now
+  let donationTimeRange = mkFiniteInterval now deadline
 
   let
     constraints :: Constraints.TxConstraints Void Void
