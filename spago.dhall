@@ -12,6 +12,7 @@ You can edit this file as you like.
   , "effect"
   , "encoding"
   , "exceptions"
+  , "math"
   , "mote"
   , "newtype"
   , "ordered-collections"

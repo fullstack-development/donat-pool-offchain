@@ -5,9 +5,10 @@ module Scaffold.Main (main, Contracts) where
 import Contract.Prelude
 
 import Common.ConnectWallet as ConnectWallet
+import Fundraising.Donate as Donate
+import Fundraising.ReceiveFunds as ReceiveFunds
 import Data.BigInt (BigInt)
 import Fundraising.Create as CreateFundraising
-import Fundraising.Donate as Donate
 import Fundraising.UserData (CreateFundraisingParams, FundraisingData)
 import Info.AllFundraisings as AllFundraisings
 import Info.Protocol as ProtocolInfo
@@ -23,10 +24,11 @@ data Contracts = Contracts
   { connectWallet :: Effect Unit
   , startProtocol :: (Protocol -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
   , updateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> ProtocolConfigParams -> Effect Unit
-  , closeProtocol :: Protocol -> Effect Unit
+  , closeProtocol :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , getProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , createFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
-  , donate :: FundraisingData -> BigInt -> Effect Unit
+  , donate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> BigInt -> Effect Unit
+  , receiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Effect Unit
   , getAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , getUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   }
@@ -40,6 +42,7 @@ main = Contracts
   , getProtocolInfo: ProtocolInfo.runGetProtocolInfo
   , createFundraising: CreateFundraising.runCreateFundraising
   , donate: Donate.runDonate
+  , receiveFunds: ReceiveFunds.runReceiveFunds
   , getAllFundraisings: AllFundraisings.runGetAllFundraisings
   , getUserRelatedFundraisings: UserRelatedFundraisings.runGetUserRelatedFundraisings
   }

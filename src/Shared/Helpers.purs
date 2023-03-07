@@ -6,15 +6,17 @@ import Contract.Monad (Contract, liftContractM)
 import Contract.PlutusData (Datum(..), fromData, class FromData)
 import Contract.Prim.ByteArray (byteArrayFromAscii)
 import Contract.Scripts (MintingPolicy)
+import Contract.Time (POSIXTime(..))
 import Contract.Transaction (TransactionInput, TransactionOutputWithRefScript, OutputDatum(OutputDatum))
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap, _amount, _datum, _output)
 import Data.Array (filter, head) as Array
 import Data.BigInt (fromInt, BigInt)
+import Data.BigInt as BigInt
 import Data.Lens.Getter ((^.))
 import Data.Map as Map
-import Data.Rational ((%), Ratio)
-import Contract.Time (POSIXTime(..))
+import Data.Rational ((%), Ratio, numerator, denominator)
+import Math as Math
 
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
@@ -92,6 +94,17 @@ mkRational :: Tuple Int Int -> Maybe (Ratio BigInt)
 mkRational (Tuple num den) =
   if den == 0 then Nothing
   else Just (fromInt num % fromInt den)
+
+mkBigIntRational :: Tuple BigInt BigInt -> Maybe (Ratio BigInt)
+mkBigIntRational (Tuple num den) =
+  if den == fromInt 0 then Nothing
+  else Just (num % den)
+
+roundBigIntRatio :: Ratio BigInt -> Maybe BigInt
+roundBigIntRatio frac = Math.round >>> BigInt.fromNumber $ bigIntRatioToNumber frac
+
+bigIntRatioToNumber :: Ratio BigInt -> Number
+bigIntRatioToNumber x = BigInt.toNumber (numerator x) / BigInt.toNumber (denominator x)
 
 daysToPosixTime :: Int -> POSIXTime
 daysToPosixTime days =

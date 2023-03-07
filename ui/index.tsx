@@ -7,6 +7,7 @@ const a = await import('@offchain/Scaffold.Main');
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 const App = () => {
+
   const startProtocolParams = {
     minAmountParam: 50000000,
     maxAmountParam: 1000000000,
@@ -23,14 +24,15 @@ const App = () => {
   };
   const createFundraisingParams = {
     description: 'Donate to feed stray cats',
-    amount: 188,
-    duration: 2
+    amount: 100,
+    duration: 1
   }
 
   const [protocol, setProtocol] = useState();
   const [fundraisingData, setFundraisingData] = useState ();
  
   const onStartProtocolComplete = completedProtocol => {
+    console.log(completedProtocol);
     setProtocol(completedProtocol);
   };
 
@@ -54,7 +56,7 @@ const App = () => {
     )(updatedParams)();
   };
   const onCloseProtocolClick = () => {
-    a.main.value0.closeProtocol(protocol)();
+    a.main.value0.closeProtocol(console.log)(console.log)(protocol)();
   };
 
   const onCreateFundraisingClick = () => {
@@ -64,9 +66,13 @@ const App = () => {
   };
 
   const onDonate = () => {   
-    a.main.value0.donate(fundraisingData)(100_000_000)();
+    a.main.value0.donate(console.log)(console.log)(fundraisingData)(100_000_000)();
   };
 
+  const onReceiveFunds = () => {
+    a.main.value0.receiveFunds(console.log)(console.log)(fundraisingData)();
+  }
+  
   const onGetAllFundraising = () => {
     a.main.value0.getAllFundraisings(console.log)(console.log)(protocol)();
   };
@@ -83,6 +89,7 @@ const App = () => {
       <button onClick={onCloseProtocolClick}>Close Protocol</button>
       <button onClick={onCreateFundraisingClick}>Create fundraising</button>
       <button onClick={onDonate}>Donate 100 Ada</button>
+      <button onClick={onReceiveFunds}>Receive funds</button>
       <button onClick={onGetAllFundraising}>Get All Fundraisings</button>
       <button onClick={onGetUserRelatedFundraisings}>Get User related Fundraisings</button>
     </div>

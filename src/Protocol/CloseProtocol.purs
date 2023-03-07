@@ -2,11 +2,11 @@ module Protocol.CloseProtocol where
 
 import Contract.Prelude
 
-import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress, addressToBech32)
+import Contract.Address (AddressWithNetworkTag(..), validatorHashBaseAddress, addressToBech32)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
-import Contract.Config (ConfigParams, testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, launchAff_, runContract, liftContractM, liftedM, liftedE)
+import Contract.Monad (Contract, liftContractM, liftedE)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
@@ -24,13 +24,11 @@ import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
 import Protocol.Redeemer (PProtocolRedeemer(PCloseProtocol))
 import Shared.Helpers as Helpers
+import Shared.RunContract (runContractWithUnitResult)
+import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
 
-runCloseProtocolTest :: Protocol -> Effect Unit
-runCloseProtocolTest = closeProtocol testnetNamiConfig
-
-closeProtocol :: ConfigParams () -> Protocol -> Effect Unit
-closeProtocol baseConfig protocol = launchAff_ do
-  runContract baseConfig (contract protocol)
+runCloseProtocolTest :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
+runCloseProtocolTest onComplete onError protocol = runContractWithUnitResult onComplete onError $ contract protocol
 
 contract :: Protocol -> Contract () Unit
 contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName }) = do
@@ -41,9 +39,9 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
     liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
   bech32Address <- addressToBech32 protocolAddress
   logInfo' $ "Current protocol address: " <> show bech32Address
-  ownHashes <- ownPaymentPubKeysHashes
-  ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
-  when (managerPkh /= ownPkh) $ liftEffect $ throw "current user doesn't have permissions to close protocol"
+
+  (OwnCredentials creds) <- getOwnCreds
+  when (managerPkh /= creds.ownPkh) $ liftEffect $ throw "current user doesn't have permissions to close protocol"
 
   protocolUTxOs <- utxosAt protocolAddress
   logInfo' $ "Protocol UTxOs: " <> show protocolUTxOs
@@ -57,8 +55,6 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
   let nftOref = protocolDatum.tokenOriginRef
   mp <- NFT.mintingPolicy nftOref
   protocolValidator <- protocolValidatorScript protocol
-  ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
-  walletUtxo <- utxosAt ownAddress >>= Helpers.getNonCollateralUtxo
 
   let
     protocolRedeemer = Redeemer $ toData PCloseProtocol
@@ -72,22 +68,23 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft protocolTokenName)
           nftToBurnValue
-        <> Constraints.mustPayToPubKey
-          ownPkh
+        <> Constraints.mustPayToPubKeyAddress
+          creds.ownPkh
+          creds.ownSkh
           (Value.lovelaceValueOf (fromInt 2000000))
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
         <> Lookups.unspentOutputs protocolUTxOs
-        <> Lookups.unspentOutputs walletUtxo
+        <> Lookups.unspentOutputs creds.ownUtxo
         <> Lookups.validator protocolValidator
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let
     addressWithNetworkTag =
       AddressWithNetworkTag
-        { address: ownAddress
+        { address: creds.ownAddress
         , networkId: TestnetId
         }
 
