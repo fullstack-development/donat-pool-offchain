@@ -37,4 +37,4 @@ mkMintVerTokenPolicy unappliedPolicy protocol =
     applyArgs unappliedPolicy mintingPolicyArgs
 
 verTokenName :: forall (r :: Row Type). Contract r Value.TokenName
-verTokenName = Helpers.mkTokenName "VerificationToken"
+verTokenName = Helpers.runMkTokenName "VerificationToken"

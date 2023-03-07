@@ -71,6 +71,14 @@ const App = () => {
 
   const onReceiveFunds = () => {
     a.main.value0.receiveFunds(protocol)(fundraisingData)();
+  }
+  
+  const onGetAllFundraising = () => {
+    a.main.value0.getAllFundraisings(console.log)(console.log)(protocol)();
+  };
+
+  const onGetUserRelatedFundraisings = () => {
+    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocol)();
   };
 
   return (
@@ -82,6 +90,8 @@ const App = () => {
       <button onClick={onCreateFundraisingClick}>Create fundraising</button>
       <button onClick={onDonate}>Donate 100 Ada</button>
       <button onClick={onReceiveFunds}>Receive funds</button>
+      <button onClick={onGetAllFundraising}>Get All Fundraisings</button>
+      <button onClick={onGetUserRelatedFundraisings}>Get User related Fundraisings</button>
     </div>
   );
 };

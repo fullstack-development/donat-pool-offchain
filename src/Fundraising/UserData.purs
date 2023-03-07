@@ -3,7 +3,7 @@ module Fundraising.UserData where
 import Contract.Prelude
 
 import Contract.Value (CurrencySymbol, TokenName)
-import Fundraising.Models (Fundraising)
+import Protocol.Models (Protocol)
 
 newtype CreateFundraisingParams = CreateFundraisingParams
   { description :: String -- 35 symbols max
@@ -15,7 +15,7 @@ derive newtype instance Show CreateFundraisingParams
 derive newtype instance Eq CreateFundraisingParams
 
 newtype FundraisingData = FundraisingData
-  { fundraising :: Fundraising
+  { protocol :: Protocol
   , frThreadTokenCurrency :: CurrencySymbol
   , frThreadTokenName :: TokenName
   }
