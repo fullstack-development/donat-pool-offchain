@@ -72,8 +72,11 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
   ownAddress <- liftedM "Failed to get donator address" $ Array.head <$> getWalletAddresses
   ownUtxo <- utxosAt ownAddress >>= getNonCollateralUtxo
 
-  let redeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
-  let receiveFundsTimeRange = StartAt currentDatum.frDeadline 
+  let receiveFundsRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
+  let validateInConstraint = if (donatedAmount >= currentDatum.frAmount)
+      then mempty
+      else Constraints.mustValidateIn $ FiniteInterval currentDatum.frDeadline now
+      
   let verTokenToBurnValue = Value.singleton fundraising.verTokenCurrency fundraising.verTokenName (fromInt (-1))
   let threadTokenToBurnValue = Value.singleton threadTokenCurrency threadTokenName (fromInt (-1))
   threadTokenMintingPolicy <- NFT.mintingPolicy currentDatum.tokenOrigin
@@ -84,9 +87,8 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput (fst frUtxo) redeemer
+      Constraints.mustSpendScriptOutput (fst frUtxo) receiveFundsRedeemer
         <> Constraints.mustBeSignedBy currentDatum.creatorPkh
-        <> Constraints.mustValidateIn receiveFundsTimeRange
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft threadTokenName)
           threadTokenToBurnValue
@@ -95,6 +97,8 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
           verTokenToBurnValue
         <> Constraints.mustPayToPubKey ownPkh amountToReceiver
         <> Constraints.mustPayToPubKey protocol.managerPkh (Value.lovelaceValueOf feeByFundrising)
+        <> validateInConstraint
+  
   let
     lookups :: Lookups.ScriptLookups Void
     lookups =
@@ -118,7 +122,7 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
   balancedSignedTx <- signTransaction balancedTx
   txId <- submit balancedSignedTx
   awaitTxConfirmed txId
-  logInfo' "Donate finished successfully"
+  logInfo' "Receive funds finished successfully"
 
 calcFee :: BigInt -> BigInt -> Contract () BigInt
 calcFee feePercent funds' = do
