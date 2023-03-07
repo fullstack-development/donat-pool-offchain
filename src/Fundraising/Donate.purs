@@ -2,7 +2,7 @@ module Fundraising.Donate where
 
 import Contract.Prelude
 
-import Contract.Address (AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes, validatorHashBaseAddress)
+import Contract.Address (AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
 import Contract.Config (NetworkId(TestnetId))
@@ -21,49 +21,32 @@ import Data.Array (head) as Array
 import Data.BigInt (BigInt)
 import Effect.Exception (throw)
 import Fundraising.Datum (PFundraisingDatum(..))
-import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
-import MintingPolicy.VerTokenMinting as VerToken
-import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT, checkTokenInUTxO, mkCurrencySymbol)
+import Shared.Helpers (checkTokenInUTxO, getNonCollateralUtxo)
 import Shared.MinAda (minAdaValue)
 import Shared.RunContract (runContractWithUnitResult)
+import Fundraising.FundrisingScriptInfo (FundrisingScriptInfo(..), getFundrisingScriptInfo, makeFundrising)
 
-runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) ->  FundraisingData -> BigInt -> Effect Unit
+runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> BigInt -> Effect Unit
 runDonate onComplete onError fundraisingData amount =
   runContractWithUnitResult onComplete onError $ contract fundraisingData amount
 
 contract :: FundraisingData -> BigInt -> Contract () Unit
-contract (FundraisingData fundraisingData) amount = do
+contract frData@(FundraisingData fundraisingData) amount = do
   logInfo' "Running donate"
 
   let
-    givenProtocol = fundraisingData.protocol
     threadTokenCurrency = fundraisingData.frThreadTokenCurrency
     threadTokenName = fundraisingData.frThreadTokenName
-
-  _ /\ verTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy givenProtocol)
-  verTn <- VerToken.verTokenName
-
-  let
-    fundraising = Fundraising
-      { protocol: givenProtocol
-      , verTokenCurrency: verTokenCs
-      , verTokenName: verTn
-      }
-
-  frValidator <- fundraisingValidatorScript fundraising
-  frValidatorHash <- getFundraisingValidatorHash fundraising
-  frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
-  frUtxos <- utxosAt frAddress
-  frUtxo <- getUtxoByNFT "Fundraising" (threadTokenCurrency /\ threadTokenName) frUtxos
-  let isVerTokenInUtxo = checkTokenInUTxO (verTokenCs /\ verTn) frUtxo
+  fundraising@(Fundraising fr) <- makeFundrising frData
+  (FundrisingScriptInfo frInfo) <- getFundrisingScriptInfo fundraising threadTokenCurrency threadTokenName
+  let isVerTokenInUtxo = checkTokenInUTxO (fr.verTokenCurrency /\ fr.verTokenName) frInfo.frUtxo
   unless isVerTokenInUtxo $ throw >>> liftEffect $ "verToken is not in fundraising utxo"
-  currentDatum'@(PFundraisingDatum currentDatum) <- liftContractM "Impossible to get Fundraising Datum" $ extractDatumFromUTxO frUtxo
-  logInfo' $ "Current datum: " <> show currentDatum
-  let currentFunds = extractValueFromUTxO frUtxo
-  logInfo' $ "Current funds: " <> show currentFunds
+  let
+    currentFunds = frInfo.frValue
+    (PFundraisingDatum currentDatum) = frInfo.frDatum
 
   now <- currentTime
   let deadline = currentDatum.frDeadline
@@ -78,7 +61,7 @@ contract (FundraisingData fundraisingData) amount = do
   donatorAddress <- liftedM "Failed to get donator address" $ Array.head <$> getWalletAddresses
   donatorUtxo <- utxosAt donatorAddress >>= getNonCollateralUtxo
 
-  let newDatum = Datum $ toData currentDatum'
+  let newDatum = Datum $ toData frInfo.frDatum
   let donation = Value.singleton Value.adaSymbol Value.adaToken amount
   let newValue = currentFunds <> donation
   let donateRedeemer = Redeemer $ toData $ PDonate threadTokenCurrency threadTokenName amount
@@ -87,16 +70,16 @@ contract (FundraisingData fundraisingData) amount = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput (fst frUtxo) donateRedeemer
-        <> Constraints.mustPayToScriptAddress frValidatorHash (ScriptCredential frValidatorHash) newDatum Constraints.DatumInline newValue
+      Constraints.mustSpendScriptOutput (fst frInfo.frUtxo) donateRedeemer
+        <> Constraints.mustPayToScriptAddress frInfo.frValidatorHash (ScriptCredential frInfo.frValidatorHash) newDatum Constraints.DatumInline newValue
         <> Constraints.mustBeSignedBy donatorPkh
         <> Constraints.mustValidateIn donationTimeRange
 
   let
     lookups :: Lookups.ScriptLookups Void
     lookups =
-      Lookups.validator frValidator
-        <> Lookups.unspentOutputs frUtxos
+      Lookups.validator frInfo.frValidator
+        <> Lookups.unspentOutputs frInfo.frUtxos
         <> Lookups.unspentOutputs donatorUtxo
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
