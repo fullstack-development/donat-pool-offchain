@@ -4,7 +4,7 @@ module Fundraising.ReceiveFunds
 
 import Contract.Prelude
 
-import Contract.Address (AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes, validatorHashBaseAddress)
+import Contract.Address (ownStakePubKeysHashes, AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes, validatorHashBaseAddress)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
 import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
@@ -17,11 +17,11 @@ import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.CurrencySymbol (adaSymbol)
-import Ctl.Internal.Types.Interval (Interval(..), from)
+import Ctl.Internal.Types.Interval (mkFiniteInterval)
 import Ctl.Internal.Types.TokenName (adaToken)
 import Data.Array (head) as Array
 import Data.BigInt (BigInt, fromInt)
-import Effect.Exception (throw)
+import Effect.Exception (Error, message, throw)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
@@ -30,31 +30,44 @@ import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
-import Protocol.Models (Protocol(..))
-import Shared.Helpers (mkBigIntRational, extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT, roundBigIntRatio, checkTokenInUTxO)
+import Shared.Helpers (mkCurrencySymbol, mkBigIntRational, extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT, roundBigIntRatio, checkTokenInUTxO)
 import Shared.MinAda (minAda)
+import Effect.Aff (runAff_)
 
-runReceiveFunds :: Protocol -> FundraisingData -> Effect Unit
-runReceiveFunds protocol fundraisingData = launchAff_ do
-  runContract testnetNamiConfig (contract protocol fundraisingData)
+runReceiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Effect Unit
+runReceiveFunds onComplete onError fundraisingData = runAff_ handler do
+  runContract testnetNamiConfig (contract fundraisingData)
+  where
+  handler :: Either Error Unit -> Effect Unit
+  handler (Right _) = onComplete unit
+  handler (Left err) = onError $ message err
 
-contract :: Protocol -> FundraisingData -> Contract () Unit
-contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
+contract :: FundraisingData -> Contract () Unit
+contract (FundraisingData fundraisingData) = do
   -- TODO: use mustPayToPubKeyAddress
   logInfo' "Running receive funds"
 
-  let fundraising'@(Fundraising fundraising) = fundraisingData.fundraising
+  let protocol = fundraisingData.protocol
   let threadTokenCurrency = fundraisingData.frThreadTokenCurrency
   let threadTokenName = fundraisingData.frThreadTokenName
+  _ /\ verTokenCurrency <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
+  verTokenName <- VerToken.verTokenName
+  let managerPkh = unwrap >>> _.managerPkh $ protocol
+  let
+    fundraising = Fundraising
+      { protocol: protocol
+      , verTokenCurrency: verTokenCurrency
+      , verTokenName: verTokenName
+      }
 
-  frValidator <- fundraisingValidatorScript fundraising'
-  frValidatorHash <- getFundraisingValidatorHash fundraising'
+  frValidator <- fundraisingValidatorScript fundraising
+  frValidatorHash <- getFundraisingValidatorHash fundraising
   frAddress <- liftContractM "Impossible to get Fundrising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
   frUtxos <- utxosAt frAddress
 
   -- TODO: refactor checks for frUtxo (similar check in donate endpoint)
   frUtxo <- getUtxoByNFT "Fundraising" (threadTokenCurrency /\ threadTokenName) frUtxos
-  let isVerTokenInUtxo = checkTokenInUTxO (fundraising.verTokenCurrency /\ fundraising.verTokenName) frUtxo
+  let isVerTokenInUtxo = checkTokenInUTxO (verTokenCurrency /\ verTokenName) frUtxo
   unless isVerTokenInUtxo $ throw >>> liftEffect $ "verToken is not in fundraising utxo"
   (PFundraisingDatum currentDatum) <- liftContractM "Impossible to get Fundraising Datum" $ extractDatumFromUTxO frUtxo
   logInfo' $ "Current datum: " <> show currentDatum
@@ -66,21 +79,23 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
   when (now <= currentDatum.frDeadline && donatedAmount /= currentDatum.frAmount) $ liftEffect $ throw "Can't receive funds while fundraising is in process"
 
   ownHashes <- ownPaymentPubKeysHashes
-  ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
+  ownPkh <- liftContractM "Impossible to get fundrising owner PaymentPubkeyHash" $ Array.head ownHashes
   when (ownPkh /= currentDatum.creatorPkh) $ liftEffect $ throw "Only fundraising creator can receive funds"
-
-  ownAddress <- liftedM "Failed to get donator address" $ Array.head <$> getWalletAddresses
+  mbOwnSkh <- join <<< Array.head <$> ownStakePubKeysHashes
+  ownSkh <- liftContractM "Failed to get fundrising owner SKH" mbOwnSkh
+  logInfo' $ "Own Payment pkh is: " <> show ownPkh
+  ownAddress <- liftedM "Failed to get fundrising owner address" $ Array.head <$> getWalletAddresses
   ownUtxo <- utxosAt ownAddress >>= getNonCollateralUtxo
 
   let receiveFundsRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
   let validateInConstraint = if (donatedAmount >= currentDatum.frAmount)
       then mempty
-      else Constraints.mustValidateIn $ FiniteInterval currentDatum.frDeadline now
+      else Constraints.mustValidateIn $ mkFiniteInterval currentDatum.frDeadline now
       
-  let verTokenToBurnValue = Value.singleton fundraising.verTokenCurrency fundraising.verTokenName (fromInt (-1))
+  let verTokenToBurnValue = Value.singleton verTokenCurrency verTokenName (fromInt (-1))
   let threadTokenToBurnValue = Value.singleton threadTokenCurrency threadTokenName (fromInt (-1))
   threadTokenMintingPolicy <- NFT.mintingPolicy currentDatum.tokenOrigin
-  verTokenMintingPolicy <- VerToken.mintingPolicy protocol'
+  verTokenMintingPolicy <- VerToken.mintingPolicy protocol
   feeByFundrising <- calcFee currentDatum.frFee donatedAmount
   let amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - feeByFundrising)
 
@@ -93,10 +108,10 @@ contract protocol'@(Protocol protocol) (FundraisingData fundraisingData) = do
           (Redeemer $ toData $ PBurnNft threadTokenName)
           threadTokenToBurnValue
         <> Constraints.mustMintValueWithRedeemer
-          (Redeemer $ toData $ PBurnNft fundraising.verTokenName)
+          (Redeemer $ toData $ PBurnNft verTokenName)
           verTokenToBurnValue
-        <> Constraints.mustPayToPubKey ownPkh amountToReceiver
-        <> Constraints.mustPayToPubKey protocol.managerPkh (Value.lovelaceValueOf feeByFundrising)
+        <> Constraints.mustPayToPubKeyAddress ownPkh ownSkh amountToReceiver
+        <> Constraints.mustPayToPubKey managerPkh (Value.lovelaceValueOf feeByFundrising)
         <> validateInConstraint
   
   let
