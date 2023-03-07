@@ -7,9 +7,9 @@ import Contract.Prelude
 import Contract.Address (ownStakePubKeysHashes, AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes, validatorHashBaseAddress)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
-import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, launchAff_, liftContractM, liftedE, liftedM, runContract)
+import Contract.Monad (Contract, liftContractM, liftedE, liftedM)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
@@ -21,7 +21,7 @@ import Ctl.Internal.Types.Interval (mkFiniteInterval)
 import Ctl.Internal.Types.TokenName (adaToken)
 import Data.Array (head) as Array
 import Data.BigInt (BigInt, fromInt)
-import Effect.Exception (Error, message, throw)
+import Effect.Exception (throw)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
@@ -32,15 +32,11 @@ import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Shared.Helpers (mkCurrencySymbol, mkBigIntRational, extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT, roundBigIntRatio, checkTokenInUTxO)
 import Shared.MinAda (minAda)
-import Effect.Aff (runAff_)
+import Shared.RunContract (runContractWithUnitResult)
 
 runReceiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Effect Unit
-runReceiveFunds onComplete onError fundraisingData = runAff_ handler do
-  runContract testnetNamiConfig (contract fundraisingData)
-  where
-  handler :: Either Error Unit -> Effect Unit
-  handler (Right _) = onComplete unit
-  handler (Left err) = onError $ message err
+runReceiveFunds onComplete onError fundraisingData = 
+  runContractWithUnitResult onComplete onError $ contract fundraisingData
 
 contract :: FundraisingData -> Contract () Unit
 contract (FundraisingData fundraisingData) = do

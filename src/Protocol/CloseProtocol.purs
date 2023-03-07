@@ -4,9 +4,9 @@ import Contract.Prelude
 
 import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress, addressToBech32)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
-import Contract.Config (ConfigParams, testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, launchAff_, runContract, liftContractM, liftedM, liftedE)
+import Contract.Monad (Contract, liftContractM, liftedM, liftedE)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
@@ -24,13 +24,10 @@ import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
 import Protocol.Redeemer (PProtocolRedeemer(PCloseProtocol))
 import Shared.Helpers as Helpers
+import Shared.RunContract (runContractWithUnitResult)
 
-runCloseProtocolTest :: Protocol -> Effect Unit
-runCloseProtocolTest = closeProtocol testnetNamiConfig
-
-closeProtocol :: ConfigParams () -> Protocol -> Effect Unit
-closeProtocol baseConfig protocol = launchAff_ do
-  runContract baseConfig (contract protocol)
+runCloseProtocolTest :: (Unit -> Effect Unit) -> (String -> Effect Unit) ->  Protocol -> Effect Unit
+runCloseProtocolTest onComplete onError protocol = runContractWithUnitResult onComplete onError $ contract protocol
 
 contract :: Protocol -> Contract () Unit
 contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName }) = do

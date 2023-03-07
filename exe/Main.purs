@@ -24,10 +24,10 @@ data Contracts = Contracts
   { connectWallet :: Effect Unit
   , startProtocol :: (Protocol -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
   , updateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> ProtocolConfigParams -> Effect Unit
-  , closeProtocol :: Protocol -> Effect Unit
+  , closeProtocol :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , getProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , createFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
-  , donate :: FundraisingData -> BigInt -> Effect Unit
+  , donate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> BigInt -> Effect Unit
   , receiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Effect Unit
   , getAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , getUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit

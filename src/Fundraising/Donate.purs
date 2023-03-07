@@ -5,10 +5,10 @@ import Contract.Prelude
 import Contract.Address (AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes, validatorHashBaseAddress)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
-import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Config (NetworkId(TestnetId))
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, launchAff_, liftContractM, liftedE, liftedM, runContract)
+import Contract.Monad (Contract, liftContractM, liftedE, liftedM)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
@@ -28,10 +28,11 @@ import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT, checkTokenInUTxO, mkCurrencySymbol)
 import Shared.MinAda (minAdaValue)
+import Shared.RunContract (runContractWithUnitResult)
 
-runDonate :: FundraisingData -> BigInt -> Effect Unit
-runDonate fundraisingData amount = launchAff_ do
-  runContract testnetNamiConfig (contract fundraisingData amount)
+runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) ->  FundraisingData -> BigInt -> Effect Unit
+runDonate onComplete onError fundraisingData amount =
+  runContractWithUnitResult onComplete onError $ contract fundraisingData amount
 
 contract :: FundraisingData -> BigInt -> Contract () Unit
 contract (FundraisingData fundraisingData) amount = do

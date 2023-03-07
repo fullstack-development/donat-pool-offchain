@@ -56,7 +56,7 @@ const App = () => {
     )(updatedParams)();
   };
   const onCloseProtocolClick = () => {
-    a.main.value0.closeProtocol(protocol)();
+    a.main.value0.closeProtocol(console.log)(console.log)(protocol)();
   };
 
   const onCreateFundraisingClick = () => {
@@ -66,11 +66,11 @@ const App = () => {
   };
 
   const onDonate = () => {   
-    a.main.value0.donate(fundraisingData)(100_000_000)();
+    a.main.value0.donate(console.log)(console.log)(fundraisingData)(100_000_000)();
   };
 
   const onReceiveFunds = () => {
-    a.main.value0.receiveFunds(protocol)(fundraisingData)();
+    a.main.value0.receiveFunds(console.log)(console.log)(fundraisingData)();
   }
   
   const onGetAllFundraising = () => {
