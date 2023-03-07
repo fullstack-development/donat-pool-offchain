@@ -55,8 +55,6 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
   let nftOref = protocolDatum.tokenOriginRef
   mp <- NFT.mintingPolicy nftOref
   protocolValidator <- protocolValidatorScript protocol
-  -- ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
-  -- walletUtxo <- utxosAt ownAddress >>= Helpers.getNonCollateralUtxo
 
   let
     protocolRedeemer = Redeemer $ toData PCloseProtocol

@@ -63,6 +63,7 @@ contract frData@(FundraisingData fundraisingData) = do
 
   let receiveFundsRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
   let
+    -- TODO: test interval
     validateInConstraint =
       if (donatedAmount >= currentDatum.frAmount) then mempty
       else Constraints.mustValidateIn $ mkFiniteInterval currentDatum.frDeadline now
