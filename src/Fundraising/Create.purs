@@ -203,7 +203,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
   pure $ FundraisingData
-    { fundraising: fundraising
+    { protocol: givenProtocol
     , frThreadTokenCurrency: nftCs
     , frThreadTokenName: nftTn
     }

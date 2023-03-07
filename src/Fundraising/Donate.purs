@@ -16,7 +16,7 @@ import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Ctl.Internal.Types.Datum (Datum(..))
-import Ctl.Internal.Types.Interval (Interval(..))
+import Ctl.Internal.Types.Interval (mkFiniteInterval)
 import Data.Array (head) as Array
 import Data.BigInt (BigInt)
 import Effect.Exception (throw)
@@ -25,7 +25,8 @@ import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraising
 import Fundraising.Models (Fundraising(..))
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
-import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT, checkTokenInUTxO)
+import MintingPolicy.VerTokenMinting as VerToken
+import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getNonCollateralUtxo, getUtxoByNFT, checkTokenInUTxO, mkCurrencySymbol)
 import Shared.MinAda (minAdaValue)
 
 runDonate :: FundraisingData -> BigInt -> Effect Unit
@@ -37,16 +38,26 @@ contract (FundraisingData fundraisingData) amount = do
   logInfo' "Running donate"
 
   let
-    fundraising'@(Fundraising fundraising) = fundraisingData.fundraising
+    givenProtocol = fundraisingData.protocol
     threadTokenCurrency = fundraisingData.frThreadTokenCurrency
     threadTokenName = fundraisingData.frThreadTokenName
 
-  frValidator <- fundraisingValidatorScript fundraising'
-  frValidatorHash <- getFundraisingValidatorHash fundraising'
+  _ /\ verTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy givenProtocol)
+  verTn <- VerToken.verTokenName
+
+  let
+    fundraising = Fundraising
+      { protocol: givenProtocol
+      , verTokenCurrency: verTokenCs
+      , verTokenName: verTn
+      }
+
+  frValidator <- fundraisingValidatorScript fundraising
+  frValidatorHash <- getFundraisingValidatorHash fundraising
   frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
   frUtxos <- utxosAt frAddress
   frUtxo <- getUtxoByNFT "Fundraising" (threadTokenCurrency /\ threadTokenName) frUtxos
-  let isVerTokenInUtxo = checkTokenInUTxO (fundraising.verTokenCurrency /\ fundraising.verTokenName) frUtxo
+  let isVerTokenInUtxo = checkTokenInUTxO (verTokenCs /\ verTn) frUtxo
   unless isVerTokenInUtxo $ throw >>> liftEffect $ "verToken is not in fundraising utxo"
   currentDatum'@(PFundraisingDatum currentDatum) <- liftContractM "Impossible to get Fundraising Datum" $ extractDatumFromUTxO frUtxo
   logInfo' $ "Current datum: " <> show currentDatum
@@ -70,7 +81,7 @@ contract (FundraisingData fundraisingData) amount = do
   let donation = Value.singleton Value.adaSymbol Value.adaToken amount
   let newValue = currentFunds <> donation
   let donateRedeemer = Redeemer $ toData $ PDonate threadTokenCurrency threadTokenName amount
-  let donationTimeRange = FiniteInterval now deadline
+  let donationTimeRange = mkFiniteInterval now deadline
 
   let
     constraints :: Constraints.TxConstraints Void Void
