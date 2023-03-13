@@ -12,7 +12,7 @@ import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
 import Contract.PlutusData (Redeemer(Redeemer), Datum(Datum), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Time (POSIXTime(..))
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit, ScriptRef(PlutusScriptRef))
+import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
@@ -145,9 +145,6 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
     paymentToProtocol = Helpers.extractValueFromUTxO protocolUtxo
     paymentToFr = Value.lovelaceValueOf (fromInt 2000000) <> nftValue <> verTokenValue
 
-    scriptRef :: ScriptRef
-    scriptRef = PlutusScriptRef (unwrap protocolValidator)
-
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustSpendPubKeyOutput oref
@@ -160,12 +157,11 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
         <> Constraints.mustSpendScriptOutput
           (fst protocolUtxo)
           protocolRedeemer
-        <> Constraints.mustPayToScriptAddressWithScriptRef
+        <> Constraints.mustPayToScriptAddress
           protocolValidatorHash
           (ScriptCredential protocolValidatorHash)
           (Datum $ toData protocolDatum)
           Constraints.DatumInline
-          scriptRef
           paymentToProtocol
         <> Constraints.mustPayToScriptAddress
           frValidatorHash

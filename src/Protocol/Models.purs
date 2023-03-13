@@ -2,7 +2,7 @@ module Protocol.Models where
 
 import Contract.Prelude
 
-import Contract.Address (PaymentPubKeyHash, Address)
+import Contract.Address (Address)
 import Contract.PlutusData (class FromData, class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), I, PNil, Z, genericFromData, genericToData)
 import Contract.Value (CurrencySymbol, TokenName)
 import Data.BigInt (BigInt)
