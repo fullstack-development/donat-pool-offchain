@@ -5,9 +5,9 @@ import Contract.Prelude
 import Contract.Monad (Contract, liftContractM)
 import Contract.PlutusData (Datum(..), fromData, class FromData)
 import Contract.Prim.ByteArray (byteArrayFromAscii)
-import Contract.Scripts (MintingPolicy, PlutusScript)
+import Contract.Scripts (MintingPolicy)
 import Contract.Time (POSIXTime(..))
-import Contract.Transaction (TransactionInput, TransactionOutputWithRefScript, OutputDatum(OutputDatum), ScriptRef(PlutusScriptRef))
+import Contract.Transaction (TransactionInput, TransactionOutputWithRefScript, OutputDatum(OutputDatum))
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap, _amount, _datum, _output)
 import Data.Array (filter, head) as Array
@@ -115,6 +115,3 @@ daysToPosixTime days =
 
 addTimes :: POSIXTime -> POSIXTime -> POSIXTime
 addTimes (POSIXTime time1) (POSIXTime time2) = POSIXTime (time1 + time2)
-
-hasRefPlutusScript :: PlutusScript -> TransactionInput /\ TransactionOutputWithRefScript -> Boolean
-hasRefPlutusScript plutusScript (_ /\ txOutput) = (unwrap txOutput).scriptRef == Just (PlutusScriptRef plutusScript)
