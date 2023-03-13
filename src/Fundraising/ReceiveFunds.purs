@@ -5,31 +5,43 @@ module Fundraising.ReceiveFunds
 import Contract.Prelude
 
 import Fundraising.FundrisingScriptInfo (FundrisingScriptInfo(..), getFundrisingScriptInfo, makeFundrising)
-import Contract.Address (AddressWithNetworkTag(..))
+import Contract.Address (AddressWithNetworkTag(..), validatorHashBaseAddress)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
 import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedE)
+import Contract.Monad (Contract, liftedE, liftContractM)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
+import Contract.Transaction
+  ( awaitTxConfirmed
+  , balanceTxWithConstraints
+  , signTransaction
+  , submit
+  , mkTxUnspentOut
+  )
 import Contract.TxConstraints as Constraints
+import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.CurrencySymbol (adaSymbol)
 import Ctl.Internal.Types.Interval (mkFiniteInterval)
 import Ctl.Internal.Types.TokenName (adaToken)
 import Data.BigInt (BigInt, fromInt)
+import Data.Lens (view)
+import Data.Map as Map
 import Effect.Exception (throw)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.Models (Fundraising(..))
 import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
+import Info.Protocol (getProtocolUtxo)
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
-import Shared.Helpers (checkTokenInUTxO, mkBigIntRational, roundBigIntRatio)
+import Protocol.Datum (_managerPkh)
+import Protocol.ProtocolScript (protocolValidatorScript, getProtocolValidatorHash)
+import Shared.Helpers (checkTokenInUTxO, mkBigIntRational, roundBigIntRatio, extractDatumFromUTxO, hasRefPlutusScript)
 import Shared.MinAda (minAda)
 import Shared.RunContract (runContractWithUnitResult)
 
@@ -41,11 +53,24 @@ contract :: FundraisingData -> Contract () Unit
 contract frData@(FundraisingData fundraisingData) = do
   -- TODO: use mustPayToPubKeyAddress for managerPkh (need stake key hash)
   logInfo' "Running receive funds"
-
+  -- let managerPkh = unwrap >>> _.managerPkh $ protocol
   let protocol = fundraisingData.protocol
+  protocolValidator <- protocolValidatorScript protocol
+  protocolValidatorHash <- getProtocolValidatorHash protocol
+  protocolAddress <- liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
+  utxos <- utxosAt protocolAddress
+  protocolUtxo <- getProtocolUtxo protocol utxos
+  currentDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
+  logInfo' $ "Current protocol datum: " <> show currentDatum
+
+  refValidatorInput /\ refValidatorOutput <-
+    liftContractM "Could not find unspent output containing ref validator"
+      $ find (hasRefPlutusScript $ unwrap protocolValidator) (Map.toUnfoldable utxos :: Array _)
+
+  let managerPkh = view _managerPkh currentDatum
+
   let threadTokenCurrency = fundraisingData.frThreadTokenCurrency
   let threadTokenName = fundraisingData.frThreadTokenName
-  let managerPkh = unwrap >>> _.managerPkh $ protocol
   fundraising@(Fundraising fr) <- makeFundrising frData
   (FundrisingScriptInfo frInfo) <- getFundrisingScriptInfo fundraising threadTokenCurrency threadTokenName
   let isVerTokenInUtxo = checkTokenInUTxO (fr.verTokenCurrency /\ fr.verTokenName) frInfo.frUtxo
@@ -77,7 +102,10 @@ contract frData@(FundraisingData fundraisingData) = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput (fst frInfo.frUtxo) receiveFundsRedeemer
+      Constraints.mustSpendScriptOutputUsingScriptRef
+        (fst frInfo.frUtxo)
+        receiveFundsRedeemer
+        (Constraints.RefInput $ mkTxUnspentOut refValidatorInput refValidatorOutput)
         <> Constraints.mustBeSignedBy currentDatum.creatorPkh
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft threadTokenName)

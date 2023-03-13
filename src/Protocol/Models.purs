@@ -9,8 +9,7 @@ import Data.BigInt (BigInt)
 import Data.Newtype (class Newtype)
 
 newtype Protocol = Protocol
-  { managerPkh :: PaymentPubKeyHash
-  , protocolCurrency :: CurrencySymbol
+  { protocolCurrency :: CurrencySymbol
   , protocolTokenName :: TokenName
   }
 
@@ -23,8 +22,7 @@ instance
     Protocol
     ( "Protocol"
         :=
-          ( "managerPkh" := I PaymentPubKeyHash
-              :+ "protocolCurrency"
+          ( "protocolCurrency"
               := I CurrencySymbol
               :+ "protocolTokenName"
               := I TokenName

@@ -31,7 +31,7 @@ runCloseProtocolTest :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Prot
 runCloseProtocolTest onComplete onError protocol = runContractWithUnitResult onComplete onError $ contract protocol
 
 contract :: Protocol -> Contract () Unit
-contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName }) = do
+contract protocol@(Protocol { protocolCurrency, protocolTokenName }) = do
   logInfo' "Running closeProtocol"
   logInfo' $ "Current protocol: " <> show protocol
   protocolValidatorHash <- getProtocolValidatorHash protocol
@@ -39,9 +39,6 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
     liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
   bech32Address <- addressToBech32 protocolAddress
   logInfo' $ "Current protocol address: " <> show bech32Address
-
-  (OwnCredentials creds) <- getOwnCreds
-  when (managerPkh /= creds.ownPkh) $ liftEffect $ throw "current user doesn't have permissions to close protocol"
 
   protocolUTxOs <- utxosAt protocolAddress
   logInfo' $ "Protocol UTxOs: " <> show protocolUTxOs
@@ -52,6 +49,10 @@ contract protocol@(Protocol { managerPkh, protocolCurrency, protocolTokenName })
   logInfo' $ "Filtered protocol UTxO: " <> show desiredTxOut
   PProtocolDatum protocolDatum <- liftContractM "Impossible to get Protocol Datum" $ Helpers.extractDatumFromUTxO desiredTxOut
   logInfo' $ "Protocol UTxO Datum: " <> show protocolDatum
+  let managerPkh = protocolDatum.managerPkh
+  (OwnCredentials creds) <- getOwnCreds
+  when (managerPkh /= creds.ownPkh) $ liftEffect $ throw "current user doesn't have permissions to close protocol"
+
   let nftOref = protocolDatum.tokenOriginRef
   mp <- NFT.mintingPolicy nftOref
   protocolValidator <- protocolValidatorScript protocol

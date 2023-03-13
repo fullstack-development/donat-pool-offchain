@@ -17,6 +17,7 @@ import Contract.Transaction
   , balanceTxWithConstraints
   , signTransaction
   , submit
+  , ScriptRef(PlutusScriptRef)
   )
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
@@ -66,8 +67,7 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   tn <- protocolTokenName
   let
     protocol = Protocol
-      { managerPkh: ownPkh
-      , protocolCurrency: cs
+      { protocolCurrency: cs
       , protocolTokenName: tn
       }
   let
@@ -86,17 +86,21 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   protocolValidator <- protocolValidatorScript protocol
 
   let
+    scriptRef :: ScriptRef
+    scriptRef = PlutusScriptRef (unwrap protocolValidator)
+
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustSpendPubKeyOutput oref
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PMintNft tn)
           nftValue
-        <> Constraints.mustPayToScriptAddress
+        <> Constraints.mustPayToScriptAddressWithScriptRef
           protocolValidatorHash
           (ScriptCredential protocolValidatorHash)
           (Datum $ toData initialProtocolDatum)
           Constraints.DatumInline
+          scriptRef
           paymentToProtocol
 
     lookups :: Lookups.ScriptLookups Void
