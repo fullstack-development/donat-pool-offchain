@@ -66,8 +66,7 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   tn <- protocolTokenName
   let
     protocol = Protocol
-      { managerPkh: ownPkh
-      , protocolCurrency: cs
+      { protocolCurrency: cs
       , protocolTokenName: tn
       }
   let
@@ -127,4 +126,3 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   logInfo' $ "Current protocol address: " <> show bech32Address
   logInfo' "Transaction submitted successfully"
   pure protocol
-

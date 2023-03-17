@@ -36,7 +36,6 @@ newtype FundrisingScriptInfo = FundrisingScriptInfo
   , frUtxo :: (Tuple TransactionInput TransactionOutputWithRefScript)
   , frDatum :: PFundraisingDatum
   , frValue :: Value.Value
-
   }
 
 getFundrisingScriptInfo :: Fundraising -> Value.CurrencySymbol -> Value.TokenName -> Contract () FundrisingScriptInfo

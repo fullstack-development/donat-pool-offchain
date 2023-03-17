@@ -13,13 +13,19 @@ import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftedE)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
+import Contract.Transaction
+  ( awaitTxConfirmed
+  , balanceTxWithConstraints
+  , signTransaction
+  , submit
+  )
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.CurrencySymbol (adaSymbol)
 import Ctl.Internal.Types.Interval (mkFiniteInterval)
 import Ctl.Internal.Types.TokenName (adaToken)
 import Data.BigInt (BigInt, fromInt)
+import Data.Lens (view)
 import Effect.Exception (throw)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.Models (Fundraising(..))
@@ -29,6 +35,8 @@ import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
+import Protocol.Datum (_managerPkh)
+import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Shared.Helpers (checkTokenInUTxO, mkBigIntRational, roundBigIntRatio)
 import Shared.MinAda (minAda)
 import Shared.RunContract (runContractWithUnitResult)
@@ -41,11 +49,12 @@ contract :: FundraisingData -> Contract () Unit
 contract frData@(FundraisingData fundraisingData) = do
   -- TODO: use mustPayToPubKeyAddress for managerPkh (need stake key hash)
   logInfo' "Running receive funds"
-
   let protocol = fundraisingData.protocol
+  (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
+  let managerPkh = view _managerPkh protocolInfo.pDatum
+
   let threadTokenCurrency = fundraisingData.frThreadTokenCurrency
   let threadTokenName = fundraisingData.frThreadTokenName
-  let managerPkh = unwrap >>> _.managerPkh $ protocol
   fundraising@(Fundraising fr) <- makeFundrising frData
   (FundrisingScriptInfo frInfo) <- getFundrisingScriptInfo fundraising threadTokenCurrency threadTokenName
   let isVerTokenInUtxo = checkTokenInUTxO (fr.verTokenCurrency /\ fr.verTokenName) frInfo.frUtxo
@@ -77,7 +86,9 @@ contract frData@(FundraisingData fundraisingData) = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput (fst frInfo.frUtxo) receiveFundsRedeemer
+      Constraints.mustSpendScriptOutput
+        (fst frInfo.frUtxo)
+        receiveFundsRedeemer
         <> Constraints.mustBeSignedBy currentDatum.creatorPkh
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft threadTokenName)
@@ -88,6 +99,7 @@ contract frData@(FundraisingData fundraisingData) = do
         <> Constraints.mustPayToPubKeyAddress creds.ownPkh creds.ownSkh amountToReceiver
         <> Constraints.mustPayToPubKey managerPkh (Value.lovelaceValueOf feeByFundrising)
         <> validateInConstraint
+        <> Constraints.mustReferenceOutput (fst protocolInfo.pUtxo)
 
   let
     lookups :: Lookups.ScriptLookups Void
@@ -97,6 +109,7 @@ contract frData@(FundraisingData fundraisingData) = do
         <> Lookups.validator frInfo.frValidator
         <> Lookups.unspentOutputs frInfo.frUtxos
         <> Lookups.unspentOutputs creds.ownUtxo
+        <> Lookups.unspentOutputs protocolInfo.pUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let
