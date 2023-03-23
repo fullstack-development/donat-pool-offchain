@@ -84,3 +84,8 @@ Notes:
 4. Create new dist for frontend:
 
 Run `sh build.sh` from project root
+
+## Tests
+
+To run combined tests type `npm run test`.
+To run tests from a specific module type `spago test --main moduleName` (i.e. `spago test --main Test.UnitTests`)
