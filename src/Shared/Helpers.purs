@@ -106,12 +106,5 @@ roundBigIntRatio frac = Math.round >>> BigInt.fromNumber $ bigIntRatioToNumber f
 bigIntRatioToNumber :: Ratio BigInt -> Number
 bigIntRatioToNumber x = BigInt.toNumber (numerator x) / BigInt.toNumber (denominator x)
 
-daysToPosixTime :: Int -> POSIXTime
-daysToPosixTime days =
-  let
-    milliseconds = fromInt days * fromInt 24 * fromInt 60 * fromInt 60 * fromInt 1000
-  in
-    POSIXTime milliseconds
-
 addTimes :: POSIXTime -> POSIXTime -> POSIXTime
 addTimes (POSIXTime time1) (POSIXTime time2) = POSIXTime (time1 + time2)
