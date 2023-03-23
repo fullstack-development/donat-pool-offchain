@@ -13,6 +13,7 @@ You can edit this file as you like.
   , "encoding"
   , "exceptions"
   , "math"
+  , "maybe"
   , "mote"
   , "newtype"
   , "ordered-collections"

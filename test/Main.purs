@@ -4,25 +4,12 @@ module Test.Scaffold.Main (main) where
 
 import Prelude
 
-import Ctl.Internal.Test.TestPlanM (interpret)
 import Effect (Effect)
-import Effect.Aff (launchAff_)
 import Test.UnitTests as UnitTests
 
 main :: Effect Unit
-main = launchAff_ do
-  interpret do
-    UnitTests.testPlan
-
-
-
-
-
-
-
-
-
-
+main = do 
+  UnitTests.main
 
 
 

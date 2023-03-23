@@ -10,7 +10,7 @@ import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChang
 import Contract.Chain (currentTime)
 import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedE)
+import Contract.Monad (Contract, liftedE, liftContractM)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction
@@ -24,9 +24,10 @@ import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.CurrencySymbol (adaSymbol)
 import Ctl.Internal.Types.Interval (mkFiniteInterval)
 import Ctl.Internal.Types.TokenName (adaToken)
-import Data.BigInt (BigInt, fromInt)
+import Data.BigInt (fromInt)
 import Data.Lens (view)
 import Effect.Exception (throw)
+import Fundraising.Calculations (calcFee)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.Models (Fundraising(..))
 import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
@@ -37,7 +38,7 @@ import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.Datum (_managerPkh)
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
-import Shared.Helpers (checkTokenInUTxO, mkBigIntRational, roundBigIntRatio)
+import Shared.Helpers (checkTokenInUTxO)
 import Shared.MinAda (minAda)
 import Shared.RunContract (runContractWithUnitResult)
 
@@ -80,7 +81,7 @@ contract frData@(FundraisingData fundraisingData) = do
   let threadTokenToBurnValue = Value.singleton threadTokenCurrency threadTokenName (fromInt (-1))
   threadTokenMintingPolicy <- NFT.mintingPolicy currentDatum.tokenOrigin
   verTokenMintingPolicy <- VerToken.mintingPolicy protocol
-  feeByFundrising <- calcFee currentDatum.frFee donatedAmount
+  feeByFundrising <- liftContractM "Can't create BigInt after round" $ calcFee currentDatum.frFee donatedAmount
   let amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - feeByFundrising)
 
   let
@@ -126,18 +127,3 @@ contract frData@(FundraisingData fundraisingData) = do
   txId <- submit balancedSignedTx
   awaitTxConfirmed txId
   logInfo' "Receive funds finished successfully"
-
-calcFee :: BigInt -> BigInt -> Contract () BigInt
-calcFee feePercent funds' = do
-  fee <- maybe roundErr pure $ calcFeePure feePercent funds'
-  logInfo' $ "FeeAmount: " <> show fee
-  pure fee
-  where
-  roundErr = liftEffect $ throw "Can't create BigInt after round"
-
-calcFeePure :: BigInt -> BigInt -> Maybe BigInt
-calcFeePure feePercent funds' = do
-  fee <- mkBigIntRational (feePercent * funds' /\ fromInt 100)  -- Impossible to get an error as `fromInt 100 /= 0`
-  rounded <- roundBigIntRatio fee
-  let feeAmount = max rounded minAda
-  pure feeAmount
