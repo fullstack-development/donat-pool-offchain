@@ -2,23 +2,25 @@ module Common.ConnectWallet where
 
 import Contract.Prelude
 
-import Contract.Address (PaymentPubKeyHash, ownPaymentPubKeysHashes)
-import Contract.Log (logInfo')
-import Contract.Monad (ConfigParams, Contract, launchAff_, liftContractM, runContract)
-import Data.Array (head) as Array
+import Contract.Address (Bech32String, addressToBech32, getWalletAddresses)
 import Contract.Config (testnetNamiConfig)
+import Contract.Log (logInfo')
+import Contract.Monad (Contract, liftedM, runContract)
+import Data.Array (head) as Array
+import Effect.Aff (runAff_)
+import Effect.Exception (Error, message)
 
-runConnectWallet :: Effect Unit
-runConnectWallet = connectWallet testnetNamiConfig
+runConnectWallet :: (Bech32String -> Effect Unit) -> (String -> Effect Unit) -> Effect Unit
+runConnectWallet onComplete onError = runAff_ handler $
+  runContract testnetNamiConfig contract
+  where
+  handler :: Either Error Bech32String -> Effect Unit
+  handler (Right response) = onComplete response
+  handler (Left err) = onError $ message err
 
-connectWallet :: ConfigParams () -> Effect Unit
-connectWallet baseConfig = launchAff_ $ do
-  runContract baseConfig contract
-
-contract :: Contract () PaymentPubKeyHash
+contract :: Contract () Bech32String
 contract = do
-  ownHashes <- ownPaymentPubKeysHashes
-  ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
-  logInfo' "Welcome to CTL! Your wallet's payment PubKey hash is:"
-  logInfo' $ show ownPkh
-  pure ownPkh
+  ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
+  bech32Address <- addressToBech32 ownAddress
+  logInfo' $ "User bech32 address: " <> show bech32Address
+  pure bech32Address

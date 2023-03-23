@@ -81,9 +81,14 @@ const App = () => {
     a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocol)();
   };
 
+  const onConnectWallet = () => {
+    a.main.value0.connectWallet(console.log)(console.log)();
+  };
+
   return (
     <div>
       <h1>Offchain integration</h1>
+      <button onClick={onConnectWallet}>Connect wallet</button>
       <button onClick={onStartProtocolClick}>Start Protocol</button>
       <button onClick={onUpdateProtocolClick}>Update Protocol</button>
       <button onClick={onCloseProtocolClick}>Close Protocol</button>
