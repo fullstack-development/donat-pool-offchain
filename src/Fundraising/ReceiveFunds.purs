@@ -129,11 +129,15 @@ contract frData@(FundraisingData fundraisingData) = do
 
 calcFee :: BigInt -> BigInt -> Contract () BigInt
 calcFee feePercent funds' = do
-  fee <- maybe rationalErr pure $ mkBigIntRational (feePercent * funds' /\ fromInt 100)
-  rounded <- maybe roundErr pure $ roundBigIntRatio fee
-  let feeAmount = max rounded minAda
-  logInfo' $ "FeeAmount: " <> show feeAmount
-  pure feeAmount
+  fee <- maybe roundErr pure $ calcFeePure feePercent funds'
+  logInfo' $ "FeeAmount: " <> show fee
+  pure fee
   where
-  rationalErr = liftEffect $ throw "Can't make rational fee"
   roundErr = liftEffect $ throw "Can't create BigInt after round"
+
+calcFeePure :: BigInt -> BigInt -> Maybe BigInt
+calcFeePure feePercent funds' = do
+  fee <- mkBigIntRational (feePercent * funds' /\ fromInt 100)  -- Impossible to get an error as `fromInt 100 /= 0`
+  rounded <- roundBigIntRatio fee
+  let feeAmount = max rounded minAda
+  pure feeAmount
