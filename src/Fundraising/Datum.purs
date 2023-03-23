@@ -22,6 +22,7 @@ newtype PFundraisingDatum = PFundraisingDatum
   , frAmount :: BigInt -- amount to raise in Lovelace
   , frDeadline :: POSIXTime
   , frFee :: BigInt -- percentage
+  , managerPkh :: PaymentPubKeyHash
   }
 
 derive instance Generic PFundraisingDatum _
@@ -46,6 +47,8 @@ instance
               := I POSIXTime
               :+ "frFee"
               := I BigInt
+              :+ "managerPkh"
+              := I PaymentPubKeyHash
               :+ PNil
           )
         @@ Z

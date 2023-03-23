@@ -25,7 +25,6 @@ import Ctl.Internal.Plutus.Types.CurrencySymbol (adaSymbol)
 import Ctl.Internal.Types.Interval (mkFiniteInterval)
 import Ctl.Internal.Types.TokenName (adaToken)
 import Data.BigInt (BigInt, fromInt)
-import Data.Lens (view)
 import Effect.Exception (throw)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.Models (Fundraising(..))
@@ -35,8 +34,6 @@ import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
-import Protocol.Datum (_managerPkh)
-import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Shared.Helpers (checkTokenInUTxO, mkBigIntRational, roundBigIntRatio)
 import Shared.MinAda (minAda)
 import Shared.RunContract (runContractWithUnitResult)
@@ -50,9 +47,6 @@ contract frData@(FundraisingData fundraisingData) = do
   -- TODO: use mustPayToPubKeyAddress for managerPkh (need stake key hash)
   logInfo' "Running receive funds"
   let protocol = fundraisingData.protocol
-  (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
-  let managerPkh = view _managerPkh protocolInfo.pDatum
-
   let threadTokenCurrency = fundraisingData.frThreadTokenCurrency
   let threadTokenName = fundraisingData.frThreadTokenName
   fundraising@(Fundraising fr) <- makeFundrising frData
@@ -62,9 +56,9 @@ contract frData@(FundraisingData fundraisingData) = do
   let
     currentFunds = frInfo.frValue
     (PFundraisingDatum currentDatum) = frInfo.frDatum
-
+    managerPkh = currentDatum.managerPkh
   now <- currentTime
-  let donatedAmount = Value.valueOf currentFunds adaSymbol adaToken - minAda
+  let donatedAmount = Value.valueOf currentFunds adaSymbol adaToken - minAda - minAda
   when (now <= currentDatum.frDeadline && donatedAmount /= currentDatum.frAmount) $ liftEffect $ throw "Can't receive funds while fundraising is in process"
 
   (OwnCredentials creds) <- getOwnCreds
@@ -99,7 +93,6 @@ contract frData@(FundraisingData fundraisingData) = do
         <> Constraints.mustPayToPubKeyAddress creds.ownPkh creds.ownSkh amountToReceiver
         <> Constraints.mustPayToPubKey managerPkh (Value.lovelaceValueOf feeByFundrising)
         <> validateInConstraint
-        <> Constraints.mustReferenceOutput (fst protocolInfo.pUtxo)
 
   let
     lookups :: Lookups.ScriptLookups Void
@@ -109,7 +102,6 @@ contract frData@(FundraisingData fundraisingData) = do
         <> Lookups.validator frInfo.frValidator
         <> Lookups.unspentOutputs frInfo.frUtxos
         <> Lookups.unspentOutputs creds.ownUtxo
-        <> Lookups.unspentOutputs protocolInfo.pUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let

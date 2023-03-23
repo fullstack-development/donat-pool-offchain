@@ -33,11 +33,12 @@ import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import MintingPolicy.VerTokenRedeemers (PVerTokenRedeemer(..))
-import Protocol.Datum (_protocolFee, _minDuration, _maxDuration, _minAmount, _maxAmount)
+import Protocol.Datum (_protocolFee, _minDuration, _maxDuration, _minAmount, _maxAmount, _managerPkh)
 import Protocol.Models (Protocol, PFundriseConfig(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Shared.Helpers as Helpers
+import Shared.MinAda (minAdaValue)
 
 runCreateFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocol params = runAff_ handler $
@@ -113,6 +114,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
       , frAmount: currentAmount
       , frDeadline: deadline
       , frFee: view _protocolFee protocolDatum
+      , managerPkh: view _managerPkh protocolDatum
       }
 
   let
@@ -143,7 +145,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
     nftValue = Value.singleton nftCs nftTn one
     verTokenValue = Value.singleton verTokenCs verTn one
     paymentToProtocol = Helpers.extractValueFromUTxO protocolUtxo
-    paymentToFr = Value.lovelaceValueOf (fromInt 2000000) <> nftValue <> verTokenValue
+    paymentToFr = minAdaValue <> minAdaValue <> nftValue <> verTokenValue
 
     constraints :: Constraints.TxConstraints Void Void
     constraints =
