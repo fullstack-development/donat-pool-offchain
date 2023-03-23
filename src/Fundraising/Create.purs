@@ -39,7 +39,7 @@ import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScrip
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Shared.Helpers as Helpers
 import Shared.MinAda (minAdaValue)
-import Shared.Duration (daysDurationToMinutes, durationToMinutes, minutesToPosixTime)
+import Shared.Duration (durationToMinutes, minutesToPosixTime)
 
 runCreateFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocol params = runAff_ handler $
@@ -95,8 +95,8 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   when (currentAmount > maxAmount) $ liftEffect $ throw ("Fundraising amount too big. It must be less than " <> show maxAmount <> ".")
 
   let
-    minDurationMinutes =  daysDurationToMinutes $  view _minDuration protocolDatum
-    maxDurationMinutes =  daysDurationToMinutes $ view _maxDuration protocolDatum
+    minDurationMinutes =  view _minDuration protocolDatum
+    maxDurationMinutes =  view _maxDuration protocolDatum
     frDurationMinutes = durationToMinutes duration
 
   when (frDurationMinutes < minDurationMinutes) $ liftEffect $ throw ("Fundraising duration too short. It must be greater than " <> show minDurationMinutes <> ".")

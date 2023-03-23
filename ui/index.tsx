@@ -8,40 +8,30 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 const App = () => {
 
-  const minDuration = {
-    days: Number(0),
-    hours: Number(0),
-    minutes: Number(5)
-  }
-
-  const maxDuration = {
-    days: Number(60),
-    hours: Number(0),
-    minutes: Number(0)
-  }
-
   const startProtocolParams = {
     minAmountParam: 50000000,
     maxAmountParam: 1000000000,
-    minDurationParam: minDuration,
-    maxDurationParam: maxDuration,
+    minDurationParam: 5,  // 5 minutes
+    maxDurationParam: 86400,  // 60 days
     protocolFeeParam: 10,
   };
   const updatedParams = {
     minAmountParam: 50000000,
     maxAmountParam: 1000000000,
-    minDurationParam: minDuration,
-    maxDurationParam: maxDuration,
+    minDurationParam: 5,  // 5 minutes
+    maxDurationParam: 86400,  // 60 days
     protocolFeeParam: 9,
   };
+
   const fundraisingDuration = {
     days: 0,
     hours: 0,
-    minutes: 5
+    minutes: 6
   };
+  
   const createFundraisingParams = {
     description: 'Donate to feed stray cats',
-    amount: 100,
+    amount: 200,
     duration: fundraisingDuration
   };
 

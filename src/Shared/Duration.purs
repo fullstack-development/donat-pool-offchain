@@ -6,9 +6,9 @@ import Data.BigInt  (BigInt, fromInt)
 import Contract.Time (POSIXTime(..))
 
 newtype Duration = Duration {
-  days :: BigInt,
-  hours :: BigInt,
-  minutes :: BigInt
+  days :: Int,
+  hours :: Int,
+  minutes :: Int
 }
 derive newtype instance Show Duration
 derive newtype instance Eq Duration
@@ -21,15 +21,15 @@ minutesInHour = fromInt 60
 
 durationToMinutes :: Duration -> BigInt
 durationToMinutes (Duration {days, hours, minutes}) =
-    (days * minutesInDay) + (hours * minutesInHour) + minutes
+    (fromInt days * minutesInDay) + (fromInt hours * minutesInHour) + fromInt minutes
 
-minutesToDuration :: BigInt -> Duration
-minutesToDuration minutesDuration = 
-    let days = minutesDuration `div` minutesInDay
-        remainingMinutes = minutesDuration - (days * minutesInDay)
-        hours = remainingMinutes `div` minutesInHour
-        minutes = remainingMinutes - (hours * minutesInHour)
-    in Duration {days: days, hours: hours, minutes}
+-- minutesToDuration :: BigInt -> Duration
+-- minutesToDuration minutesDuration = 
+--     let days = minutesDuration `div` minutesInDay
+--         remainingMinutes = minutesDuration - (days * minutesInDay)
+--         hours = remainingMinutes `div` minutesInHour
+--         minutes = remainingMinutes - (hours * minutesInHour)
+--     in Duration {days: days, hours: hours, minutes}
 
 daysDurationToMinutes :: BigInt -> BigInt
 daysDurationToMinutes days = days * minutesInDay

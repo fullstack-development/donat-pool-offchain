@@ -25,7 +25,6 @@ import Protocol.Datum (PProtocolDatum(..))
 import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript, protocolTokenName)
 import Protocol.UserData (ProtocolConfigParams(..))
-import Shared.Duration (durationToMinutes)
 import Shared.Helpers as Helpers
 
 runStartProtocol :: (Protocol -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
@@ -60,8 +59,8 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
     initialProtocolDatum = PProtocolDatum
       { minAmount: minAmountParam
       , maxAmount: maxAmountParam
-      , minDuration: durationToMinutes minDurationParam
-      , maxDuration: durationToMinutes maxDurationParam
+      , minDuration: minDurationParam
+      , maxDuration: maxDurationParam
       , protocolFee: protocolFeeParam
       , managerPkh: ownPkh
       , tokenOriginRef: oref
