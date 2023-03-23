@@ -8,13 +8,8 @@ import Effect (Effect)
 import Test.UnitTests as UnitTests
 
 main :: Effect Unit
-main = do 
+main = do
   UnitTests.main
-
-
-
-
-
 
 -- import Contract.Prelude
 
@@ -41,8 +36,6 @@ main = do
 -- import Mote (test)
 -- import Scaffold (contract)
 -- import Test.Spec.Runner (defaultConfig)
-
-
 
 -- Run with `npm run test`
 -- main :: Effect Unit
