@@ -4,6 +4,7 @@ module Scaffold.Main (main, Contracts) where
 
 import Contract.Prelude
 
+import Contract.Address (Bech32String)
 import Common.ConnectWallet as ConnectWallet
 import Fundraising.Donate as Donate
 import Fundraising.ReceiveFunds as ReceiveFunds
@@ -21,7 +22,7 @@ import Protocol.UpdateProtocol as UpdateProtocol
 import Protocol.UserData (ProtocolConfigParams)
 
 data Contracts = Contracts
-  { connectWallet :: Effect Unit
+  { connectWallet :: (Bech32String -> Effect Unit) -> (String -> Effect Unit) -> Effect Unit
   , startProtocol :: (Protocol -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
   , updateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> ProtocolConfigParams -> Effect Unit
   , closeProtocol :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
