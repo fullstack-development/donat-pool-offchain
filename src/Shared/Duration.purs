@@ -24,14 +24,6 @@ durationToMinutes :: Duration -> BigInt
 durationToMinutes (Duration { days, hours, minutes }) =
   (fromInt days * minutesInDay) + (fromInt hours * minutesInHour) + fromInt minutes
 
--- minutesToDuration :: BigInt -> Duration
--- minutesToDuration minutesDuration = 
---     let days = minutesDuration `div` minutesInDay
---         remainingMinutes = minutesDuration - (days * minutesInDay)
---         hours = remainingMinutes `div` minutesInHour
---         minutes = remainingMinutes - (hours * minutesInHour)
---     in Duration {days: days, hours: hours, minutes}
-
 daysDurationToMinutes :: BigInt -> BigInt
 daysDurationToMinutes days = days * minutesInDay
 
