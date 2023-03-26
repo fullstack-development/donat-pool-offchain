@@ -2,14 +2,15 @@ module Shared.Duration where
 
 import Contract.Prelude
 
-import Data.BigInt  (BigInt, fromInt)
+import Data.BigInt (BigInt, fromInt)
 import Contract.Time (POSIXTime(..))
 
-newtype Duration = Duration {
-  days :: Int,
-  hours :: Int,
-  minutes :: Int
-}
+newtype Duration = Duration
+  { days :: Int
+  , hours :: Int
+  , minutes :: Int
+  }
+
 derive newtype instance Show Duration
 derive newtype instance Eq Duration
 
@@ -20,8 +21,8 @@ minutesInHour :: BigInt
 minutesInHour = fromInt 60
 
 durationToMinutes :: Duration -> BigInt
-durationToMinutes (Duration {days, hours, minutes}) =
-    (fromInt days * minutesInDay) + (fromInt hours * minutesInHour) + fromInt minutes
+durationToMinutes (Duration { days, hours, minutes }) =
+  (fromInt days * minutesInDay) + (fromInt hours * minutesInHour) + fromInt minutes
 
 -- minutesToDuration :: BigInt -> Duration
 -- minutesToDuration minutesDuration = 

@@ -95,8 +95,8 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   when (currentAmount > maxAmount) $ liftEffect $ throw ("Fundraising amount too big. It must be less than " <> show maxAmount <> ".")
 
   let
-    minDurationMinutes =  view _minDuration protocolDatum
-    maxDurationMinutes =  view _maxDuration protocolDatum
+    minDurationMinutes = view _minDuration protocolDatum
+    maxDurationMinutes = view _maxDuration protocolDatum
     frDurationMinutes = durationToMinutes duration
 
   when (frDurationMinutes < minDurationMinutes) $ liftEffect $ throw ("Fundraising duration too short. It must be greater than " <> show minDurationMinutes <> ".")
@@ -104,7 +104,6 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
 
   now@(POSIXTime now') <- currentTime
   let deadline = Helpers.addTimes now (minutesToPosixTime frDurationMinutes)
-
   desc <- liftContractM "Impossible to serialize description" $ byteArrayFromAscii (take descLength description)
 
   let
