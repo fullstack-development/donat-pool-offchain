@@ -22,7 +22,7 @@ import Contract.Transaction
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.CurrencySymbol (adaSymbol)
-import Ctl.Internal.Types.Interval (mkFiniteInterval)
+import Ctl.Internal.Types.Interval (from)
 import Ctl.Internal.Types.TokenName (adaToken)
 import Data.BigInt (fromInt)
 import Effect.Exception (throw)
@@ -66,11 +66,7 @@ contract frData@(FundraisingData fundraisingData) = do
   when (creds.ownPkh /= currentDatum.creatorPkh) $ liftEffect $ throw "Only fundraising creator can receive funds"
 
   let receiveFundsRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
-  let
-    -- TODO: test interval
-    validateInConstraint =
-      if (donatedAmount >= currentDatum.frAmount) then mempty
-      else Constraints.mustValidateIn $ mkFiniteInterval currentDatum.frDeadline now
+
   let verTokenToBurnValue = Value.singleton fr.verTokenCurrency fr.verTokenName (fromInt (-1))
   let threadTokenToBurnValue = Value.singleton threadTokenCurrency threadTokenName (fromInt (-1))
   threadTokenMintingPolicy <- NFT.mintingPolicy currentDatum.tokenOrigin
@@ -93,7 +89,7 @@ contract frData@(FundraisingData fundraisingData) = do
           verTokenToBurnValue
         <> Constraints.mustPayToPubKeyAddress creds.ownPkh creds.ownSkh amountToReceiver
         <> Constraints.mustPayToPubKey managerPkh (Value.lovelaceValueOf feeByFundrising)
-        <> validateInConstraint
+        <> Constraints.mustValidateIn (from now)
 
   let
     lookups :: Lookups.ScriptLookups Void

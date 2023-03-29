@@ -4,11 +4,12 @@ import Contract.Prelude
 
 import Contract.Value (CurrencySymbol, TokenName)
 import Protocol.Models (Protocol)
+import Shared.Duration (Duration)
 
 newtype CreateFundraisingParams = CreateFundraisingParams
   { description :: String -- 35 symbols max
   , amount :: Int -- amount to raise in Ada (not Lovelace)
-  , duration :: Int -- Fundraising duration in days
+  , duration :: Duration
   }
 
 derive newtype instance Show CreateFundraisingParams

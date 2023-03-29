@@ -39,6 +39,7 @@ import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScrip
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Shared.Helpers as Helpers
 import Shared.MinAda (minAdaValue)
+import Shared.Duration (durationToMinutes, minutesToPosixTime)
 
 runCreateFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocol params = runAff_ handler $
@@ -94,16 +95,15 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   when (currentAmount > maxAmount) $ liftEffect $ throw ("Fundraising amount too big. It must be less than " <> show maxAmount <> ".")
 
   let
-    minDuration = view _minDuration protocolDatum
-    maxDuration = view _maxDuration protocolDatum
-    frDuration = fromInt duration
+    minDurationMinutes = view _minDuration protocolDatum
+    maxDurationMinutes = view _maxDuration protocolDatum
+    frDurationMinutes = durationToMinutes duration
 
-  when (frDuration < minDuration) $ liftEffect $ throw ("Fundraising duration too short. It must be greater than " <> show minDuration <> ".")
-  when (frDuration > maxDuration) $ liftEffect $ throw ("Fundraising duration too long. It must be less than " <> show maxDuration <> ".")
+  when (frDurationMinutes < minDurationMinutes) $ liftEffect $ throw ("Fundraising duration too short. It must be greater than " <> show minDurationMinutes <> ".")
+  when (frDurationMinutes > maxDurationMinutes) $ liftEffect $ throw ("Fundraising duration too long. It must be less than " <> show maxDurationMinutes <> ".")
 
   now@(POSIXTime now') <- currentTime
-  let deadline = Helpers.addTimes now (Helpers.daysToPosixTime duration)
-
+  let deadline = Helpers.addTimes now (minutesToPosixTime frDurationMinutes)
   desc <- liftContractM "Impossible to serialize description" $ byteArrayFromAscii (take descLength description)
 
   let

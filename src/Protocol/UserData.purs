@@ -8,8 +8,8 @@ import Data.BigInt (BigInt)
 newtype ProtocolConfigParams = ProtocolConfigParams
   { minAmountParam :: BigInt
   , maxAmountParam :: BigInt
-  , minDurationParam :: BigInt
-  , maxDurationParam :: BigInt
+  , minDurationParam :: BigInt -- minutes
+  , maxDurationParam :: BigInt -- minutes
   , protocolFeeParam :: BigInt -- percentage
   }
 

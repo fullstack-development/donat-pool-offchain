@@ -3,43 +3,29 @@ module Protocol.StartProtocol where
 import Contract.Prelude
 
 import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), addressToBech32, validatorHashBaseAddress)
+import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
-import Contract.PlutusData
-  ( Redeemer(Redeemer)
-  , Datum(Datum)
-  , toData
-  )
+import Contract.PlutusData (Redeemer(Redeemer), Datum(Datum), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction
-  ( awaitTxConfirmed
-  , balanceTxWithConstraints
-  , signTransaction
-  , submit
-  )
+import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Data.Array (head) as Array
 import Data.BigInt (fromInt)
 import Data.Map (toUnfoldable) as Map
-import Protocol.UserData (ProtocolConfigParams(..))
-import MintingPolicy.NftRedeemer (PNftRedeemer(..))
-import MintingPolicy.NftMinting as NFT
-import Shared.Helpers as Helpers
-import Protocol.Models (Protocol(..))
-import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript, protocolTokenName)
-import Contract.BalanceTxConstraints
-  ( BalanceTxConstraintsBuilder
-  , mustSendChangeToAddress
-  )
-import Protocol.Datum
-  ( PProtocolDatum(..)
-  )
-import Contract.Credential (Credential(ScriptCredential))
 import Effect.Aff (runAff_)
 import Effect.Exception (Error, message)
+import MintingPolicy.NftMinting as NFT
+import MintingPolicy.NftRedeemer (PNftRedeemer(..))
+import Protocol.Datum (PProtocolDatum(..))
+import Protocol.Models (Protocol(..))
+import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript, protocolTokenName)
+import Protocol.UserData (ProtocolConfigParams(..))
+import Shared.Helpers as Helpers
 
 runStartProtocol :: (Protocol -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
 runStartProtocol onComplete onError params = runAff_ handler $
