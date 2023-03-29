@@ -31,7 +31,7 @@ mapToFundraisingInfo :: UtxoTuple -> Maybe FundraisingInfo
 mapToFundraisingInfo utxo = do
   PFundraisingDatum currentDatum <- extractDatumFromUTxO utxo
   let frVal = extractValueFromUTxO utxo
-  let currentFunds = Value.valueToCoin' frVal - Value.valueToCoin' minAdaValue
+  let currentFunds = Value.valueToCoin' frVal - Value.valueToCoin' minAdaValue - Value.valueToCoin' minAdaValue
   let ByteArray unwrappedDesc = currentDatum.frDesc
   desc <- either (const Nothing) Just $ decodeUtf8 unwrappedDesc
   frTokenName <- fundraisingTokenName
