@@ -87,5 +87,5 @@ Run `sh build.sh` from project root
 
 ## Tests
 
-To run Unit tests type `spago test --main Test.UnitTests`
-To run Plutip tests type `spago run --main Test.Plutip`
+To run Unit tests type `npm run unit-tests`
+To run Plutip tests type `npm run plutip-tests`
