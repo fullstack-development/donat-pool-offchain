@@ -2,12 +2,13 @@ module Protocol.StartProtocol where
 
 import Contract.Prelude
 
-import Contract.Address 
+import Contract.Address
   ( getWalletAddresses
   , getWalletAddressesWithNetworkTag
   , ownPaymentPubKeysHashes
   , addressToBech32
-  , validatorHashBaseAddress)
+  , validatorHashBaseAddress
+  )
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Credential (Credential(ScriptCredential))

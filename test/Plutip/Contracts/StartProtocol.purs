@@ -27,7 +27,7 @@ suite = do
           , BigInt.fromInt 2_000_000_000
           ]
       withWallets distribution \alice -> withKeyWallet alice $ startProtocolContract startProtocolParams
-    
+
     test "Should fail if user wallet doesn't have any UTxOs" do
       let
         distribution :: InitialUTxOs
@@ -38,14 +38,14 @@ suite = do
         result `shouldSatisfy` (isExpectedError errMsg)
 
 startProtocolParams :: ProtocolConfigParams
-startProtocolParams = 
-            ProtocolConfigParams
-                { minAmountParam: BigInt.fromInt 2_000_000
-                , maxAmountParam: BigInt.fromInt 100_000_000
-                , minDurationParam: BigInt.fromInt 5 -- minutes
-                , maxDurationParam: BigInt.fromInt 250 -- minutes
-                , protocolFeeParam: BigInt.fromInt 5 -- percentage
-                }
+startProtocolParams =
+  ProtocolConfigParams
+    { minAmountParam: BigInt.fromInt 2_000_000
+    , maxAmountParam: BigInt.fromInt 100_000_000
+    , minDurationParam: BigInt.fromInt 5 -- minutes
+    , maxDurationParam: BigInt.fromInt 250 -- minutes
+    , protocolFeeParam: BigInt.fromInt 5 -- percentage
+    }
 
 startProtocolContract
   :: ProtocolConfigParams
