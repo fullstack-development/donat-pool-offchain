@@ -1,0 +1,82 @@
+module Test.Plutip.Contracts.UpdateProtocol where
+
+import Prelude
+
+import Contract.Monad (Contract)
+import Contract.Test.Plutip (InitialUTxOs, withWallets)
+import Contract.Wallet (withKeyWallet)
+import Contract.Value as Value
+import Control.Monad.Error.Class (try)
+import Ctl.Internal.Plutip.Server (PlutipTest)
+import Ctl.Internal.Test.TestPlanM (TestPlanM)
+import Data.Tuple.Nested (type (/\), (/\))
+import Data.BigInt as BigInt
+import Mote (group, test)
+import Protocol.Models (PProtocolConfig, Protocol (..))
+import Protocol.StartProtocol as StartProtocol
+import Protocol.UpdateProtocol as UpdateProtocol
+import Protocol.UserData (ProtocolConfigParams(..), mapToProtocolConfig)
+import Shared.Helpers as Helpers
+import Test.Plutip.Contracts.StartProtocol (startProtocolParams)
+import Test.Plutip.Utils (isExpectedError)
+import Test.Spec.Assertions (shouldSatisfy)
+
+suite :: TestPlanM PlutipTest Unit
+suite = do
+  group "Update Protocol" do
+
+    test "Should successfully update protocol" do
+      let
+        distribution :: InitialUTxOs
+        distribution =
+          [ BigInt.fromInt 1_000_000_000
+          , BigInt.fromInt 2_000_000_000
+          ]
+      withWallets distribution \alice -> do 
+        withKeyWallet alice $ do 
+          protocol <- StartProtocol.contract startProtocolParams
+          void $ UpdateProtocol.contract protocol updateProtocolConfig
+
+    test "Should fail if user doen't have permissions to update Protocol" do
+      let
+        distribution :: InitialUTxOs /\ InitialUTxOs
+        distribution =
+          [ BigInt.fromInt 1_000_000_000
+          , BigInt.fromInt 2_000_000_000
+          ] /\ 
+            [ BigInt.fromInt 30_000_000 ]
+      withWallets distribution \(alice /\ bob)-> do 
+        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        result <- try $ withKeyWallet bob $ UpdateProtocol.contract protocol updateProtocolConfig
+        let errMsg = "Current user doesn't have permissions to update protocol"
+        result `shouldSatisfy` (isExpectedError errMsg)
+    
+    test "Should fail if Protocol doesn't exist" do
+      let
+        distribution :: InitialUTxOs
+        distribution =
+          [ BigInt.fromInt 1_000_000_000
+          , BigInt.fromInt 2_000_000_000
+          ]
+      withWallets distribution \alice-> do 
+        protocol <- incorrectProtocol 
+        result <- try $ withKeyWallet alice $ UpdateProtocol.contract protocol updateProtocolConfig
+        let errMsg = "Protocol UTxO with given nft not found"
+        result `shouldSatisfy` (isExpectedError errMsg)
+
+updateProtocolConfig :: PProtocolConfig
+updateProtocolConfig =
+  let params = 
+          ProtocolConfigParams
+            { minAmountParam: BigInt.fromInt 2_000_000
+            , maxAmountParam: BigInt.fromInt 100_000_000
+            , minDurationParam: BigInt.fromInt 5 -- minutes
+            , maxDurationParam: BigInt.fromInt 250 -- minutes
+            , protocolFeeParam: BigInt.fromInt 3 -- percentage
+            }
+   in mapToProtocolConfig params
+
+incorrectProtocol :: Contract () Protocol
+incorrectProtocol = do 
+  tn <- Helpers.runMkTokenName "Protocol"
+  pure $ Protocol { protocolCurrency : Value.adaSymbol, protocolTokenName : tn } 

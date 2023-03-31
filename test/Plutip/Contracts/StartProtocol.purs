@@ -1,4 +1,4 @@
-module Test.Plutip.Contracts.StartProtocol (suite) where
+module Test.Plutip.Contracts.StartProtocol (suite, startProtocolParams) where
 
 import Prelude
 
