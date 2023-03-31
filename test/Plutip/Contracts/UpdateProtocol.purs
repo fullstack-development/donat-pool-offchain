@@ -37,7 +37,7 @@ suite = do
           protocol <- StartProtocol.contract startProtocolParams
           void $ UpdateProtocol.contract protocol updateProtocolConfig
 
-    test "Should fail if user doen't have permissions to update Protocol" do
+    test "Should fail if user doesn't have permissions to update Protocol" do
       let
         distribution :: InitialUTxOs /\ InitialUTxOs
         distribution =
