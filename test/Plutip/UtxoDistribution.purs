@@ -2,10 +2,8 @@ module Test.Plutip.UtxoDistribution where
 
 import Prelude
 
-import Contract.Address (PaymentPubKeyHash, StakePubKeyHash)
 import Control.Alternative (guard)
 import Control.Monad.State.Trans (StateT(StateT), runStateT)
-import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
 import Ctl.Internal.Serialization.Types (PrivateKey)
 import Ctl.Internal.Wallet.Key
   ( KeyWallet
@@ -132,10 +130,3 @@ decodeWalletsDefault d p = do
   wallets /\ remainingPKeys <- decodeWallets' d p
   guard $ Array.null remainingPKeys
   pure wallets
-
-type WalletInfo =
-  { utxos :: UtxoMap
-  , payPkh :: PaymentPubKeyHash
-  , stakePkh :: StakePubKeyHash
-  , wallet :: KeyWallet
-  }
