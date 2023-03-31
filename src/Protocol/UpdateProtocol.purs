@@ -2,9 +2,9 @@ module Protocol.UpdateProtocol where
 
 import Contract.Prelude
 
-import Contract.Address (AddressWithNetworkTag(..), getWalletAddresses, ownPaymentPubKeysHashes)
+import Contract.Address (getWalletAddressesWithNetworkTag, getWalletAddresses, ownPaymentPubKeysHashes)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
-import Contract.Config (NetworkId(..), testnetNamiConfig)
+import Contract.Config (testnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, liftedE, liftedM, runContract)
@@ -44,7 +44,7 @@ contract protocol protocolConfig = do
   walletUtxo <- utxosAt ownAddress >>= getNonCollateralUtxo
 
   let manager = view _managerPkh protocolInfo.pDatum
-  when (manager /= ownPkh) $ liftEffect $ throw "current user doesn't have permissions to close protocol"
+  when (manager /= ownPkh) $ liftEffect $ throw "Current user doesn't have permissions to update protocol"
 
   let newDatum = makeDatum protocolInfo.pDatum protocolConfig
   logInfo' $ "New datum: " <> show newDatum
@@ -71,13 +71,8 @@ contract protocol protocolConfig = do
         <> Lookups.unspentOutputs walletUtxo
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
+  addressWithNetworkTag <- liftedM "Failed to get own address with Network Tag" $ Array.head <$> getWalletAddressesWithNetworkTag
   let
-    addressWithNetworkTag =
-      AddressWithNetworkTag
-        { address: ownAddress
-        , networkId: TestnetId
-        }
-
     balanceTxConstraints :: BalanceTxConstraintsBuilder
     balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
   balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints

@@ -1,4 +1,4 @@
-module Test.Scaffold.Main (main) where
+module Test.Main (main) where
 
 import Prelude
 
