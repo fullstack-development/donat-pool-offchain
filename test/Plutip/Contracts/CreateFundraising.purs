@@ -34,7 +34,7 @@ suite = do
       withWallets distribution \(alice /\ bob) -> do
         protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
         withKeyWallet bob $ void $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 6))
-      
+
     test "Should fail if Protocol doesn't exist" do
       let
         distribution :: InitialUTxOs
@@ -105,11 +105,11 @@ suite = do
         result `shouldSatisfy` (isExpectedError errMsg)
 
 mkFundraisingParams :: Int -> Duration -> CreateFundraisingParams
-mkFundraisingParams amt dur = CreateFundraisingParams 
-  { description: "Donate to feed stray cats",
-    amount: amt,
-    duration: dur
+mkFundraisingParams amt dur = CreateFundraisingParams
+  { description: "Donate to feed stray cats"
+  , amount: amt
+  , duration: dur
   }
 
 mkFundraisingDuration :: Int -> Int -> Int -> Duration
-mkFundraisingDuration d h m = Duration { days: d, hours: h, minutes: m}
+mkFundraisingDuration d h m = Duration { days: d, hours: h, minutes: m }
