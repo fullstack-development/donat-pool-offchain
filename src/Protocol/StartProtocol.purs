@@ -2,7 +2,13 @@ module Protocol.StartProtocol where
 
 import Contract.Prelude
 
-import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), addressToBech32, validatorHashBaseAddress)
+import Contract.Address
+  ( getWalletAddresses
+  , getWalletAddressesWithNetworkTag
+  , ownPaymentPubKeysHashes
+  , addressToBech32
+  , validatorHashBaseAddress
+  )
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
 import Contract.Credential (Credential(ScriptCredential))
@@ -91,13 +97,8 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
         <> Lookups.validator protocolValidator
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
+  addressWithNetworkTag <- liftedM "Failed to get own address with Network Tag" $ Array.head <$> getWalletAddressesWithNetworkTag
   let
-    addressWithNetworkTag =
-      AddressWithNetworkTag
-        { address: ownAddress
-        , networkId: TestnetId
-        }
-
     balanceTxConstraints :: BalanceTxConstraintsBuilder
     balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
   balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints

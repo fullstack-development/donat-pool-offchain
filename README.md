@@ -87,5 +87,5 @@ Run `sh build.sh` from project root
 
 ## Tests
 
-To run combined tests type `npm run test`.
-To run tests from a specific module type `spago test --main moduleName` (i.e. `spago test --main Test.UnitTests`)
+To run Unit tests type `spago test --main Test.UnitTests`
+To run Plutip tests type `spago run --main Test.Plutip`
