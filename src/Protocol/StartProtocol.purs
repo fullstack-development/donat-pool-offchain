@@ -3,14 +3,15 @@ module Protocol.StartProtocol where
 import Contract.Prelude
 
 import Contract.Address
-  ( getWalletAddresses
+  ( getNetworkId
+  , getWalletAddresses
   , getWalletAddressesWithNetworkTag
   , ownPaymentPubKeysHashes
   , addressToBech32
   , validatorHashBaseAddress
   )
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
-import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Config (testnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
@@ -107,8 +108,9 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   awaitTxConfirmed txId
 
   logInfo' $ "Current protocol: " <> show protocol
+  networkId <- getNetworkId
   protocolAddress <-
-    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
+    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress networkId protocolValidatorHash
   bech32Address <- addressToBech32 protocolAddress
   logInfo' $ "Current protocol address: " <> show bech32Address
   logInfo' "Transaction submitted successfully"

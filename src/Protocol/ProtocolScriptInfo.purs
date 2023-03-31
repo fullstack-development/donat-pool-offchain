@@ -2,8 +2,7 @@ module Protocol.ProtocolScriptInfo where
 
 import Contract.Prelude
 
-import Contract.Address (Address, validatorHashBaseAddress)
-import Contract.Config (NetworkId(TestnetId))
+import Contract.Address (Address, getNetworkId, validatorHashBaseAddress)
 import Contract.Monad (Contract, liftContractM)
 import Contract.Transaction (TransactionInput, TransactionOutputWithRefScript)
 import Contract.Utxos (utxosAt)
@@ -30,8 +29,9 @@ getProtocolScriptInfo :: Protocol -> Contract () ProtocolScriptInfo
 getProtocolScriptInfo protocol = do
   protocolValidator <- protocolValidatorScript protocol
   protocolValidatorHash <- getProtocolValidatorHash protocol
+  networkId <- getNetworkId
   protocolAddress <-
-    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
+    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress networkId protocolValidatorHash
   utxos <- utxosAt protocolAddress
   protocolUtxo <- getProtocolUtxo protocol utxos
   currentDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo

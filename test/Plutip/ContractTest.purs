@@ -1,7 +1,6 @@
-module Test.Plutip.ContractTest
+module Test.ContractTest
   ( ContractTest(ContractTest)
   , withWallets
-  , noWallet
   , ContractTestHandler
   , ContractTestPlan(ContractTestPlan)
   , ContractTestPlanHandler
@@ -11,7 +10,7 @@ import Prelude
 
 import Contract.Monad (Contract)
 import Ctl.Internal.Test.TestPlanM (TestPlanM)
-import Test.Plutip.UtxoDistribution (class UtxoDistribution)
+import Contract.Test.Plutip (class UtxoDistribution)
 
 -- | Represents a `Contract` test suite that depend on *some* wallet
 -- | `UtxoDistribution`.
@@ -31,10 +30,6 @@ withWallets
   -> (wallets -> Contract () Unit)
   -> ContractTest
 withWallets distr tests = ContractTest \h -> h distr tests
-
--- | Lift a `Contract` into `ContractTest`
-noWallet :: Contract () Unit -> ContractTest
-noWallet = withWallets unit <<< const
 
 -- | A runner for a test suite that supports funds distribution.
 type ContractTestHandler :: Type -> Type -> Type -> Type
