@@ -14,6 +14,7 @@ import Effect.Aff (Milliseconds(Milliseconds), cancelWith, effectCanceler, launc
 import Mote (group)
 import Test.Plutip.Common (config)
 import Test.Plutip.Contracts.CloseProtocol as CloseProtocol
+import Test.Plutip.Contracts.CreateFundraising as CreateFundraising
 import Test.Plutip.Contracts.StartProtocol as StartProtocol
 import Test.Plutip.Contracts.UpdateProtocol as UpdateProtocol
 import Test.Spec.Runner (defaultConfig)
@@ -29,3 +30,4 @@ main = interruptOnSignal SIGINT =<< launchAff do
             StartProtocol.suite
             UpdateProtocol.suite
             CloseProtocol.suite
+            CreateFundraising.suite
