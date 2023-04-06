@@ -8,13 +8,11 @@ You can edit this file as you like.
   , "arrays"
   , "bigints"
   , "cardano-transaction-lib"
-  , "control"
   , "datetime"
   , "effect"
   , "either"
   , "encoding"
   , "exceptions"
-  , "foldable-traversable"
   , "math"
   , "maybe"
   , "monad-logger"
@@ -30,7 +28,6 @@ You can edit this file as you like.
   , "strings"
   , "transformers"
   , "tuples"
-  , "typelevel-prelude"
   , "uint"
   ]
 , packages = ./packages.dhall
