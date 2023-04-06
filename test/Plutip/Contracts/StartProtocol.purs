@@ -6,7 +6,6 @@ import Contract.Monad (Contract)
 import Contract.Test.Plutip (InitialUTxOs, withWallets)
 import Contract.Wallet (withKeyWallet)
 import Control.Monad.Error.Class (try)
-import Ctl.Internal.Plutip.Server (PlutipTest)
 import Ctl.Internal.Test.TestPlanM (TestPlanM)
 import Data.BigInt as BigInt
 import Mote (group, test)
@@ -14,8 +13,9 @@ import Protocol.StartProtocol as StartProtocol
 import Protocol.UserData (ProtocolConfigParams(..))
 import Test.Plutip.Utils (isExpectedError)
 import Test.Spec.Assertions (shouldSatisfy)
+import Ctl.Internal.Test.ContractTest (ContractTest)
 
-suite :: TestPlanM PlutipTest Unit
+suite :: TestPlanM ContractTest Unit
 suite = do
   group "Start Protocol" do
 
@@ -49,5 +49,5 @@ startProtocolParams =
 
 startProtocolContract
   :: ProtocolConfigParams
-  -> Contract () Unit
+  -> Contract Unit
 startProtocolContract = void <<< StartProtocol.contract

@@ -6,7 +6,7 @@ import Effect.Aff (runAff_)
 import Contract.Config (testnetNamiConfig)
 import Contract.Monad (Contract, runContract)
 
-runContractWithUnitResult :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Contract () Unit -> Effect Unit
+runContractWithUnitResult :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Contract Unit -> Effect Unit
 runContractWithUnitResult onComplete onError contract = runAff_ handler do
   runContract testnetNamiConfig contract
   where

@@ -24,10 +24,10 @@ type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
 mkTokenName :: String -> Maybe Value.TokenName
 mkTokenName = Value.mkTokenName <=< byteArrayFromAscii
 
-runMkTokenName :: forall (r :: Row Type). String -> Contract r Value.TokenName
+runMkTokenName :: forall (r :: Row Type). String -> Contract Value.TokenName
 runMkTokenName = liftContractM "Cannot make token name" <<< mkTokenName
 
-mkCurrencySymbol :: forall (r :: Row Type). Contract r MintingPolicy -> Contract r (MintingPolicy /\ Value.CurrencySymbol)
+mkCurrencySymbol :: forall (r :: Row Type). Contract MintingPolicy -> Contract (MintingPolicy /\ Value.CurrencySymbol)
 mkCurrencySymbol policy = do
   mp <- policy
   cs <- liftContractM "Cannot get cs" $ Value.scriptCurrencySymbol mp
@@ -48,7 +48,7 @@ checkNonCollateral (Tuple _ txOutWithRef) =
 filterNonCollateral :: Array UtxoTuple -> Array UtxoTuple
 filterNonCollateral = Array.filter checkNonCollateral
 
-getNonCollateralUtxo :: UtxoMap -> Contract () UtxoMap
+getNonCollateralUtxo :: UtxoMap -> Contract UtxoMap
 getNonCollateralUtxo utxos = do
   let nonCollateralArray = filterNonCollateral (Map.toUnfoldable utxos)
   (Tuple walletTxInput walletTxOutputWitRef) <- liftContractM "Failed to get non collateral utxo" $ Array.head nonCollateralArray
@@ -64,7 +64,7 @@ checkTokenInUTxO (Tuple cs tn) (Tuple _ txOutWithRef) =
 filterByToken :: TokenTuple -> Array UtxoTuple -> Array UtxoTuple
 filterByToken token = Array.filter (checkTokenInUTxO token)
 
-getUtxoByNFT :: String -> TokenTuple -> UtxoMap -> Contract () UtxoTuple
+getUtxoByNFT :: String -> TokenTuple -> UtxoMap -> Contract UtxoTuple
 getUtxoByNFT scriptName nft utxos =
   liftContractM (scriptName <> " UTxO with given nft not found")
     (Array.head (filterByToken nft $ Map.toUnfoldable utxos))

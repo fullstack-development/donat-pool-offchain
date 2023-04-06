@@ -21,7 +21,7 @@ runGetUserRelatedFundraisings onComplete onError protocol = runAff_ handler $
   handler (Right response) = onComplete response
   handler (Left err) = onError $ message err
 
-getUserRelatedFundraisings :: Protocol -> Contract () (Array FundraisingInfo)
+getUserRelatedFundraisings :: Protocol -> Contract (Array FundraisingInfo)
 getUserRelatedFundraisings protocol = do
   allFrs <- getAllFundraisings protocol
   ownHashes <- ownPaymentPubKeysHashes

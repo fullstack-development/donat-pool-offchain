@@ -25,7 +25,7 @@ import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
 runCloseProtocolTest :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
 runCloseProtocolTest onComplete onError protocol = runContractWithUnitResult onComplete onError $ contract protocol
 
-contract :: Protocol -> Contract () Unit
+contract :: Protocol -> Contract Unit
 contract protocol@(Protocol { protocolCurrency, protocolTokenName }) = do
   logInfo' "Running closeProtocol"
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol

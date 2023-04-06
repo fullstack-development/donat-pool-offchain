@@ -14,7 +14,7 @@ import Shared.Helpers as Helpers
 
 foreign import fundraisingValidator :: String
 
-fundraisingValidatorScript :: Fundraising -> Contract () Validator
+fundraisingValidatorScript :: Fundraising -> Contract Validator
 fundraisingValidatorScript fundraising = do
   script <- liftMaybe (error "Error decoding fundraisingValidator") do
     envelope <- decodeTextEnvelope fundraisingValidator
@@ -30,12 +30,12 @@ mkFundraisingValidatorScript unappliedValidator fundraising =
   in
     applyArgs unappliedValidator validatorArgs
 
-getFundraisingValidatorHash :: Fundraising -> Contract () ValidatorHash
+getFundraisingValidatorHash :: Fundraising -> Contract ValidatorHash
 getFundraisingValidatorHash fundraising = do
   validator <- fundraisingValidatorScript fundraising
   pure $ validatorHash validator
 
-getFundraisingTokenName :: forall (r :: Row Type). Contract r Value.TokenName
+getFundraisingTokenName :: forall (r :: Row Type). Contract Value.TokenName
 getFundraisingTokenName = liftContractM "Cannot make Fundraising token name" $ fundraisingTokenName
 
 fundraisingTokenName :: Maybe Value.TokenName

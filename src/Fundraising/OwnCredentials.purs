@@ -21,7 +21,7 @@ newtype OwnCredentials = OwnCredentials
   , ownUtxo :: (Map TransactionInput TransactionOutputWithRefScript)
   }
 
-getOwnCreds :: Contract () OwnCredentials
+getOwnCreds :: Contract OwnCredentials
 getOwnCreds = do
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes

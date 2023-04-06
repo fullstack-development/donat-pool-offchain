@@ -18,10 +18,10 @@ import Shared.Helpers as Helpers
 
 foreign import verTokenPolicy :: String
 
-mintingPolicy :: Protocol -> Contract () MintingPolicy
+mintingPolicy :: Protocol -> Contract MintingPolicy
 mintingPolicy = map PlutusMintingPolicy <<< mintVerTokenScript
 
-mintVerTokenScript :: Protocol -> Contract () PlutusScript
+mintVerTokenScript :: Protocol -> Contract PlutusScript
 mintVerTokenScript protocol = do
   script <- liftMaybe (error "Error decoding nftPolicy") do
     envelope <- decodeTextEnvelope verTokenPolicy
@@ -36,5 +36,5 @@ mkMintVerTokenPolicy unappliedPolicy protocol =
   in
     applyArgs unappliedPolicy mintingPolicyArgs
 
-verTokenName :: forall (r :: Row Type). Contract r Value.TokenName
+verTokenName :: forall (r :: Row Type). Contract Value.TokenName
 verTokenName = Helpers.runMkTokenName "VerificationToken"

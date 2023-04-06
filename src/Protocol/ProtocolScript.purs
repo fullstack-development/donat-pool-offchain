@@ -18,7 +18,7 @@ import Shared.Helpers as Helpers
 
 foreign import protocolValidator :: String
 
-protocolValidatorScript :: Protocol -> Contract () Validator
+protocolValidatorScript :: Protocol -> Contract Validator
 protocolValidatorScript protocol = do
   script <- liftMaybe (error "Error decoding protocolValidator") do
     envelope <- decodeTextEnvelope protocolValidator
@@ -37,10 +37,10 @@ mkProtocolValidatorScript unappliedValidator protocol =
   in
     applyArgs unappliedValidator validatorArgs
 
-getProtocolValidatorHash :: Protocol -> Contract () ValidatorHash
+getProtocolValidatorHash :: Protocol -> Contract ValidatorHash
 getProtocolValidatorHash protocol = do
   validator <- protocolValidatorScript protocol
   pure $ validatorHash validator
 
-protocolTokenName :: forall (r :: Row Type). Contract r Value.TokenName
+protocolTokenName :: forall (r :: Row Type). Contract Value.TokenName
 protocolTokenName = Helpers.runMkTokenName "DonatPoolProtocol"

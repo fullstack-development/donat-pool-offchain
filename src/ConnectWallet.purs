@@ -18,7 +18,7 @@ runConnectWallet onComplete onError = runAff_ handler $
   handler (Right response) = onComplete response
   handler (Left err) = onError $ message err
 
-contract :: Contract () Bech32String
+contract :: Contract Bech32String
 contract = do
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
   bech32Address <- addressToBech32 ownAddress
