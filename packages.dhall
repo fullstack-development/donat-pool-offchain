@@ -148,6 +148,21 @@ let additions =
         , repo = "https://github.com/mlabs-haskell/purescript-aeson.git"
         , version = "bfd8f4dcd0522a076320f9dc710c24817438e02e"
         }
+        , bignumber =
+        { dependencies =
+          [ "console"
+          , "effect"
+          , "either"
+          , "exceptions"
+          , "functions"
+          , "integers"
+          , "partial"
+          , "prelude"
+          , "tuples"
+          ]
+        , repo = "https://github.com/mlabs-haskell/purescript-bignumber"
+        , version = "705923edd892a3397b90d28ce7db9a7181dcd599"
+      }
       , sequences =
         { dependencies =
           [ "arrays"
@@ -244,38 +259,25 @@ let additions =
         , repo = "https://github.com/firefrorefiddle/purescript-toppokki"
         , version = "6983e07bf0aa55ab779bcef12df3df339a2b5bd9"
         }
-      , bignumber =
-        { dependencies =
-          [ "console"
-          , "effect"
-          , "either"
-          , "exceptions"
-          , "functions"
-          , "integers"
-          , "partial"
-          , "prelude"
-          , "tuples"
-          ]
-        , repo = "https://github.com/mlabs-haskell/purescript-bignumber"
-        , version = "705923edd892a3397b90d28ce7db9a7181dcd599"
-        }
       , cardano-transaction-lib =
         { dependencies =
           [ "aeson"
-          , "argonaut-codecs"
           , "aff"
           , "aff-promise"
           , "aff-retry"
           , "affjax"
           , "argonaut"
+          , "argonaut-codecs"
           , "arraybuffer-types"
           , "arrays"
           , "avar"
           , "bifunctors"
           , "bigints"
+          , "bignumber"
           , "checked-exceptions"
           , "console"
           , "control"
+          , "crypto"
           , "datetime"
           , "debug"
           , "effect"
@@ -286,6 +288,7 @@ let additions =
           , "foldable-traversable"
           , "foreign"
           , "foreign-object"
+          , "formatters"
           , "functions"
           , "gen"
           , "heterogeneous"
@@ -327,6 +330,7 @@ let additions =
           , "quickcheck"
           , "quickcheck-combinators"
           , "quickcheck-laws"
+          , "random"
           , "rationals"
           , "record"
           , "refs"
@@ -346,9 +350,11 @@ let additions =
           , "unfoldable"
           , "untagged-union"
           , "variant"
+          , "web-html"
+          , "web-storage"
           ]
         , repo = "https://github.com/Plutonomicon/cardano-transaction-lib.git"
-        , version = "27f997461fda4a6f7eb52f1165a91d7d453fb990"
+        , version = "205f25b591656b825186d2187fdcba1e00c3df87"
         }
       , noble-secp256k1 =
         { dependencies =
