@@ -43,7 +43,7 @@ runReceiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Fundraisi
 runReceiveFunds onComplete onError fundraisingData =
   runContractWithUnitResult onComplete onError $ contract fundraisingData
 
-contract :: FundraisingData -> Contract () Unit
+contract :: FundraisingData -> Contract Unit
 contract frData@(FundraisingData fundraisingData) = do
   -- TODO: use mustPayToPubKeyAddress for managerPkh (need stake key hash)
   logInfo' "Running receive funds"

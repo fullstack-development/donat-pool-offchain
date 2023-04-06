@@ -3,7 +3,7 @@ module MintingPolicy.NftMinting where
 import Contract.Prelude
 
 import Contract.Address (getWalletAddresses)
-import Contract.Config (ConfigParams, testnetNamiConfig)
+import Contract.Config (ContractParams, testnetNamiConfig)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, launchAff_, runContract, liftContractM, liftContractE, liftedM)
 import Contract.PlutusData (PlutusData, Redeemer(Redeemer), toData)
@@ -39,11 +39,11 @@ runMintNft = mintNft testnetNamiConfig
 runBurnNft :: Effect Unit
 runBurnNft = burnNft testnetNamiConfig
 
-mintNft :: ConfigParams () -> Effect Unit
+mintNft :: ContractParams -> Effect Unit
 mintNft cfg = launchAff_ do
   runContract cfg contract
 
-burnNft :: ConfigParams () -> Effect Unit
+burnNft :: ContractParams -> Effect Unit
 burnNft cfg = launchAff_ do
   -- NOTE: Provide with correct Transaction input
   let
@@ -54,7 +54,7 @@ burnNft cfg = launchAff_ do
         }
   runContract cfg (burnNftContract oref)
 
-contract :: Contract () Unit
+contract :: Contract Unit
 contract = do
   logInfo' "Running mint NFT contract"
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$>
@@ -87,7 +87,7 @@ contract = do
   logInfo' $ "Token origin: " <> show oref
   logInfo' "Tx submitted successfully!"
 
-burnNftContract :: TransactionInput -> Contract () Unit
+burnNftContract :: TransactionInput -> Contract Unit
 burnNftContract txInput = do
   logInfo' "Running burn NFT contract"
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$>
@@ -122,11 +122,11 @@ burnNftContract txInput = do
 
 foreign import nftPolicy :: String
 
-mintingPolicy :: TransactionInput -> Contract () MintingPolicy
+mintingPolicy :: TransactionInput -> Contract MintingPolicy
 mintingPolicy =
   map PlutusMintingPolicy <<< mintNftPolicyScript
 
-mintNftPolicyScript :: TransactionInput -> Contract () PlutusScript
+mintNftPolicyScript :: TransactionInput -> Contract PlutusScript
 mintNftPolicyScript txInput = do
   script <- liftMaybe (error "Error decoding nftPolicy") do
     envelope <- decodeTextEnvelope nftPolicy

@@ -49,7 +49,7 @@ runCreateFundraising onComplete onError protocol params = runAff_ handler $
   handler (Right response) = onComplete response
   handler (Left err) = onError $ message err
 
-contract :: Protocol -> CreateFundraisingParams -> Contract () FundraisingData
+contract :: Protocol -> CreateFundraisingParams -> Contract FundraisingData
 contract givenProtocol (CreateFundraisingParams { description, amount, duration }) = do
   logInfo' "Running Create Fundraising contract"
   ownHashes <- ownPaymentPubKeysHashes

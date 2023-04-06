@@ -33,7 +33,7 @@ runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData
 runDonate onComplete onError fundraisingData amount =
   runContractWithUnitResult onComplete onError $ contract fundraisingData amount
 
-contract :: FundraisingData -> BigInt -> Contract () Unit
+contract :: FundraisingData -> BigInt -> Contract Unit
 contract frData@(FundraisingData fundraisingData) amount = do
   logInfo' "Running donate"
 

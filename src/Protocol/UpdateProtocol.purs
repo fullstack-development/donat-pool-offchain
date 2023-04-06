@@ -34,7 +34,7 @@ runUpdateProtocol onComplete onError protocol params = runAff_ handler $ do
   handler (Right protocolConfigParams) = onComplete protocolConfigParams
   handler (Left error) = onError $ message error
 
-contract :: Protocol -> PProtocolConfig -> Contract () ProtocolConfigParams
+contract :: Protocol -> PProtocolConfig -> Contract ProtocolConfigParams
 contract protocol protocolConfig = do
   logInfo' "Running update protocol"
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol

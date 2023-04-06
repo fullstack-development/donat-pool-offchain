@@ -17,7 +17,7 @@ import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByNFT, mkCurrencySymbol)
 
-makeFundrising :: FundraisingData -> Contract () Fundraising
+makeFundrising :: FundraisingData -> Contract Fundraising
 makeFundrising (FundraisingData fundraisingData) = do
   let protocol = fundraisingData.protocol
   _ /\ verTokenCurrency <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
@@ -38,7 +38,7 @@ newtype FundrisingScriptInfo = FundrisingScriptInfo
   , frValue :: Value.Value
   }
 
-getFundrisingScriptInfo :: Fundraising -> Value.CurrencySymbol -> Value.TokenName -> Contract () FundrisingScriptInfo
+getFundrisingScriptInfo :: Fundraising -> Value.CurrencySymbol -> Value.TokenName -> Contract FundrisingScriptInfo
 getFundrisingScriptInfo fr threadTokenCurrency threadTokenName = do
   frValidator <- fundraisingValidatorScript fr
   frValidatorHash <- getFundraisingValidatorHash fr

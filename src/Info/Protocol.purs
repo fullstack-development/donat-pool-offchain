@@ -23,7 +23,7 @@ runGetProtocolInfo onComplete onError protocol = runAff_ handler $ do
   handler (Right protocolConfigParams) = onComplete protocolConfigParams
   handler (Left error) = onError $ message error
 
-protocolInfoContract :: Protocol -> Contract () ProtocolConfigParams
+protocolInfoContract :: Protocol -> Contract ProtocolConfigParams
 protocolInfoContract protocol = do
   logInfo' "Running get protocol info"
   protocolValidatorHash <- getProtocolValidatorHash protocol
@@ -37,7 +37,7 @@ protocolInfoContract protocol = do
   logInfo' $ "Current datum: " <> show currentDatum
   pure $ mapFromProtocolDatum currentDatum
 
-getProtocolUtxo :: Protocol -> UtxoMap -> Contract () UtxoTuple
+getProtocolUtxo :: Protocol -> UtxoMap -> Contract UtxoTuple
 getProtocolUtxo protocol utxos =
   let
     p = unwrap protocol

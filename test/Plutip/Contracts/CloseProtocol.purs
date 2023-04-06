@@ -5,7 +5,6 @@ import Prelude
 import Contract.Test.Plutip (withStakeKey, withWallets)
 import Contract.Wallet (withKeyWallet)
 import Control.Monad.Error.Class (try)
-import Ctl.Internal.Plutip.Server (PlutipTest)
 import Ctl.Internal.Test.TestPlanM (TestPlanM)
 import Data.Tuple.Nested ((/\))
 import Data.BigInt as BigInt
@@ -17,8 +16,9 @@ import Test.Plutip.Contracts.StartProtocol (startProtocolParams)
 import Test.Plutip.Contracts.UpdateProtocol (incorrectProtocol)
 import Test.Plutip.Utils (isExpectedError)
 import Test.Spec.Assertions (shouldSatisfy)
+import Ctl.Internal.Test.ContractTest (ContractTest)
 
-suite :: TestPlanM PlutipTest Unit
+suite :: TestPlanM ContractTest Unit
 suite = do
   group "Close Protocol" do
 

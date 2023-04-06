@@ -26,7 +26,7 @@ runGetAllFundraisings onComplete onError protocol = runAff_ handler $
   handler (Right response) = onComplete response
   handler (Left err) = onError $ message err
 
-getAllFundraisings :: Protocol -> Contract () (Array FundraisingInfo)
+getAllFundraisings :: Protocol -> Contract (Array FundraisingInfo)
 getAllFundraisings protocol = do
   _ /\ verTokenCs <- Helpers.mkCurrencySymbol (VerToken.mintingPolicy protocol)
   verTn <- VerToken.verTokenName

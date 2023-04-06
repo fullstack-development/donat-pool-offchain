@@ -42,7 +42,7 @@ runStartProtocol onComplete onError params = runAff_ handler $
   handler (Right protocol) = onComplete protocol
   handler (Left error) = onError $ message error
 
-contract :: ProtocolConfigParams -> Contract () Protocol
+contract :: ProtocolConfigParams -> Contract Protocol
 contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
   logInfo' "Running startDonatPool protocol contract"
   ownHashes <- ownPaymentPubKeysHashes

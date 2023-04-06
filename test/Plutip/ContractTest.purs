@@ -27,14 +27,14 @@ withWallets
   :: forall (distr :: Type) (wallets :: Type)
    . UtxoDistribution distr wallets
   => distr
-  -> (wallets -> Contract () Unit)
+  -> (wallets -> Contract Unit)
   -> ContractTest
 withWallets distr tests = ContractTest \h -> h distr tests
 
 -- | A runner for a test suite that supports funds distribution.
 type ContractTestHandler :: Type -> Type -> Type -> Type
 type ContractTestHandler distr wallets r =
-  UtxoDistribution distr wallets => distr -> (wallets -> Contract () Unit) -> r
+  UtxoDistribution distr wallets => distr -> (wallets -> Contract Unit) -> r
 
 -- | Represents `Contract`s in `TestPlanM` that depend on *some* wallet `UtxoDistribution`
 newtype ContractTestPlan = ContractTestPlan
@@ -50,5 +50,5 @@ type ContractTestPlanHandler :: Type -> Type -> Type -> Type
 type ContractTestPlanHandler distr wallets r =
   UtxoDistribution distr wallets
   => distr
-  -> TestPlanM (wallets -> Contract () Unit) Unit
+  -> TestPlanM (wallets -> Contract Unit) Unit
   -> r

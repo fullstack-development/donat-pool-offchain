@@ -25,7 +25,7 @@ newtype ProtocolScriptInfo = ProtocolScriptInfo
   , pValue :: Value.Value
   }
 
-getProtocolScriptInfo :: Protocol -> Contract () ProtocolScriptInfo
+getProtocolScriptInfo :: Protocol -> Contract ProtocolScriptInfo
 getProtocolScriptInfo protocol = do
   protocolValidator <- protocolValidatorScript protocol
   protocolValidatorHash <- getProtocolValidatorHash protocol
