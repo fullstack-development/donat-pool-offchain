@@ -2,16 +2,16 @@ module Protocol.CloseProtocol where
 
 import Contract.Prelude
 
-import Contract.Address (AddressWithNetworkTag(..))
+import Contract.Address (getWalletAddressesWithNetworkTag)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
-import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedE)
+import Contract.Monad (Contract, liftedE, liftedM)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
+import Data.Array as Array
 import Data.BigInt (fromInt)
 import Effect.Exception (throw)
 import MintingPolicy.NftMinting as NFT
@@ -59,13 +59,8 @@ contract protocol@(Protocol { protocolCurrency, protocolTokenName }) = do
         <> Lookups.validator protocolInfo.pValidator
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
+  addressWithNetworkTag <- liftedM "Failed to get own address with Network Tag" $ Array.head <$> getWalletAddressesWithNetworkTag
   let
-    addressWithNetworkTag =
-      AddressWithNetworkTag
-        { address: creds.ownAddress
-        , networkId: TestnetId
-        }
-
     balanceTxConstraints :: BalanceTxConstraintsBuilder
     balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
   balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints

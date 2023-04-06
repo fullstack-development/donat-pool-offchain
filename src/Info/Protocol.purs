@@ -1,18 +1,19 @@
 module Info.Protocol where
 
 import Contract.Prelude
-import Contract.Monad (Contract, liftContractM, runContract)
-import Effect.Aff (runAff_)
-import Protocol.Models (Protocol)
-import Contract.Address (validatorHashBaseAddress)
-import Contract.Config (NetworkId(..), testnetNamiConfig)
+
+import Contract.Address (getNetworkId, validatorHashBaseAddress)
+import Contract.Config (testnetNamiConfig)
 import Contract.Log (logInfo')
+import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.Utxos (utxosAt)
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
-import Protocol.ProtocolScript (getProtocolValidatorHash)
-import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
-import Protocol.UserData (ProtocolConfigParams, mapFromProtocolDatum)
+import Effect.Aff (runAff_)
 import Effect.Exception (Error, message)
+import Protocol.Models (Protocol)
+import Protocol.ProtocolScript (getProtocolValidatorHash)
+import Protocol.UserData (ProtocolConfigParams, mapFromProtocolDatum)
+import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
 
 runGetProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
 runGetProtocolInfo onComplete onError protocol = runAff_ handler $ do
@@ -26,8 +27,9 @@ protocolInfoContract :: Protocol -> Contract () ProtocolConfigParams
 protocolInfoContract protocol = do
   logInfo' "Running get protocol info"
   protocolValidatorHash <- getProtocolValidatorHash protocol
+  networkId <- getNetworkId
   protocolAddress <-
-    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
+    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress networkId protocolValidatorHash
   utxos <- utxosAt protocolAddress
   protocolUtxo <- getProtocolUtxo protocol utxos
 

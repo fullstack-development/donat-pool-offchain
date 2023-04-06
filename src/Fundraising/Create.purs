@@ -2,10 +2,10 @@ module Fundraising.Create where
 
 import Contract.Prelude
 
-import Contract.Address (getWalletAddresses, ownPaymentPubKeysHashes, AddressWithNetworkTag(..), validatorHashBaseAddress, addressToBech32)
+import Contract.Address (getNetworkId, getWalletAddresses, ownPaymentPubKeysHashes, getWalletAddressesWithNetworkTag, validatorHashBaseAddress, addressToBech32)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
-import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Config (testnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
@@ -18,7 +18,7 @@ import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Ctl.Internal.Types.ByteArray (byteArrayFromAscii)
 import Data.Array (head) as Array
-import Data.BigInt (fromInt)
+import Data.BigInt (fromInt, toString)
 import Data.Lens (view)
 import Data.Map (toUnfoldable) as Map
 import Data.String (take)
@@ -76,8 +76,9 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
 
   protocolValidator <- protocolValidatorScript givenProtocol
   protocolValidatorHash <- getProtocolValidatorHash givenProtocol
+  networkId <- getNetworkId
   protocolAddress <-
-    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress TestnetId protocolValidatorHash
+    liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress networkId protocolValidatorHash
   logInfo' $ "Protocol validator address: " <> show protocolAddress
   protocolUtxos <- utxosAt protocolAddress
   logInfo' $ "Protocol UTxOs list: " <> show protocolUtxos
@@ -91,16 +92,16 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
     maxAmount = view _maxAmount protocolDatum
     currentAmount = fromInt amount * fromInt 1_000_000
 
-  when (currentAmount < minAmount) $ liftEffect $ throw ("Fundraising amount too small. It must be greater than " <> show minAmount <> ".")
-  when (currentAmount > maxAmount) $ liftEffect $ throw ("Fundraising amount too big. It must be less than " <> show maxAmount <> ".")
+  when (currentAmount < minAmount) $ liftEffect $ throw ("Fundraising amount too small. It must be greater than " <> toString minAmount <> ".")
+  when (currentAmount > maxAmount) $ liftEffect $ throw ("Fundraising amount too big. It must be less than " <> toString maxAmount <> ".")
 
   let
     minDurationMinutes = view _minDuration protocolDatum
     maxDurationMinutes = view _maxDuration protocolDatum
     frDurationMinutes = durationToMinutes duration
 
-  when (frDurationMinutes < minDurationMinutes) $ liftEffect $ throw ("Fundraising duration too short. It must be greater than " <> show minDurationMinutes <> ".")
-  when (frDurationMinutes > maxDurationMinutes) $ liftEffect $ throw ("Fundraising duration too long. It must be less than " <> show maxDurationMinutes <> ".")
+  when (frDurationMinutes < minDurationMinutes) $ liftEffect $ throw ("Fundraising duration too short. It must be greater than " <> toString minDurationMinutes <> ".")
+  when (frDurationMinutes > maxDurationMinutes) $ liftEffect $ throw ("Fundraising duration too long. It must be less than " <> toString maxDurationMinutes <> ".")
 
   now@(POSIXTime now') <- currentTime
   let deadline = Helpers.addTimes now (minutesToPosixTime frDurationMinutes)
@@ -127,7 +128,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
   frValidator <- fundraisingValidatorScript fundraising
   frValidatorHash <- getFundraisingValidatorHash fundraising
 
-  frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
+  frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress networkId frValidatorHash
 
   let
     protocolRedeemerData = PFundriseConfig
@@ -182,13 +183,8 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
         <> Lookups.validator frValidator
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
+  addressWithNetworkTag <- liftedM "Failed to get own address with Network Tag" $ Array.head <$> getWalletAddressesWithNetworkTag
   let
-    addressWithNetworkTag =
-      AddressWithNetworkTag
-        { address: ownAddress
-        , networkId: TestnetId
-        }
-
     balanceTxConstraints :: BalanceTxConstraintsBuilder
     balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
 
