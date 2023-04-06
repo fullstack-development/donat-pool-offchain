@@ -10,7 +10,7 @@ import Data.Array as Array
 import Data.BigInt (BigInt)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingTokenName)
-import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getCurrencyByTokenName)
+import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getCurrencyByTokenName, currencySymbolToString)
 import Shared.MinAda (minAdaValue)
 import Data.TextDecoder (decodeUtf8)
 
@@ -22,6 +22,7 @@ newtype FundraisingInfo = FundraisingInfo
   , deadline :: POSIXTime
   , threadTokenCurrency :: Value.CurrencySymbol
   , threadTokenName :: Value.TokenName
+  , path :: String
   }
 
 derive newtype instance Show FundraisingInfo
@@ -36,6 +37,7 @@ mapToFundraisingInfo utxo = do
   desc <- either (const Nothing) Just $ decodeUtf8 unwrappedDesc
   frTokenName <- fundraisingTokenName
   cs <- getCurrencyByTokenName frVal frTokenName
+  let pathStr = currencySymbolToString cs
   pure $ FundraisingInfo
     { creator: currentDatum.creatorPkh
     , description: desc
@@ -44,6 +46,7 @@ mapToFundraisingInfo utxo = do
     , deadline: currentDatum.frDeadline
     , threadTokenCurrency: cs
     , threadTokenName: frTokenName
+    , path: pathStr
     }
 
 filterByPkh :: PaymentPubKeyHash -> Array FundraisingInfo -> Array FundraisingInfo
