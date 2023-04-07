@@ -50,6 +50,7 @@ contract protocol@(Protocol { protocolCurrency, protocolTokenName }) = do
           creds.ownPkh
           creds.ownSkh
           (Value.lovelaceValueOf (fromInt 2000000))
+        <> Constraints.mustBeSignedBy creds.ownPkh
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
