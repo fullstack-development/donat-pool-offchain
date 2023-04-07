@@ -172,6 +172,7 @@ contract givenProtocol (CreateFundraisingParams { description, amount, duration 
           (Datum $ toData initialFrDatum)
           Constraints.DatumInline
           paymentToFr
+        <> Constraints.mustBeSignedBy ownPkh
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
