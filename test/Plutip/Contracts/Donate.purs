@@ -1,6 +1,5 @@
 module Test.Plutip.Contracts.Donate where
 
-import Data.BigInt (fromInt)
 import Prelude
 import Test.Plutip.Contracts.CreateFundraising (mkFundraisingDuration, mkFundraisingParams)
 import Contract.Test.Plutip (withWallets)
@@ -18,7 +17,7 @@ import Protocol.StartProtocol as StartProtocol
 import Test.Plutip.Contracts.StartProtocol (startProtocolParams)
 import Test.Plutip.Utils (isExpectedError)
 import Test.Spec.Assertions (shouldSatisfy)
-import Test.Plutip.Fixtures (distribution, incorrectFundrisingData, minDurationStartProtocolParams)
+import Test.Plutip.Fixtures (distribution, incorrectFundraisingData, minDurationStartProtocolParams)
 
 suite :: TestPlanM ContractTest Unit
 suite = do
@@ -28,25 +27,25 @@ suite = do
       withWallets distribution \(alice /\ bob) -> do
         protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
         frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 100 (mkFundraisingDuration 0 0 10))
-        withKeyWallet alice $ void $ Donate.contract frData (fromInt 20)
+        withKeyWallet alice $ void $ Donate.contract frData 20
 
     test "Should successfully donate more than fundraising goal" do
       withWallets distribution \(alice /\ bob) -> do
         protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
         frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
-        withKeyWallet alice $ void $ Donate.contract frData (fromInt 100)
+        withKeyWallet alice $ void $ Donate.contract frData 100
 
-    test "Should successfully donate by fundrising creator" do
+    test "Should successfully donate by fundraising creator" do
       withWallets distribution \(alice /\ bob) -> do
         protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
         frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
-        withKeyWallet bob $ void $ Donate.contract frData (fromInt 50)
+        withKeyWallet bob $ void $ Donate.contract frData 50
 
-    test "Should fail if fundrising does not exist" do
+    test "Should fail if fundraising does not exist" do
       withWallets distribution \(alice /\ bob) -> do
         protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
-        frData <- incorrectFundrisingData protocol
-        result <- try $ withKeyWallet bob $ void $ Donate.contract frData (fromInt 50)
+        frData <- incorrectFundraisingData protocol
+        result <- try $ withKeyWallet bob $ void $ Donate.contract frData 50
         let errMsg = "Fundraising UTxO with given nft not found"
         result `shouldSatisfy` (isExpectedError errMsg)
 
@@ -54,8 +53,8 @@ suite = do
       withWallets distribution \(alice /\ bob) -> do
         protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
         frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
-        withKeyWallet alice $ void $ Donate.contract frData (fromInt 80)
-        result <- try $ withKeyWallet alice $ void $ Donate.contract frData (fromInt 20)
+        withKeyWallet alice $ void $ Donate.contract frData 80
+        result <- try $ withKeyWallet alice $ void $ Donate.contract frData 20
         let errMsg = "fundraising goal is already completed"
         result `shouldSatisfy` (isExpectedError errMsg)
 
@@ -64,13 +63,13 @@ suite = do
         protocol <- withKeyWallet alice $ StartProtocol.contract minDurationStartProtocolParams
         frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 1))
         liftAff $ delay $ Milliseconds 60000.0 -- 1 min
-        result <- try $ withKeyWallet alice $ void $ Donate.contract frData (fromInt 20)
+        result <- try $ withKeyWallet alice $ void $ Donate.contract frData 20
         let errMsg = "fundraising time is over"
         result `shouldSatisfy` (isExpectedError errMsg)
 
-    test "Should successfully donate on 1 minute duration funsraising" do
+    test "Should successfully donate on 1 minute duration fundraising" do
       withWallets distribution \(alice /\ bob) -> do
         protocol <- withKeyWallet alice $ StartProtocol.contract minDurationStartProtocolParams
         frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 1))
-        withKeyWallet bob $ void $ Donate.contract frData (fromInt 50)
+        withKeyWallet bob $ void $ Donate.contract frData 50
 

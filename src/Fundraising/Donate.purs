@@ -14,7 +14,7 @@ import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Ctl.Internal.Types.Datum (Datum(..))
 import Ctl.Internal.Types.Interval (from)
-import Data.BigInt (BigInt, fromInt)
+import Data.BigInt (fromInt)
 import Effect.Exception (throw)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.Models (Fundraising(..))
@@ -23,22 +23,22 @@ import Fundraising.UserData (FundraisingData(..))
 import Shared.Helpers (checkTokenInUTxO)
 import Shared.MinAda (minAdaValue)
 import Shared.RunContract (runContractWithUnitResult)
-import Fundraising.FundrisingScriptInfo (FundrisingScriptInfo(..), getFundrisingScriptInfo, makeFundrising)
+import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
 import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
 
-runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> BigInt -> Effect Unit
+runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Int -> Effect Unit
 runDonate onComplete onError fundraisingData amount =
   runContractWithUnitResult onComplete onError $ contract fundraisingData amount
 
-contract :: FundraisingData -> BigInt -> Contract Unit
+contract :: FundraisingData -> Int -> Contract Unit
 contract frData@(FundraisingData fundraisingData) adaAmount = do
   logInfo' "Running donate"
 
   let
     threadTokenCurrency = fundraisingData.frThreadTokenCurrency
     threadTokenName = fundraisingData.frThreadTokenName
-  fundraising@(Fundraising fr) <- makeFundrising frData
-  (FundrisingScriptInfo frInfo) <- getFundrisingScriptInfo fundraising threadTokenCurrency threadTokenName
+  fundraising@(Fundraising fr) <- makeFundraising frData
+  (FundraisingScriptInfo frInfo) <- getFundraisingScriptInfo fundraising threadTokenCurrency threadTokenName
   let isVerTokenInUtxo = checkTokenInUTxO (fr.verTokenCurrency /\ fr.verTokenName) frInfo.frUtxo
   unless isVerTokenInUtxo $ throw >>> liftEffect $ "verToken is not in fundraising utxo"
   let
@@ -46,7 +46,7 @@ contract frData@(FundraisingData fundraisingData) adaAmount = do
     (PFundraisingDatum currentDatum) = frInfo.frDatum
 
   now <- currentTime
-  let amount = adaAmount * fromInt 1_000_000
+  let amount = fromInt adaAmount * fromInt 1_000_000
   let deadline = currentDatum.frDeadline
   let amountToRaise = currentDatum.frAmount
   let currentDonationsAmount = Value.valueToCoin' currentFunds - Value.valueToCoin' minAdaValue - Value.valueToCoin' minAdaValue

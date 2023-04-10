@@ -27,8 +27,8 @@ distribution =
     , BigInt.fromInt 2_000_000_000
     ]
 
-incorrectFundrisingData :: Protocol -> Contract FundraisingData
-incorrectFundrisingData protocol = do
+incorrectFundraisingData :: Protocol -> Contract FundraisingData
+incorrectFundraisingData protocol = do
   tn <- Helpers.runMkTokenName "FundraisingThreadToken"
   pure $ FundraisingData { protocol: protocol, frThreadTokenCurrency: Value.adaSymbol, frThreadTokenName: tn }
 
