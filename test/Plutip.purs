@@ -19,6 +19,7 @@ import Test.Plutip.Contracts.StartProtocol as StartProtocol
 import Test.Plutip.Contracts.UpdateProtocol as UpdateProtocol
 import Test.Spec.Runner (defaultConfig)
 import Test.Plutip.Contracts.Donate as Donate
+import Test.Plutip.Contracts.ReceiveFunds as ReceiveFunds
 
 -- Run tests with 'spago run --main Test.Plutip'
 main :: Effect Unit
@@ -33,3 +34,4 @@ main = interruptOnSignal SIGINT =<< launchAff do
             CloseProtocol.suite
             CreateFundraising.suite
             Donate.suite
+            ReceiveFunds.suite

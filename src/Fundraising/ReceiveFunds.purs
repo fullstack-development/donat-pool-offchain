@@ -1,5 +1,6 @@
 module Fundraising.ReceiveFunds
   ( runReceiveFunds
+  , contract
   ) where
 
 import Contract.Prelude

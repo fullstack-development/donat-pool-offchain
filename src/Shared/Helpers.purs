@@ -110,8 +110,5 @@ bigIntRatioToNumber x = BigInt.toNumber (numerator x) / BigInt.toNumber (denomin
 addTimes :: POSIXTime -> POSIXTime -> POSIXTime
 addTimes (POSIXTime time1) (POSIXTime time2) = POSIXTime (time1 + time2)
 
-roundTime :: POSIXTime -> POSIXTime
-roundTime (POSIXTime time) = POSIXTime (time + fromInt 1)
-
 currencySymbolToString :: Value.CurrencySymbol -> String
 currencySymbolToString = byteArrayToHex <<< Value.getCurrencySymbol
