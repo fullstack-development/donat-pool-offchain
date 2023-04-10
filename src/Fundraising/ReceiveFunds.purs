@@ -5,10 +5,8 @@ module Fundraising.ReceiveFunds
 import Contract.Prelude
 
 import Fundraising.FundrisingScriptInfo (FundrisingScriptInfo(..), getFundrisingScriptInfo, makeFundrising)
-import Contract.Address (AddressWithNetworkTag(..))
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
-import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftedE, liftContractM)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
@@ -102,14 +100,8 @@ contract frData@(FundraisingData fundraisingData) = do
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let
-    addressWithNetworkTag =
-      AddressWithNetworkTag
-        { address: creds.ownAddress
-        , networkId: TestnetId
-        }
-
     balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
+    balanceTxConstraints = mustSendChangeToAddress creds.ownAddressWithNetworkTag
   balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
   balancedSignedTx <- signTransaction balancedTx
   txId <- submit balancedSignedTx
