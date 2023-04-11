@@ -1,14 +1,13 @@
 module Fundraising.ReceiveFunds
   ( runReceiveFunds
+  , contract
   ) where
 
 import Contract.Prelude
 
-import Fundraising.FundrisingScriptInfo (FundrisingScriptInfo(..), getFundrisingScriptInfo, makeFundrising)
-import Contract.Address (AddressWithNetworkTag(..))
+import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
-import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftedE, liftContractM)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
@@ -50,8 +49,8 @@ contract frData@(FundraisingData fundraisingData) = do
   let protocol = fundraisingData.protocol
   let threadTokenCurrency = fundraisingData.frThreadTokenCurrency
   let threadTokenName = fundraisingData.frThreadTokenName
-  fundraising@(Fundraising fr) <- makeFundrising frData
-  (FundrisingScriptInfo frInfo) <- getFundrisingScriptInfo fundraising threadTokenCurrency threadTokenName
+  fundraising@(Fundraising fr) <- makeFundraising frData
+  (FundraisingScriptInfo frInfo) <- getFundraisingScriptInfo fundraising threadTokenCurrency threadTokenName
   let isVerTokenInUtxo = checkTokenInUTxO (fr.verTokenCurrency /\ fr.verTokenName) frInfo.frUtxo
   unless isVerTokenInUtxo $ throw >>> liftEffect $ "verToken is not in fundraising utxo"
   let
@@ -71,8 +70,8 @@ contract frData@(FundraisingData fundraisingData) = do
   let threadTokenToBurnValue = Value.singleton threadTokenCurrency threadTokenName (fromInt (-1))
   threadTokenMintingPolicy <- NFT.mintingPolicy currentDatum.tokenOrigin
   verTokenMintingPolicy <- VerToken.mintingPolicy protocol
-  feeByFundrising <- liftContractM "Can't create BigInt after round" $ calcFee currentDatum.frFee donatedAmount
-  let amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - feeByFundrising)
+  feeByFundraising <- liftContractM "Can't create BigInt after round" $ calcFee currentDatum.frFee donatedAmount
+  let amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - feeByFundraising)
 
   let
     constraints :: Constraints.TxConstraints Void Void
@@ -88,7 +87,7 @@ contract frData@(FundraisingData fundraisingData) = do
           (Redeemer $ toData $ PBurnNft fr.verTokenName)
           verTokenToBurnValue
         <> Constraints.mustPayToPubKeyAddress creds.ownPkh creds.ownSkh amountToReceiver
-        <> Constraints.mustPayToPubKey managerPkh (Value.lovelaceValueOf feeByFundrising)
+        <> Constraints.mustPayToPubKey managerPkh (Value.lovelaceValueOf feeByFundraising)
         <> Constraints.mustValidateIn (from now)
 
   let
@@ -102,14 +101,8 @@ contract frData@(FundraisingData fundraisingData) = do
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let
-    addressWithNetworkTag =
-      AddressWithNetworkTag
-        { address: creds.ownAddress
-        , networkId: TestnetId
-        }
-
     balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
+    balanceTxConstraints = mustSendChangeToAddress creds.ownAddressWithNetworkTag
   balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
   balancedSignedTx <- signTransaction balancedTx
   txId <- submit balancedSignedTx

@@ -1,4 +1,4 @@
-module Fundraising.FundrisingScriptInfo where
+module Fundraising.FundraisingScriptInfo where
 
 import Contract.Prelude
 import Ctl.Internal.Types.Scripts (Validator, ValidatorHash)
@@ -17,8 +17,8 @@ import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByNFT, mkCurrencySymbol)
 
-makeFundrising :: FundraisingData -> Contract Fundraising
-makeFundrising (FundraisingData fundraisingData) = do
+makeFundraising :: FundraisingData -> Contract Fundraising
+makeFundraising (FundraisingData fundraisingData) = do
   let protocol = fundraisingData.protocol
   _ /\ verTokenCurrency <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
   verTokenName <- VerToken.verTokenName
@@ -28,7 +28,7 @@ makeFundrising (FundraisingData fundraisingData) = do
     , verTokenName: verTokenName
     }
 
-newtype FundrisingScriptInfo = FundrisingScriptInfo
+newtype FundraisingScriptInfo = FundraisingScriptInfo
   { frValidator :: Validator
   , frValidatorHash :: ValidatorHash
   , frAddress :: Address
@@ -38,16 +38,16 @@ newtype FundrisingScriptInfo = FundrisingScriptInfo
   , frValue :: Value.Value
   }
 
-getFundrisingScriptInfo :: Fundraising -> Value.CurrencySymbol -> Value.TokenName -> Contract FundrisingScriptInfo
-getFundrisingScriptInfo fr threadTokenCurrency threadTokenName = do
+getFundraisingScriptInfo :: Fundraising -> Value.CurrencySymbol -> Value.TokenName -> Contract FundraisingScriptInfo
+getFundraisingScriptInfo fr threadTokenCurrency threadTokenName = do
   frValidator <- fundraisingValidatorScript fr
   frValidatorHash <- getFundraisingValidatorHash fr
-  frAddress <- liftContractM "Impossible to get Fundrising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
+  frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
   frUtxos <- utxosAt frAddress
   frUtxo <- getUtxoByNFT "Fundraising" (threadTokenCurrency /\ threadTokenName) frUtxos
   frDatum <- liftContractM "Impossible to get Fundraising Datum" $ extractDatumFromUTxO frUtxo
   let frFunds = extractValueFromUTxO frUtxo
-  pure $ FundrisingScriptInfo
+  pure $ FundraisingScriptInfo
     { frValidator: frValidator
     , frValidatorHash: frValidatorHash
     , frAddress: frAddress

@@ -8,7 +8,6 @@ import Contract.Address (Bech32String)
 import Common.ConnectWallet as ConnectWallet
 import Fundraising.Donate as Donate
 import Fundraising.ReceiveFunds as ReceiveFunds
-import Data.BigInt (BigInt)
 import Fundraising.Create as CreateFundraising
 import Fundraising.UserData (CreateFundraisingParams, FundraisingData)
 import Info.AllFundraisings as AllFundraisings
@@ -28,7 +27,7 @@ data Contracts = Contracts
   , closeProtocol :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , getProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , createFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
-  , donate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> BigInt -> Effect Unit
+  , donate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Int -> Effect Unit
   , receiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Effect Unit
   , getAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , getUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit

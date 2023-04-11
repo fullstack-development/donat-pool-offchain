@@ -73,7 +73,7 @@ const App = () => {
   };
 
   const onDonate = () => {   
-    a.main.value0.donate(console.log)(console.log)(fundraisingData)(100_000_000)();
+    a.main.value0.donate(console.log)(console.log)(fundraisingData)(100)();
   };
 
   const onReceiveFunds = () => {
