@@ -34,33 +34,18 @@ kupoProdConfig host secure =
     , path: Just "kupo"
     }
 
--- ogmiosProdWsConfig :: ServerConfig
--- ogmiosProdWsConfig =
---   { port: UInt.fromInt 1337
---   , host: "testnet.donat-pool.io"
---   , secure: true
---   , path: Nothing
---   }
--- ogmiosProdWsConfig :: ServerConfig
--- ogmiosProdWsConfig =
---   { port: UInt.fromInt 443
---   , host: "testnet.donat-pool.io"
---   , secure: true
---   , path: Just "ogmios"
---   }
-
-ogmiosProdWsConfig :: String -> Boolean -> ServerConfig
-ogmiosProdWsConfig host secure =
-  { port: UInt.fromInt 1337
-  , host: host
-  , secure: false
+ogmiosProdWsConfig :: ServerConfig
+ogmiosProdWsConfig =
+  { port: UInt.fromInt 443
+  , host: "ogmios.donat-pool.io"
+  , secure: true
   , path: Nothing
   }
 
 testnetNamiConfig :: String -> Boolean -> ContractParams
 testnetNamiConfig host secure = testnetConfig
   { backendParams = mkCtlBackendParams
-      { ogmiosConfig: if isProduction then ogmiosProdWsConfig host secure else defaultOgmiosWsConfig
+      { ogmiosConfig: if isProduction then ogmiosProdWsConfig else defaultOgmiosWsConfig
       , kupoConfig: if isProduction then kupoProdConfig host secure else defaultKupoServerConfig
       }
   , walletSpec = Just ConnectToNami
