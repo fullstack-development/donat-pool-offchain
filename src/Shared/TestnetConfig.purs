@@ -49,18 +49,18 @@ kupoProdConfig host secure =
 --   , path: Just "ogmios"
 --   }
 
-ogmiosProdWsConfig :: String -> ServerConfig
-ogmiosProdWsConfig host =
+ogmiosProdWsConfig :: String -> Boolean -> ServerConfig
+ogmiosProdWsConfig host secure =
   { port: UInt.fromInt 1337
   , host: host
-  , secure: true
+  , secure: secure
   , path: Nothing
   }
 
 testnetNamiConfig :: String -> Boolean -> ContractParams
 testnetNamiConfig host secure = testnetConfig
   { backendParams = mkCtlBackendParams
-      { ogmiosConfig: if isProduction then ogmiosProdWsConfig host else defaultOgmiosWsConfig
+      { ogmiosConfig: if isProduction then ogmiosProdWsConfig host secure else defaultOgmiosWsConfig
       , kupoConfig: if isProduction then kupoProdConfig host secure else defaultKupoServerConfig
       }
   , walletSpec = Just ConnectToNami
