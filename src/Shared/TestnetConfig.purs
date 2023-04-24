@@ -33,7 +33,7 @@ kupoConfig host secure =
 
 ogmiosWsConfig :: String -> Boolean -> ServerConfig
 ogmiosWsConfig host secure =
-  { port: UInt.fromInt 80
+  { port: UInt.fromInt 443  -- TODO: no hardcode
   , host: host
   , secure: secure
   , path: Just "ogmios"  -- TODO: only for host != localhost
