@@ -38,7 +38,7 @@ ogmiosProdWsConfig :: ServerConfig
 ogmiosProdWsConfig =
   { port: UInt.fromInt 1337
   , host: "0.0.0.0"
-  , secure: false
+  , secure: true
   , path: Nothing
   }
 
