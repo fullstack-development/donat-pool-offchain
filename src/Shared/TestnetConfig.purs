@@ -2,7 +2,7 @@ module Shared.TestnetConfig where
 
 import Prelude
 
-import Contract.Config (testnetConfig)
+import Contract.Config (defaultKupoServerConfig, defaultOgmiosWsConfig, testnetConfig)
 import Ctl.Internal.Contract.Monad (ContractParams)
 import Ctl.Internal.Contract.QueryBackend (mkCtlBackendParams)
 import Ctl.Internal.ServerConfig (ServerConfig)
@@ -20,31 +20,36 @@ mkTestnetNamiConfig = do
   location <- WEB.window >>= WEB.location
   host <- WEB.hostname location
   protocol <- WEB.protocol location
-  let secure = protocol == "https:"
+  let secure = (protocol == "https:" || protocol == "wss")
   pure $ testnetNamiConfig host secure
 
-kupoConfig :: String -> Boolean -> ServerConfig
-kupoConfig host secure =
+kupoProdConfig :: String -> Boolean -> ServerConfig
+kupoProdConfig host secure =
   { port: UInt.fromInt 4008
   , host: "127.0.0.1"
   , secure: false
   , path: Just "kupo"
   }
 
-ogmiosWsConfig :: String -> Boolean -> ServerConfig
-ogmiosWsConfig host secure =
-  { port: UInt.fromInt 443  -- TODO: no hardcode
-  , host: host
-  , secure: secure
-  , path: Just "ogmios"  -- TODO: only for host != localhost
-  }
+ogmiosProdWsConfig :: String -> Boolean -> ServerConfig
+ogmiosProdWsConfig host secure =
+  let
+    port = if secure then 443 else 80
+  in
+    { port: UInt.fromInt port
+    , host: host
+    , secure: secure
+    , path: Just "ogmios" -- Use nginx proxy for location /ogmios/ 
+    }
 
 testnetNamiConfig :: String -> Boolean -> ContractParams
 testnetNamiConfig host secure = testnetConfig
   { backendParams = mkCtlBackendParams
-      { ogmiosConfig: ogmiosWsConfig host secure
-      , kupoConfig: kupoConfig host secure
+      { ogmiosConfig: if isProduction then ogmiosProdWsConfig host secure else defaultOgmiosWsConfig
+      , kupoConfig: if isProduction then kupoProdConfig host secure else defaultKupoServerConfig
       }
   , walletSpec = Just ConnectToNami
   , logLevel = Debug
   }
+  where
+  isProduction = not $ host == "localhost"
