@@ -26,8 +26,8 @@ mkTestnetNamiConfig = do
 kupoProdConfig :: String -> Boolean -> ServerConfig
 kupoProdConfig host secure =
   { port: UInt.fromInt 4008
-  , host: "127.0.0.1"
-  , secure: false
+  , host: host
+  , secure: secure
   , path: Just "kupo"
   }
 
