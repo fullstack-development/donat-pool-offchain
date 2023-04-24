@@ -3,7 +3,8 @@ module Info.AllFundraisings where
 import Contract.Prelude
 
 import Contract.Address (validatorHashBaseAddress)
-import Contract.Config (testnetNamiConfig, NetworkId(TestnetId))
+import Contract.Config (NetworkId(TestnetId))
+import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.Utxos (utxosAt)
@@ -19,8 +20,9 @@ import Info.UserData (FundraisingInfo, mapToFundraisingInfo)
 import Data.Array (mapMaybe)
 
 runGetAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
-runGetAllFundraisings onComplete onError protocol = runAff_ handler $
-  runContract testnetNamiConfig (getAllFundraisings protocol)
+runGetAllFundraisings onComplete onError protocol = do
+  testnetNamiConfig <- mkTestnetNamiConfig
+  runAff_ handler $ runContract testnetNamiConfig (getAllFundraisings protocol)
   where
   handler :: Either Error (Array FundraisingInfo) -> Effect Unit
   handler (Right response) = onComplete response

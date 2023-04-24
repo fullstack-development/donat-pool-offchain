@@ -8,7 +8,7 @@ import Ctl.Internal.Contract.QueryBackend (mkCtlBackendParams)
 import Ctl.Internal.ServerConfig (ServerConfig)
 import Ctl.Internal.Wallet.Spec (WalletSpec(..))
 import Data.Log.Level (LogLevel(Debug))
-import Data.Maybe (Maybe(Just, Nothing))
+import Data.Maybe (Maybe(Just))
 import Data.UInt as UInt
 import Effect (Effect)
 import Web.HTML (window) as WEB
@@ -34,21 +34,10 @@ kupoProdConfig host secure =
     , path: Just "kupo"
     }
 
-ogmiosProdWsConfig :: String -> Boolean -> ServerConfig
-ogmiosProdWsConfig host secure =
-  let
-    port = if secure then 443 else 80
-  in
-    { port: UInt.fromInt port
-    , host: host
-    , secure: secure
-    , path: Just "ogmios" -- Use nginx proxy for location /ogmios/ 
-    }
-
 testnetNamiConfig :: String -> Boolean -> ContractParams
 testnetNamiConfig host secure = testnetConfig
   { backendParams = mkCtlBackendParams
-      { ogmiosConfig: defaultOgmiosWsConfig -- if isProduction then ogmiosProdWsConfig host secure else defaultOgmiosWsConfig
+      { ogmiosConfig: defaultOgmiosWsConfig
       , kupoConfig: if isProduction then kupoProdConfig host secure else defaultKupoServerConfig
       }
   , walletSpec = Just ConnectToNami
