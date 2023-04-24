@@ -46,7 +46,7 @@ testnetNamiConfig :: String -> Boolean -> ContractParams
 testnetNamiConfig host secure = testnetConfig
   { backendParams = mkCtlBackendParams
       { ogmiosConfig: defaultOgmiosWsConfig -- if isProduction then ogmiosProdWsConfig host secure else defaultOgmiosWsConfig
-      , kupoConfig: defaultKupoServerConfig -- if isProduction then kupoProdConfig host secure else defaultKupoServerConfig
+      , kupoConfig: if isProduction then kupoProdConfig host secure else defaultKupoServerConfig
       }
   , walletSpec = Just ConnectToNami
   , logLevel = Debug
