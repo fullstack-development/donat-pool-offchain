@@ -25,11 +25,14 @@ mkTestnetNamiConfig = do
 
 kupoProdConfig :: String -> Boolean -> ServerConfig
 kupoProdConfig host secure =
-  { port: UInt.fromInt 4008
-  , host: host
-  , secure: secure
-  , path: Just "kupo"
-  }
+  let
+    port = if secure then 443 else 80
+  in
+    { port: UInt.fromInt port
+    , host: host
+    , secure: secure
+    , path: Just "kupo"
+    }
 
 ogmiosProdWsConfig :: String -> Boolean -> ServerConfig
 ogmiosProdWsConfig host secure =
