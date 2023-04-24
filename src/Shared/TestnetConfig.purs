@@ -34,12 +34,19 @@ kupoProdConfig host secure =
     , path: Just "kupo"
     }
 
+-- ogmiosProdWsConfig :: ServerConfig
+-- ogmiosProdWsConfig =
+--   { port: UInt.fromInt 1337
+--   , host: "testnet.donat-pool.io"
+--   , secure: true
+--   , path: Nothing
+--   }
 ogmiosProdWsConfig :: ServerConfig
 ogmiosProdWsConfig =
-  { port: UInt.fromInt 1337
+  { port: UInt.fromInt 443
   , host: "testnet.donat-pool.io"
   , secure: true
-  , path: Nothing
+  , path: Just "ogmios"
   }
 
 testnetNamiConfig :: String -> Boolean -> ContractParams
