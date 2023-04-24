@@ -37,7 +37,7 @@ kupoProdConfig host secure =
 ogmiosProdWsConfig :: ServerConfig
 ogmiosProdWsConfig =
   { port: UInt.fromInt 1337
-  , host: "0.0.0.0"
+  , host: "testnet.donat-pool.io"
   , secure: true
   , path: Nothing
   }
