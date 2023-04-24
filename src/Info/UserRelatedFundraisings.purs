@@ -3,7 +3,7 @@ module Info.UserRelatedFundraisings where
 import Contract.Prelude
 
 import Contract.Address (ownPaymentPubKeysHashes)
-import Contract.Config (testnetNamiConfig)
+import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, runContract)
 import Data.Array as Array
@@ -14,8 +14,9 @@ import Info.UserData (FundraisingInfo, filterByPkh)
 import Protocol.Models (Protocol)
 
 runGetUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
-runGetUserRelatedFundraisings onComplete onError protocol = runAff_ handler $
-  runContract testnetNamiConfig (getUserRelatedFundraisings protocol)
+runGetUserRelatedFundraisings onComplete onError protocol = do
+  testnetNamiConfig <- mkTestnetNamiConfig
+  runAff_ handler $ runContract testnetNamiConfig (getUserRelatedFundraisings protocol)
   where
   handler :: Either Error (Array FundraisingInfo) -> Effect Unit
   handler (Right response) = onComplete response

@@ -5,7 +5,7 @@ import Contract.Prelude
 import Contract.Address (getNetworkId, getWalletAddresses, ownPaymentPubKeysHashes, getWalletAddressesWithNetworkTag, validatorHashBaseAddress, addressToBech32)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
-import Contract.Config (testnetNamiConfig)
+import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
@@ -42,8 +42,9 @@ import Shared.MinAda (minAdaValue)
 import Shared.Duration (durationToMinutes, minutesToPosixTime)
 
 runCreateFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
-runCreateFundraising onComplete onError protocol params = runAff_ handler $
-  runContract testnetNamiConfig (contract protocol params)
+runCreateFundraising onComplete onError protocol params = do
+  testnetNamiConfig <- mkTestnetNamiConfig
+  runAff_ handler $ runContract testnetNamiConfig (contract protocol params)
   where
   handler :: Either Error FundraisingData -> Effect Unit
   handler (Right response) = onComplete response
