@@ -33,10 +33,10 @@ kupoConfig host secure =
 
 ogmiosWsConfig :: String -> Boolean -> ServerConfig
 ogmiosWsConfig host secure =
-  { port: UInt.fromInt 1337
-  , host: "0.0.0.0"
+  { port: UInt.fromInt 4008
+  , host: "127.0.0.1"
   , secure: false
-  , path: Nothing
+  , path: Just "ogmios"
   }
 
 testnetNamiConfig :: String -> Boolean -> ContractParams
