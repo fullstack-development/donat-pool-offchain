@@ -43,7 +43,7 @@ kupoProdConfig host secure =
 --   }
 ogmiosProdWsConfig :: ServerConfig
 ogmiosProdWsConfig =
-  { port: UInt.fromInt 443
+  { port: UInt.fromInt 8020
   , host: "testnet.donat-pool.io"
   , secure: true
   , path: Just "ogmios"
