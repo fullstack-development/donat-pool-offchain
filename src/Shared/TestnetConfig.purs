@@ -53,7 +53,7 @@ ogmiosProdWsConfig :: String -> Boolean -> ServerConfig
 ogmiosProdWsConfig host secure =
   { port: UInt.fromInt 1337
   , host: host
-  , secure: secure
+  , secure: false
   , path: Nothing
   }
 
