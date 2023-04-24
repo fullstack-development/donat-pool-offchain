@@ -4,7 +4,7 @@ import Contract.Prelude
 
 import Contract.Address (getWalletAddressesWithNetworkTag, getWalletAddresses, ownPaymentPubKeysHashes)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
-import Contract.Config (testnetNamiConfig)
+import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, liftedE, liftedM, runContract)
@@ -26,9 +26,10 @@ import Effect.Aff (runAff_)
 import Effect.Exception (Error, message, throw)
 
 runUpdateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> ProtocolConfigParams -> Effect Unit
-runUpdateProtocol onComplete onError protocol params = runAff_ handler $ do
+runUpdateProtocol onComplete onError protocol params = do
+  testnetNamiConfig <- mkTestnetNamiConfig
   let protocolConfig = mapToProtocolConfig params
-  runContract testnetNamiConfig (contract protocol protocolConfig)
+  runAff_ handler $ runContract testnetNamiConfig (contract protocol protocolConfig)
   where
   handler :: Either Error ProtocolConfigParams -> Effect Unit
   handler (Right protocolConfigParams) = onComplete protocolConfigParams

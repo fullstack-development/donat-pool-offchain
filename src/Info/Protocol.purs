@@ -3,7 +3,7 @@ module Info.Protocol where
 import Contract.Prelude
 
 import Contract.Address (getNetworkId, validatorHashBaseAddress)
-import Contract.Config (testnetNamiConfig)
+import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.Utxos (utxosAt)
@@ -16,8 +16,9 @@ import Protocol.UserData (ProtocolConfigParams, mapFromProtocolDatum)
 import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
 
 runGetProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
-runGetProtocolInfo onComplete onError protocol = runAff_ handler $ do
-  runContract testnetNamiConfig (protocolInfoContract protocol)
+runGetProtocolInfo onComplete onError protocol = do
+  testnetNamiConfig <- mkTestnetNamiConfig
+  runAff_ handler $ runContract testnetNamiConfig (protocolInfoContract protocol)
   where
   handler :: Either Error ProtocolConfigParams -> Effect Unit
   handler (Right protocolConfigParams) = onComplete protocolConfigParams

@@ -20,22 +20,22 @@ mkTestnetNamiConfig = do
   location <- WEB.window >>= WEB.location
   host <- WEB.hostname location
   protocol <- WEB.protocol location
-  let secure = protocol == "https:" 
+  let secure = protocol == "https:"
   pure $ testnetNamiConfig host secure
 
 kupoConfig :: String -> Boolean -> ServerConfig
 kupoConfig host secure =
   { port: UInt.fromInt 4008
-  , host: "127.0.0.1"
-  , secure: false
+  , host: host
+  , secure: secure
   , path: Just "kupo"
   }
 
 ogmiosWsConfig :: String -> Boolean -> ServerConfig
 ogmiosWsConfig host secure =
   { port: UInt.fromInt 1337
-  , host: "127.0.0.1"
-  , secure: false
+  , host: host
+  , secure: secure
   , path: Nothing
   }
 

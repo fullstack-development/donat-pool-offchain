@@ -11,7 +11,7 @@ import Contract.Address
   , validatorHashBaseAddress
   )
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
-import Contract.Config (testnetNamiConfig)
+import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
@@ -35,8 +35,9 @@ import Protocol.UserData (ProtocolConfigParams(..))
 import Shared.Helpers as Helpers
 
 runStartProtocol :: (Protocol -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
-runStartProtocol onComplete onError params = runAff_ handler $
-  runContract testnetNamiConfig (contract params)
+runStartProtocol onComplete onError params = do
+  testnetNamiConfig <- mkTestnetNamiConfig
+  runAff_ handler $ runContract testnetNamiConfig (contract params)
   where
   handler :: Either Error Protocol -> Effect Unit
   handler (Right protocol) = onComplete protocol
