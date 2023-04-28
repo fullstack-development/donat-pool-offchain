@@ -1,7 +1,7 @@
 module Info.AppInfo where
 
 import Contract.Prelude
-import Info.UserData (AppInfo(..), UserInfo(..))
+
 import Contract.Address (addressWithNetworkTagToBech32, getNetworkId, validatorHashBaseAddress)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, runContract)
@@ -10,24 +10,26 @@ import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
 import Effect.Aff (runAff_)
 import Effect.Exception (Error, message)
 import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
+import Info.UserData (AppInfo(..), UserInfo(..))
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash)
-import Protocol.UserData (getConfigFromProtocolDatum)
+import Protocol.UserData (ProtocolData, dataToProtocol, getConfigFromProtocolDatum)
 import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
 import Shared.TestnetConfig (mkTestnetNamiConfig)
 
-runGetAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
-runGetAppInfo onComplete onError protocol = do
+runGetAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
+runGetAppInfo onComplete onError protocolData = do
   testnetNamiConfig <- mkTestnetNamiConfig
-  runAff_ handler $ runContract testnetNamiConfig (appInfoContract protocol)
+  runAff_ handler $ runContract testnetNamiConfig (appInfoContract protocolData)
   where
   handler :: Either Error AppInfo -> Effect Unit
   handler (Right appInfo) = onComplete appInfo
   handler (Left error) = onError $ message error
 
-appInfoContract :: Protocol -> Contract AppInfo
-appInfoContract protocol = do
+appInfoContract :: ProtocolData -> Contract AppInfo
+appInfoContract protocolData = do
   logInfo' "Running get protocol info"
+  protocol <- dataToProtocol protocolData
   protocolValidatorHash <- getProtocolValidatorHash protocol
   networkId <- getNetworkId
   protocolAddress <-

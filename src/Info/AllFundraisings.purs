@@ -4,32 +4,33 @@ import Contract.Prelude
 
 import Contract.Address (validatorHashBaseAddress)
 import Contract.Config (NetworkId(TestnetId))
-import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.Utxos (utxosAt)
+import Data.Array (mapMaybe)
 import Data.Map as Map
 import Effect.Aff (runAff_)
 import Effect.Exception (Error, message)
 import Fundraising.FundraisingScript (getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
-import MintingPolicy.VerTokenMinting as VerToken
-import Protocol.Models (Protocol)
-import Shared.Helpers as Helpers
 import Info.UserData (FundraisingInfo, mapToFundraisingInfo)
-import Data.Array (mapMaybe)
+import MintingPolicy.VerTokenMinting as VerToken
+import Protocol.UserData (ProtocolData, dataToProtocol)
+import Shared.Helpers as Helpers
+import Shared.TestnetConfig (mkTestnetNamiConfig)
 
-runGetAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
-runGetAllFundraisings onComplete onError protocol = do
+runGetAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
+runGetAllFundraisings onComplete onError protocolData = do
   testnetNamiConfig <- mkTestnetNamiConfig
-  runAff_ handler $ runContract testnetNamiConfig (getAllFundraisings protocol)
+  runAff_ handler $ runContract testnetNamiConfig (getAllFundraisings protocolData)
   where
   handler :: Either Error (Array FundraisingInfo) -> Effect Unit
   handler (Right response) = onComplete response
   handler (Left err) = onError $ message err
 
-getAllFundraisings :: Protocol -> Contract (Array FundraisingInfo)
-getAllFundraisings protocol = do
+getAllFundraisings :: ProtocolData -> Contract (Array FundraisingInfo)
+getAllFundraisings protocolData = do
+  protocol <- dataToProtocol protocolData
   _ /\ verTokenCs <- Helpers.mkCurrencySymbol (VerToken.mintingPolicy protocol)
   verTn <- VerToken.verTokenName
   let

@@ -14,20 +14,22 @@ import Contract.Value as Value
 import Data.Array as Array
 import Data.BigInt (fromInt)
 import Effect.Exception (throw)
+import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Protocol.Redeemer (PProtocolRedeemer(PCloseProtocol))
+import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.RunContract (runContractWithUnitResult)
-import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
 
-runCloseProtocolTest :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
-runCloseProtocolTest onComplete onError protocol = runContractWithUnitResult onComplete onError $ contract protocol
+runCloseProtocolTest :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
+runCloseProtocolTest onComplete onError protocolData = runContractWithUnitResult onComplete onError $ contract protocolData
 
-contract :: Protocol -> Contract Unit
-contract protocol@(Protocol { protocolCurrency, protocolTokenName }) = do
+contract :: ProtocolData -> Contract Unit
+contract protocolData = do
   logInfo' "Running closeProtocol"
+  protocol@(Protocol { protocolCurrency, protocolTokenName }) <- dataToProtocol protocolData
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
   let managerPkh = (unwrap protocolInfo.pDatum).managerPkh
   (OwnCredentials creds) <- getOwnCreds

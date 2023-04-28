@@ -1,17 +1,17 @@
 module Test.Plutip.Fixtures where
 
 import Prelude
-import Data.Tuple (Tuple)
-import Contract.Test.Plutip (InitialUTxOsWithStakeKey, withStakeKey)
-import Data.BigInt as BigInt
-import Data.Tuple.Nested ((/\))
-import Test.Plutip.Common (privateStakeKey)
-import Protocol.Models (Protocol)
-import Protocol.UserData (ProtocolConfigParams(..))
+
 import Contract.Monad (Contract)
-import Fundraising.UserData (FundraisingData(..))
-import Shared.Helpers as Helpers
+import Contract.Test.Plutip (InitialUTxOsWithStakeKey, withStakeKey)
 import Contract.Value as Value
+import Data.BigInt as BigInt
+import Data.Tuple (Tuple)
+import Data.Tuple.Nested ((/\))
+import Fundraising.UserData (FundraisingData(..))
+import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, dataToProtocol)
+import Shared.Helpers as Helpers
+import Test.Plutip.Common (privateStakeKey)
 
 distribution :: Tuple InitialUTxOsWithStakeKey InitialUTxOsWithStakeKey
 distribution =
@@ -27,8 +27,9 @@ distribution =
     , BigInt.fromInt 2_000_000_000
     ]
 
-incorrectFundraisingData :: Protocol -> Contract FundraisingData
-incorrectFundraisingData protocol = do
+incorrectFundraisingData :: ProtocolData -> Contract FundraisingData
+incorrectFundraisingData protocolData = do
+  protocol <- dataToProtocol protocolData
   tn <- Helpers.runMkTokenName "FundraisingThreadToken"
   pure $ FundraisingData { protocol: protocol, frThreadTokenCurrency: Value.adaSymbol, frThreadTokenName: tn }
 

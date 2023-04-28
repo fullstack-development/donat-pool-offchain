@@ -1,9 +1,16 @@
 module Protocol.UserData where
 
 import Contract.Prelude
-import Protocol.Models (PProtocolConfig(..))
-import Protocol.Datum (PProtocolDatum(..))
+
+import Ctl.Internal.Types.Aliases (Bech32String)
 import Data.BigInt (BigInt)
+import Protocol.Datum (PProtocolDatum(..))
+import Protocol.Models (PProtocolConfig(..), Protocol(..))
+import Contract.Monad (Contract, liftContractM)
+import Shared.Helpers as Helpers
+import Ctl.Internal.Types.ByteArray (byteArrayFromAscii, hexToByteArray)
+import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
+import Contract.Value as Value
 
 newtype ProtocolConfigParams = ProtocolConfigParams
   { minAmountParam :: BigInt
@@ -35,3 +42,23 @@ getConfigFromProtocolDatum (PProtocolDatum datum) =
     , maxDurationParam: datum.maxDuration
     , protocolFeeParam: datum.protocolFee
     }
+
+newtype ProtocolData = ProtocolData
+  { protocolCurrency :: Bech32String
+  , protocolTokenName :: String
+  }
+
+derive newtype instance Show ProtocolData
+derive newtype instance Eq ProtocolData
+
+protocolToData :: Protocol -> Contract ProtocolData
+protocolToData (Protocol protocol) = do
+  let protocolCurrencyString = Helpers.currencySymbolToString $ protocol.protocolCurrency
+  protocolTnString <- liftContractM "Impossible to decode Protocol token name" $ Helpers.tokenNameToString $ protocol.protocolTokenName
+  pure $ ProtocolData { protocolCurrency: protocolCurrencyString, protocolTokenName: protocolTnString }
+
+dataToProtocol :: ProtocolData -> Contract Protocol
+dataToProtocol (ProtocolData pData) = do
+  curSymbol <- liftContractM "Impossible to get protocol currency symbol" $ (hexToByteArray pData.protocolCurrency >>= CurrencySymbol.mkCurrencySymbol)
+  tokenName <- liftContractM "Impossible to get protocol token name" $ (byteArrayFromAscii pData.protocolTokenName >>= Value.mkTokenName)
+  pure $ Protocol { protocolCurrency: curSymbol, protocolTokenName: tokenName }
