@@ -10,7 +10,7 @@ import Contract.Time (POSIXTime(..))
 import Contract.Transaction (TransactionInput, TransactionOutputWithRefScript, OutputDatum(OutputDatum))
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap, _amount, _datum, _output)
-import Ctl.Internal.Types.ByteArray (byteArrayToHex)
+import Ctl.Internal.Types.ByteArray (byteArrayToHex, ByteArray(..))
 import Data.Array (filter, head) as Array
 import Data.BigInt (fromInt, BigInt)
 import Data.BigInt as BigInt
@@ -18,6 +18,7 @@ import Data.Lens.Getter ((^.))
 import Data.Map as Map
 import Data.Rational ((%), Ratio, numerator, denominator)
 import Math as Math
+import Data.TextDecoder (decodeUtf8)
 
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
@@ -112,3 +113,10 @@ addTimes (POSIXTime time1) (POSIXTime time2) = POSIXTime (time1 + time2)
 
 currencySymbolToString :: Value.CurrencySymbol -> String
 currencySymbolToString = byteArrayToHex <<< Value.getCurrencySymbol
+
+tokenNameToString :: Value.TokenName -> Maybe String
+tokenNameToString tn =
+  let
+    (ByteArray tnBytes) = Value.getTokenName tn
+  in
+    either (const Nothing) Just $ decodeUtf8 tnBytes

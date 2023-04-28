@@ -4,7 +4,6 @@ import Contract.Prelude
 
 import Contract.Address (getWalletAddressesWithNetworkTag, getWalletAddresses, ownPaymentPubKeysHashes)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
-import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, liftedE, liftedM, runContract)
@@ -16,28 +15,30 @@ import Contract.Utxos (utxosAt)
 import Ctl.Internal.Types.Datum (Datum(..))
 import Data.Array (head) as Array
 import Data.Lens (view)
-import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
-import Protocol.Models (PProtocolConfig(..), Protocol)
-import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
-import Protocol.Redeemer (PProtocolRedeemer(..))
-import Protocol.UserData (ProtocolConfigParams, mapToProtocolConfig, getConfigFromProtocolDatum)
-import Shared.Helpers (getNonCollateralUtxo)
 import Effect.Aff (runAff_)
 import Effect.Exception (Error, message, throw)
+import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
+import Protocol.Models (PProtocolConfig(..))
+import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
+import Protocol.Redeemer (PProtocolRedeemer(..))
+import Protocol.UserData (ProtocolConfigParams, ProtocolData, dataToProtocol, getConfigFromProtocolDatum, mapToProtocolConfig)
+import Shared.Helpers (getNonCollateralUtxo)
+import Shared.TestnetConfig (mkTestnetNamiConfig)
 
-runUpdateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> ProtocolConfigParams -> Effect Unit
-runUpdateProtocol onComplete onError protocol params = do
+runUpdateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> ProtocolConfigParams -> Effect Unit
+runUpdateProtocol onComplete onError protocolData params = do
   testnetNamiConfig <- mkTestnetNamiConfig
   let protocolConfig = mapToProtocolConfig params
-  runAff_ handler $ runContract testnetNamiConfig (contract protocol protocolConfig)
+  runAff_ handler $ runContract testnetNamiConfig (contract protocolData protocolConfig)
   where
   handler :: Either Error ProtocolConfigParams -> Effect Unit
   handler (Right protocolConfigParams) = onComplete protocolConfigParams
   handler (Left error) = onError $ message error
 
-contract :: Protocol -> PProtocolConfig -> Contract ProtocolConfigParams
-contract protocol protocolConfig = do
+contract :: ProtocolData -> PProtocolConfig -> Contract ProtocolConfigParams
+contract protocolData protocolConfig = do
   logInfo' "Running update protocol"
+  protocol <- dataToProtocol protocolData
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes

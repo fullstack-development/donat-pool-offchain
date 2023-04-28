@@ -5,7 +5,6 @@ import Contract.Prelude
 import Contract.Address (getNetworkId, getWalletAddresses, ownPaymentPubKeysHashes, getWalletAddressesWithNetworkTag, validatorHashBaseAddress, addressToBech32)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
-import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
@@ -34,25 +33,28 @@ import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import MintingPolicy.VerTokenRedeemers (PVerTokenRedeemer(..))
 import Protocol.Datum (_protocolFee, _minDuration, _maxDuration, _minAmount, _maxAmount, _managerPkh)
-import Protocol.Models (Protocol, PFundriseConfig(..))
+import Protocol.Models (PFundriseConfig(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
 import Protocol.Redeemer (PProtocolRedeemer(..))
+import Protocol.UserData (ProtocolData, dataToProtocol)
+import Shared.Duration (durationToMinutes, minutesToPosixTime)
 import Shared.Helpers as Helpers
 import Shared.MinAda (minAdaValue)
-import Shared.Duration (durationToMinutes, minutesToPosixTime)
+import Shared.TestnetConfig (mkTestnetNamiConfig)
 
-runCreateFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
-runCreateFundraising onComplete onError protocol params = do
+runCreateFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
+runCreateFundraising onComplete onError protocolData params = do
   testnetNamiConfig <- mkTestnetNamiConfig
-  runAff_ handler $ runContract testnetNamiConfig (contract protocol params)
+  runAff_ handler $ runContract testnetNamiConfig (contract protocolData params)
   where
   handler :: Either Error FundraisingData -> Effect Unit
   handler (Right response) = onComplete response
   handler (Left err) = onError $ message err
 
-contract :: Protocol -> CreateFundraisingParams -> Contract FundraisingData
-contract givenProtocol (CreateFundraisingParams { description, amount, duration }) = do
+contract :: ProtocolData -> CreateFundraisingParams -> Contract FundraisingData
+contract protocolData (CreateFundraisingParams { description, amount, duration }) = do
   logInfo' "Running Create Fundraising contract"
+  givenProtocol <- dataToProtocol protocolData
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
   logInfo' $ "Own Payment pkh is: " <> show ownPkh

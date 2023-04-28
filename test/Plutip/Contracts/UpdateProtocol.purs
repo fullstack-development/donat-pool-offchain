@@ -4,22 +4,22 @@ import Prelude
 
 import Contract.Monad (Contract)
 import Contract.Test.Plutip (InitialUTxOs, withWallets)
-import Contract.Wallet (withKeyWallet)
 import Contract.Value as Value
+import Contract.Wallet (withKeyWallet)
 import Control.Monad.Error.Class (try)
+import Ctl.Internal.Test.ContractTest (ContractTest)
 import Ctl.Internal.Test.TestPlanM (TestPlanM)
-import Data.Tuple.Nested (type (/\), (/\))
 import Data.BigInt as BigInt
+import Data.Tuple.Nested (type (/\), (/\))
 import Mote (group, test)
 import Protocol.Models (PProtocolConfig, Protocol(..))
 import Protocol.StartProtocol as StartProtocol
 import Protocol.UpdateProtocol as UpdateProtocol
-import Protocol.UserData (ProtocolConfigParams(..), mapToProtocolConfig)
+import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, mapToProtocolConfig, protocolToData)
 import Shared.Helpers as Helpers
 import Test.Plutip.Contracts.StartProtocol (startProtocolParams)
 import Test.Plutip.Utils (isExpectedError)
 import Test.Spec.Assertions (shouldSatisfy)
-import Ctl.Internal.Test.ContractTest (ContractTest)
 
 suite :: TestPlanM ContractTest Unit
 suite = do
@@ -78,7 +78,8 @@ updateProtocolConfig =
   in
     mapToProtocolConfig params
 
-incorrectProtocol :: Contract Protocol
+incorrectProtocol :: Contract ProtocolData
 incorrectProtocol = do
   tn <- Helpers.runMkTokenName "Protocol"
-  pure $ Protocol { protocolCurrency: Value.adaSymbol, protocolTokenName: tn }
+  let protocol = Protocol { protocolCurrency: Value.adaSymbol, protocolTokenName: tn }
+  protocolToData protocol
