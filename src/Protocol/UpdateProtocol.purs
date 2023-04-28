@@ -20,7 +20,7 @@ import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
 import Protocol.Models (PProtocolConfig(..), Protocol)
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Protocol.Redeemer (PProtocolRedeemer(..))
-import Protocol.UserData (ProtocolConfigParams, mapToProtocolConfig, mapFromProtocolDatum)
+import Protocol.UserData (ProtocolConfigParams, mapToProtocolConfig, getConfigFromProtocolDatum)
 import Shared.Helpers (getNonCollateralUtxo)
 import Effect.Aff (runAff_)
 import Effect.Exception (Error, message, throw)
@@ -80,7 +80,7 @@ contract protocol protocolConfig = do
   balancedSignedTx <- signTransaction balancedTx
   txId <- submit balancedSignedTx
   awaitTxConfirmed txId
-  pure $ mapFromProtocolDatum newDatum
+  pure $ getConfigFromProtocolDatum newDatum
 
 makeDatum ∷ PProtocolDatum -> PProtocolConfig → PProtocolDatum
 makeDatum currentDatum (PProtocolConfig { minAmount, maxAmount, minDuration, maxDuration, protocolFee }) =

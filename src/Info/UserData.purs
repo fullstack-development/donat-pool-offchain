@@ -2,17 +2,18 @@ module Info.UserData where
 
 import Contract.Prelude
 
-import Contract.Address (PaymentPubKeyHash)
+import Contract.Address (PaymentPubKeyHash, Bech32String)
 import Contract.Time (POSIXTime)
 import Contract.Value as Value
 import Ctl.Internal.Types.ByteArray (ByteArray(..))
 import Data.Array as Array
 import Data.BigInt (BigInt)
+import Data.TextDecoder (decodeUtf8)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingTokenName)
+import Protocol.UserData (ProtocolConfigParams)
 import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getCurrencyByTokenName, currencySymbolToString)
 import Shared.MinAda (minAdaValue)
-import Data.TextDecoder (decodeUtf8)
 
 newtype FundraisingInfo = FundraisingInfo
   { creator :: PaymentPubKeyHash
@@ -53,3 +54,19 @@ filterByPkh :: PaymentPubKeyHash -> Array FundraisingInfo -> Array FundraisingIn
 filterByPkh pkh = Array.filter belongsToUser
   where
   belongsToUser (FundraisingInfo frInfo) = frInfo.creator == pkh
+
+newtype UserInfo = UserInfo
+  { address :: Bech32String
+  , isManager :: Boolean
+  }
+
+derive newtype instance Show UserInfo
+derive newtype instance Eq UserInfo
+
+newtype AppInfo = AppInfo
+  { protocolConfig :: ProtocolConfigParams
+  , userInfo :: UserInfo
+  }
+
+derive newtype instance Show AppInfo
+derive newtype instance Eq AppInfo

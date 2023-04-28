@@ -92,6 +92,10 @@ const App = () => {
     a.main.value0.connectWallet(console.log)(console.log)();
   };
 
+  const onGetAppInfo = () => {
+    a.main.value0.getAppInfo(console.log)(console.log)(protocol)();
+  };
+
   return (
     <div>
       <h1>Offchain integration</h1>
@@ -104,6 +108,7 @@ const App = () => {
       <button onClick={onReceiveFunds}>Receive funds</button>
       <button onClick={onGetAllFundraising}>Get All Fundraisings</button>
       <button onClick={onGetUserRelatedFundraisings}>Get User related Fundraisings</button>
+      <button onClick={onGetAppInfo}>Get app info</button>
     </div>
   );
 };

@@ -28,7 +28,7 @@ import Fundraising.Datum (PFundraisingDatum(..), descLength)
 import Fundraising.FundraisingScript (getFundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
 import Fundraising.UserData (CreateFundraisingParams(..), FundraisingData(..))
-import Info.Protocol (getProtocolUtxo)
+import Info.AppInfo (getProtocolUtxo)
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
