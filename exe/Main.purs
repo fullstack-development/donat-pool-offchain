@@ -11,8 +11,8 @@ import Fundraising.ReceiveFunds as ReceiveFunds
 import Fundraising.Create as CreateFundraising
 import Fundraising.UserData (CreateFundraisingParams, FundraisingData)
 import Info.AllFundraisings as AllFundraisings
-import Info.Protocol as ProtocolInfo
-import Info.UserData (FundraisingInfo)
+import Info.AppInfo as AppInfo
+import Info.UserData (AppInfo, FundraisingInfo)
 import Info.UserRelatedFundraisings as UserRelatedFundraisings
 import Protocol.CloseProtocol as CloseProtocol
 import Protocol.Models (Protocol)
@@ -25,7 +25,7 @@ data Contracts = Contracts
   , startProtocol :: (Protocol -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
   , updateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> ProtocolConfigParams -> Effect Unit
   , closeProtocol :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
-  , getProtocolInfo :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
+  , getAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> Effect Unit
   , createFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> Protocol -> CreateFundraisingParams -> Effect Unit
   , donate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Int -> Effect Unit
   , receiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Effect Unit
@@ -39,7 +39,7 @@ main = Contracts
   , startProtocol: StartProtocol.runStartProtocol
   , updateProtocol: UpdateProtocol.runUpdateProtocol
   , closeProtocol: CloseProtocol.runCloseProtocolTest
-  , getProtocolInfo: ProtocolInfo.runGetProtocolInfo
+  , getAppInfo: AppInfo.runGetAppInfo
   , createFundraising: CreateFundraising.runCreateFundraising
   , donate: Donate.runDonate
   , receiveFunds: ReceiveFunds.runReceiveFunds

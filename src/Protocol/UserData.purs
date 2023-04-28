@@ -26,8 +26,8 @@ mapToProtocolConfig (ProtocolConfigParams configParams) = do
     , protocolFee: configParams.protocolFeeParam
     }
 
-mapFromProtocolDatum :: PProtocolDatum -> ProtocolConfigParams
-mapFromProtocolDatum (PProtocolDatum datum) =
+getConfigFromProtocolDatum :: PProtocolDatum -> ProtocolConfigParams
+getConfigFromProtocolDatum (PProtocolDatum datum) =
   ProtocolConfigParams
     { minAmountParam: datum.minAmount
     , maxAmountParam: datum.maxAmount

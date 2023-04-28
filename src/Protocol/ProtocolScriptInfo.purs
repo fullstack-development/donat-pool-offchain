@@ -9,7 +9,7 @@ import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Ctl.Internal.Types.Scripts (Validator, ValidatorHash)
 import Data.Map (Map)
-import Info.Protocol (getProtocolUtxo)
+import Info.AppInfo (getProtocolUtxo)
 import Protocol.Datum (PProtocolDatum)
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
