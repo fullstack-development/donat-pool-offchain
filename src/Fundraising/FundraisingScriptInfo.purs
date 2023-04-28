@@ -1,7 +1,6 @@
 module Fundraising.FundraisingScriptInfo where
 
 import Contract.Prelude
-import Ctl.Internal.Types.Scripts (Validator, ValidatorHash)
 
 import Contract.Address (Address, validatorHashBaseAddress)
 import Contract.Config (NetworkId(TestnetId))
@@ -9,17 +8,18 @@ import Contract.Monad (Contract, liftContractM)
 import Contract.Transaction (TransactionInput, TransactionOutputWithRefScript)
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
+import Ctl.Internal.Types.Scripts (Validator, ValidatorHash)
 import Data.Map (Map)
 import Fundraising.Datum (PFundraisingDatum)
 import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
-import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.VerTokenMinting as VerToken
+import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByNFT, mkCurrencySymbol)
 
-makeFundraising :: FundraisingData -> Contract Fundraising
-makeFundraising (FundraisingData fundraisingData) = do
-  let protocol = fundraisingData.protocol
+makeFundraising :: ProtocolData -> Contract Fundraising
+makeFundraising protocolData = do
+  protocol <- dataToProtocol protocolData
   _ /\ verTokenCurrency <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
   verTokenName <- VerToken.verTokenName
   pure $ Fundraising

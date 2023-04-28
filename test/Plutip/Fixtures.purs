@@ -9,7 +9,7 @@ import Data.BigInt as BigInt
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 import Fundraising.UserData (FundraisingData(..))
-import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, dataToProtocol)
+import Protocol.UserData (ProtocolConfigParams(..))
 import Shared.Helpers as Helpers
 import Test.Plutip.Common (privateStakeKey)
 
@@ -27,11 +27,10 @@ distribution =
     , BigInt.fromInt 2_000_000_000
     ]
 
-incorrectFundraisingData :: ProtocolData -> Contract FundraisingData
-incorrectFundraisingData protocolData = do
-  protocol <- dataToProtocol protocolData
+incorrectFundraisingData :: Contract FundraisingData
+incorrectFundraisingData = do
   tn <- Helpers.runMkTokenName "FundraisingThreadToken"
-  pure $ FundraisingData { protocol: protocol, frThreadTokenCurrency: Value.adaSymbol, frThreadTokenName: tn }
+  pure $ FundraisingData { frThreadTokenCurrency: Value.adaSymbol, frThreadTokenName: tn }
 
 minDurationStartProtocolParams :: ProtocolConfigParams
 minDurationStartProtocolParams = ProtocolConfigParams

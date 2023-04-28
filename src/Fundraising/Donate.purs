@@ -17,27 +17,27 @@ import Ctl.Internal.Types.Interval (from)
 import Data.BigInt (fromInt)
 import Effect.Exception (throw)
 import Fundraising.Datum (PFundraisingDatum(..))
+import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
 import Fundraising.Models (Fundraising(..))
+import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
 import Shared.Helpers (checkTokenInUTxO)
 import Shared.MinAda (minAdaValue)
 import Shared.RunContract (runContractWithUnitResult)
-import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
-import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
+import Protocol.UserData (ProtocolData)
 
-runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> FundraisingData -> Int -> Effect Unit
-runDonate onComplete onError fundraisingData amount =
-  runContractWithUnitResult onComplete onError $ contract fundraisingData amount
+runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> FundraisingData -> Int -> Effect Unit
+runDonate onComplete onError pData fundraisingData amount =
+  runContractWithUnitResult onComplete onError $ contract pData fundraisingData amount
 
-contract :: FundraisingData -> Int -> Contract Unit
-contract frData@(FundraisingData fundraisingData) adaAmount = do
+contract :: ProtocolData -> FundraisingData -> Int -> Contract Unit
+contract pData (FundraisingData fundraisingData) adaAmount = do
   logInfo' "Running donate"
-
   let
     threadTokenCurrency = fundraisingData.frThreadTokenCurrency
     threadTokenName = fundraisingData.frThreadTokenName
-  fundraising@(Fundraising fr) <- makeFundraising frData
+  fundraising@(Fundraising fr) <- makeFundraising pData
   (FundraisingScriptInfo frInfo) <- getFundraisingScriptInfo fundraising threadTokenCurrency threadTokenName
   let isVerTokenInUtxo = checkTokenInUTxO (fr.verTokenCurrency /\ fr.verTokenName) frInfo.frUtxo
   unless isVerTokenInUtxo $ throw >>> liftEffect $ "verToken is not in fundraising utxo"
