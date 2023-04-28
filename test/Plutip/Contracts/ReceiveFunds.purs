@@ -26,41 +26,41 @@ suite = do
 
     test "Should successfully receive funds when fundraising goal is reached" do
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
-        frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
-        withKeyWallet alice $ void $ Donate.contract frData 80
-        withKeyWallet bob $ void $ ReceiveFunds.contract frData
+        protocolData <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        frData <- withKeyWallet bob $ Create.contract protocolData (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
+        withKeyWallet alice $ void $ Donate.contract protocolData frData 80
+        withKeyWallet bob $ void $ ReceiveFunds.contract protocolData frData
 
     test "Should successfully receive funds when time is over" do
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract minDurationStartProtocolParams
-        frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 1))
-        withKeyWallet alice $ void $ Donate.contract frData 50
+        protocolData <- withKeyWallet alice $ StartProtocol.contract minDurationStartProtocolParams
+        frData <- withKeyWallet bob $ Create.contract protocolData (mkFundraisingParams 80 (mkFundraisingDuration 0 0 1))
+        withKeyWallet alice $ void $ Donate.contract protocolData frData 50
         liftAff $ delay $ Milliseconds 60000.0 -- 1 min
-        withKeyWallet bob $ void $ ReceiveFunds.contract frData
+        withKeyWallet bob $ void $ ReceiveFunds.contract protocolData frData
 
     test "Should fail if fundraising does not exist" do
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
-        frData <- incorrectFundraisingData protocol
-        result <- try $ withKeyWallet bob $ void $ ReceiveFunds.contract frData
+        protocolData <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        frData <- incorrectFundraisingData
+        result <- try $ withKeyWallet bob $ void $ ReceiveFunds.contract protocolData frData
         let errMsg = "Fundraising UTxO with given nft not found"
         result `shouldSatisfy` (isExpectedError errMsg)
 
     test "Should fail if called from foreign wallet" do
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
-        frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
-        withKeyWallet alice $ void $ Donate.contract frData 80
-        result <- try $ withKeyWallet alice $ void $ ReceiveFunds.contract frData
+        protocolData <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        frData <- withKeyWallet bob $ Create.contract protocolData (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
+        withKeyWallet alice $ void $ Donate.contract protocolData frData 80
+        result <- try $ withKeyWallet alice $ void $ ReceiveFunds.contract protocolData frData
         let errMsg = "Only fundraising creator can receive funds"
         result `shouldSatisfy` (isExpectedError errMsg)
 
     test "Should fail if neither fundraising goal reached nor fundraising time is over" do
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
-        frData <- withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
-        withKeyWallet alice $ void $ Donate.contract frData 20
-        result <- try $ withKeyWallet bob $ void $ ReceiveFunds.contract frData
+        protocolData <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        frData <- withKeyWallet bob $ Create.contract protocolData (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
+        withKeyWallet alice $ void $ Donate.contract protocolData frData 20
+        result <- try $ withKeyWallet bob $ void $ ReceiveFunds.contract protocolData frData
         let errMsg = "Can't receive funds while fundraising is in process"
         result `shouldSatisfy` (isExpectedError errMsg)
