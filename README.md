@@ -1,24 +1,21 @@
 # DonatPool Offchain project based on [Cardano-Transaction-Lib](https://github.com/Plutonomicon/cardano-transaction-lib/tree/develop/doc)
 
-To start working run `nix develop` (make sure to use Nix v2.8 or later) and then build the project with `spago build`.
+The repo contains the offchain part for the [DonatPool onchain](https://github.com/fullstack-development/donat-pool-onchain) project. Here you may find transaction builders (including all the offchain checks), simplified frontend (buttons to call the endpoints) and a bunch of unit tests and e2e plutip tests.
 
-Please also see the CTL related sources:
+You may find the current project working in the PreProduction testnet on the [DonatPool website](https://testnet.donat-pool.io/).
 
-- [Documentation](https://github.com/Plutonomicon/cardano-transaction-lib/tree/develop/doc)
-
-- [Generated docs](https://plutonomicon.github.io/cardano-transaction-lib/)
-
-- [Discord server](https://discord.gg/JhbexnV9Pc)
+To start working clone the repository, go to the project root and run `nix develop` (make sure to use Nix v2.8 or later) and then build the project with `spago build`.
 
 
-## DonationPool Project environment 
+## DonatPool Project environment 
 
 DonationPool is dependent on the services listed below, so for working in blockchain you need them all installed and run on you host-machine. The services you need:
 
 - Cardano node
 - Ogmios
-- Ogmios-Datum-Cache
 - Kupo 
+
+Also before starting make sure to have files with plutus scripts in the scripts/ folder.
 
 ### Running in Pre-Production testnet 
 
@@ -62,7 +59,13 @@ Notes:
 
 Run `sh build.sh` from project root
 
-## Tests
+4. Run server
 
-To run Unit tests type `npm run unit-tests`
-To run Plutip tests type `npm run plutip-tests`
+Before running the server open terminal from the project root and type `npm install` to create node modules (make sure to do it not under `nix develop`). Then run the environment in different terminals, build the project with `spago build` (under `nix develop`) and then create new dists (`sh build.sh` under `nix develop`). You may run the server on port 4008 with `npm run serve` command (under `nix develop` as well). Then go to `localhost:4008` with the Chrome browser and explore.
+
+Note that the current offchain version functionality is available for Chrome browser with installed Nami wallet extension only. To test it with Nami wallet make sure to switch on the PreProduction testnet network (Nami -> Settings -> Network -> Preprod), you also have to lock 5 Ada as collateral (Nami -> Collateral -> Confirm).
+
+### Tests
+
+To run Unit tests type `npm run unit-tests` from the project root (under `nix develop`)
+To run Plutip tests type `npm run plutip-tests` from the project root (under `nix develop`)
