@@ -36,7 +36,11 @@ const App = () => {
   };
 
   const [protocol, setProtocol] = useState();
-  const [fundraisingData, setFundraisingData] = useState ();
+
+  const [fundraisingData, setFundraisingData] = useState<{
+    frThreadTokenCurrency: any;
+    frThreadTokenName: any;
+  }>();
  
   const onStartProtocolComplete = completedProtocol => {
     console.log(completedProtocol);
@@ -48,11 +52,9 @@ const App = () => {
   };
 
   const onCreateFundraisingComplete = createdFundraisingResponse => {
-    const frThreadTokenCurrency = createdFundraisingResponse && createdFundraisingResponse.threadTokenCurrency ? createdFundraisingResponse.threadTokenCurrency : null;
-    const frThreadTokenName = createdFundraisingResponse && createdFundraisingResponse.threadTokenName ? createdFundraisingResponse.threadTokenName : null 
     const frData = {
-      frThreadTokenCurrency: frThreadTokenCurrency,
-      frThreadTokenName: frThreadTokenName
+      frThreadTokenCurrency: createdFundraisingResponse.threadTokenCurrency,
+      frThreadTokenName: createdFundraisingResponse.threadTokenName
     };
     
     setFundraisingData(frData);
