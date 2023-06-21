@@ -60,7 +60,7 @@ Notes:
 ```
 docker pull cardanosolutions/kupo:v2.4.0
 
-docker run --network host -d \
+docker run --network host -d --name kupo \
   cardanosolutions/kupo:v2.4.0 \
   --ogmios-host 0.0.0.0 \
   --ogmios-port 1337 \
