@@ -48,8 +48,14 @@ const App = () => {
   };
 
   const onCreateFundraisingComplete = createdFundraisingResponse => {
-    setFundraisingData(createdFundraisingResponse);
-   
+    const frThreadTokenCurrency = createdFundraisingResponse && createdFundraisingResponse.threadTokenCurrency ? createdFundraisingResponse.threadTokenCurrency : null;
+    const frThreadTokenName = createdFundraisingResponse && createdFundraisingResponse.threadTokenName ? createdFundraisingResponse.threadTokenName : null 
+    const frData = {
+      frThreadTokenCurrency: frThreadTokenCurrency,
+      frThreadTokenName: frThreadTokenName
+    };
+    
+    setFundraisingData(frData);
   };
 
   const onStartProtocolClick = () => {

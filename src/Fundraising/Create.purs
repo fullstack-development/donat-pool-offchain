@@ -26,8 +26,9 @@ import Effect.Exception (throw, Error, message)
 import Fundraising.Datum (PFundraisingDatum(..), descLength)
 import Fundraising.FundraisingScript (getFundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
-import Fundraising.UserData (CreateFundraisingParams(..), FundraisingData(..))
+import Fundraising.UserData (CreateFundraisingParams(..))
 import Info.AppInfo (getProtocolUtxo)
+import Info.UserData (FundraisingInfo(..))
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
@@ -42,16 +43,16 @@ import Shared.Helpers as Helpers
 import Shared.MinAda (minAdaValue)
 import Shared.TestnetConfig (mkTestnetNamiConfig)
 
-runCreateFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
+runCreateFundraising :: (FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocolData params = do
   testnetNamiConfig <- mkTestnetNamiConfig
   runAff_ handler $ runContract testnetNamiConfig (contract protocolData params)
   where
-  handler :: Either Error FundraisingData -> Effect Unit
+  handler :: Either Error FundraisingInfo -> Effect Unit
   handler (Right response) = onComplete response
   handler (Left err) = onError $ message err
 
-contract :: ProtocolData -> CreateFundraisingParams -> Contract FundraisingData
+contract :: ProtocolData -> CreateFundraisingParams -> Contract FundraisingInfo
 contract protocolData (CreateFundraisingParams { description, amount, duration }) = do
   logInfo' "Running Create Fundraising contract"
   givenProtocol <- dataToProtocol protocolData
@@ -93,10 +94,10 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
   let
     minAmount = view _minAmount protocolDatum
     maxAmount = view _maxAmount protocolDatum
-    currentAmount = fromInt amount * fromInt 1_000_000
+    targetAmount = fromInt amount * fromInt 1_000_000
 
-  when (currentAmount < minAmount) $ liftEffect $ throw ("Fundraising amount too small. It must be greater than " <> toString minAmount <> ".")
-  when (currentAmount > maxAmount) $ liftEffect $ throw ("Fundraising amount too big. It must be less than " <> toString maxAmount <> ".")
+  when (targetAmount < minAmount) $ liftEffect $ throw ("Fundraising amount too small. It must be greater than " <> toString minAmount <> ".")
+  when (targetAmount > maxAmount) $ liftEffect $ throw ("Fundraising amount too big. It must be less than " <> toString maxAmount <> ".")
 
   let
     minDurationMinutes = view _minDuration protocolDatum
@@ -115,7 +116,7 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
       { creatorPkh: ownPkh
       , tokenOrigin: oref
       , frDesc: desc
-      , frAmount: currentAmount
+      , frAmount: targetAmount
       , frDeadline: deadline
       , frFee: view _protocolFee protocolDatum
       , managerPkh: view _managerPkh protocolDatum
@@ -204,7 +205,14 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
   bech32Address <- addressToBech32 frAddress
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
-  pure $ FundraisingData
-    { frThreadTokenCurrency: nftCs
-    , frThreadTokenName: nftTn
+  pure $ FundraisingInfo
+    { creator: ownPkh
+    , description: description
+    , goal: targetAmount
+    , raisedAmt: fromInt 0
+    , deadline: deadline
+    , threadTokenCurrency: nftCs
+    , threadTokenName: nftTn
+    , path: Helpers.currencySymbolToString nftCs
     }
+
