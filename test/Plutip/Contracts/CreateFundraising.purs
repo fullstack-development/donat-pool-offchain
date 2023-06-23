@@ -3,13 +3,13 @@ module Test.Plutip.Contracts.CreateFundraising where
 import Prelude
 
 import Contract.Test.Plutip (InitialUTxOs, withWallets)
-import Contract.Wallet (withKeyWallet)
+import Contract.Wallet (withKeyWallet, KeyWallet)
 import Control.Monad.Error.Class (try)
 import Ctl.Internal.Test.TestPlanM (TestPlanM)
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.BigInt as BigInt
 import Fundraising.Create as Create
-import Fundraising.UserData (CreateFundraisingParams(..))
+import Fundraising.UserData (CreateFundraisingParams(..), FundraisingData, mapFundraisingInfoToData)
 import Mote (group, test)
 import Protocol.StartProtocol as StartProtocol
 import Shared.Duration (Duration(..))
@@ -18,6 +18,8 @@ import Test.Plutip.Contracts.UpdateProtocol (incorrectProtocol)
 import Test.Plutip.Utils (isExpectedError)
 import Test.Spec.Assertions (shouldSatisfy)
 import Ctl.Internal.Test.ContractTest (ContractTest)
+import Protocol.UserData (ProtocolData)
+import Contract.Monad (Contract)
 
 suite :: TestPlanM ContractTest Unit
 suite = do
@@ -113,3 +115,7 @@ mkFundraisingParams amt dur = CreateFundraisingParams
 
 mkFundraisingDuration :: Int -> Int -> Int -> Duration
 mkFundraisingDuration d h m = Duration { days: d, hours: h, minutes: m }
+
+createTestFundraising :: KeyWallet -> ProtocolData -> CreateFundraisingParams -> Contract FundraisingData
+createTestFundraising wallet protocolData frParams =
+  withKeyWallet wallet $ mapFundraisingInfoToData <$> Create.contract protocolData frParams

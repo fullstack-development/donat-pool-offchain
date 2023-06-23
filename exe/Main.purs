@@ -25,7 +25,7 @@ data Contracts = Contracts
   , updateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> ProtocolConfigParams -> Effect Unit
   , closeProtocol :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
   , getAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
-  , createFundraising :: (FundraisingData -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
+  , createFundraising :: (FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
   , donate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> FundraisingData -> Int -> Effect Unit
   , receiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> FundraisingData -> Effect Unit
   , getAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit

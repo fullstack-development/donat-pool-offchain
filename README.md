@@ -55,6 +55,20 @@ Notes:
   --node-config some-folder/cardano-node/config.json \
 ```
 
+- To run kupo using Docker container:
+
+```
+docker pull cardanosolutions/kupo:v2.4.0
+
+docker run --network host -d --name kupo \
+  cardanosolutions/kupo:v2.4.0 \
+  --ogmios-host 0.0.0.0 \
+  --ogmios-port 1337 \
+  --since origin \
+  --match "*" \
+  --workdir . 
+```
+
 3. Create new dist for frontend:
 
 Run `sh build.sh` from project root
@@ -69,3 +83,9 @@ Note that the current offchain version functionality is available for Chrome bro
 
 To run Unit tests type `npm run unit-tests` from the project root (under `nix develop`)
 To run Plutip tests type `npm run plutip-tests` from the project root (under `nix develop`)
+
+### Code formatting
+
+```
+make format
+```
