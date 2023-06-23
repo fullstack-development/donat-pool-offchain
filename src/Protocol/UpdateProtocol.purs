@@ -22,7 +22,7 @@ import Protocol.Models (PProtocolConfig(..))
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolConfigParams, ProtocolData, dataToProtocol, getConfigFromProtocolDatum, mapToProtocolConfig)
-import Shared.Helpers (getNonCollateralUtxo)
+import Shared.Utxo (getNonCollateralUtxo)
 import Shared.TestnetConfig (mkTestnetNamiConfig)
 
 runUpdateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> ProtocolConfigParams -> Effect Unit

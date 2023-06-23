@@ -7,10 +7,10 @@ import Data.BigInt (BigInt)
 import Protocol.Datum (PProtocolDatum(..))
 import Protocol.Models (PProtocolConfig(..), Protocol(..))
 import Contract.Monad (Contract, liftContractM)
-import Shared.Helpers as Helpers
 import Ctl.Internal.Types.ByteArray (byteArrayFromAscii, hexToByteArray)
 import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
 import Contract.Value as Value
+import Ext.Contract.Value (currencySymbolToString, tokenNameToString)
 
 newtype ProtocolConfigParams = ProtocolConfigParams
   { minAmountParam :: BigInt
@@ -53,8 +53,8 @@ derive newtype instance Eq ProtocolData
 
 protocolToData :: Protocol -> Contract ProtocolData
 protocolToData (Protocol protocol) = do
-  let protocolCurrencyString = Helpers.currencySymbolToString $ protocol.protocolCurrency
-  protocolTnString <- liftContractM "Impossible to decode Protocol token name" $ Helpers.tokenNameToString $ protocol.protocolTokenName
+  let protocolCurrencyString = currencySymbolToString $ protocol.protocolCurrency
+  protocolTnString <- liftContractM "Impossible to decode Protocol token name" $ tokenNameToString $ protocol.protocolTokenName
   pure $ ProtocolData { protocolCurrency: protocolCurrencyString, protocolTokenName: protocolTnString }
 
 dataToProtocol :: ProtocolData -> Contract Protocol

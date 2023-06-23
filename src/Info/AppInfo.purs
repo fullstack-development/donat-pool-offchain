@@ -14,7 +14,7 @@ import Info.UserData (AppInfo(..), UserInfo(..))
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash)
 import Protocol.UserData (ProtocolData, dataToProtocol, getConfigFromProtocolDatum)
-import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
+import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
 import Shared.TestnetConfig (mkTestnetNamiConfig)
 
 runGetAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit

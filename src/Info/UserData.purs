@@ -12,7 +12,8 @@ import Data.TextDecoder (decodeUtf8)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingTokenName)
 import Protocol.UserData (ProtocolConfigParams)
-import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, getCurrencyByTokenName, currencySymbolToString)
+import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO)
+import Ext.Contract.Value (getCurrencyByTokenName, currencySymbolToString)
 import Shared.MinAda (minAdaValue)
 
 newtype FundraisingInfo = FundraisingInfo

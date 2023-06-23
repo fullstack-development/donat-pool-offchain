@@ -30,7 +30,7 @@ import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.UserData (ProtocolData, dataToProtocol)
-import Shared.Helpers (checkTokenInUTxO)
+import Shared.Utxo (checkTokenInUTxO)
 import Shared.MinAda (minAda)
 import Shared.RunContract (runContractWithUnitResult)
 

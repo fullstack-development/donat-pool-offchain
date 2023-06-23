@@ -15,7 +15,8 @@ import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraising
 import Fundraising.Models (Fundraising(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.UserData (ProtocolData, dataToProtocol)
-import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByNFT, mkCurrencySymbol)
+import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByNFT)
+import Ext.Contract.Value (mkCurrencySymbol)
 
 makeFundraising :: ProtocolData -> Contract Fundraising
 makeFundraising protocolData = do
