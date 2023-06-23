@@ -1,4 +1,4 @@
-module Fundraising.OwnCredentials where
+module Shared.OwnCredentials where
 
 import Contract.Prelude
 

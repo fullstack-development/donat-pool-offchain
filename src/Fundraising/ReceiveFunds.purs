@@ -23,7 +23,7 @@ import Fundraising.Calculations (calcFee)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
 import Fundraising.Models (Fundraising(..))
-import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.NftMinting as NFT
