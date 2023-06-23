@@ -39,9 +39,11 @@ import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScrip
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.Duration (durationToMinutes, minutesToPosixTime)
-import Shared.Helpers as Helpers
 import Shared.MinAda (minAdaValue)
 import Shared.TestnetConfig (mkTestnetNamiConfig)
+import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, filterNonCollateral)
+import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
+import Ext.Contract.Time (addTimes)
 
 runCreateFundraising :: (FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocolData params = do
@@ -66,14 +68,14 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
   logInfo' $ "UTxOs found on address: " <> show ownUtxos
   oref <-
     liftContractM "Utxo set is empty"
-      (fst <$> Array.head (Helpers.filterNonCollateral $ Map.toUnfoldable ownUtxos))
+      (fst <$> Array.head (filterNonCollateral $ Map.toUnfoldable ownUtxos))
   logInfo' $ "Desired user UTxO is: " <> show oref
-  nftMp /\ nftCs <- Helpers.mkCurrencySymbol (NFT.mintingPolicy oref)
+  nftMp /\ nftCs <- mkCurrencySymbol (NFT.mintingPolicy oref)
   logInfo' $ "NFT currency symbol: " <> show nftCs
   nftTn <- getFundraisingTokenName
   logInfo' $ "NFT token name: " <> show nftTn
 
-  verTokenMp /\ verTokenCs <- Helpers.mkCurrencySymbol (VerToken.mintingPolicy givenProtocol)
+  verTokenMp /\ verTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy givenProtocol)
   logInfo' $ "VerToken currency symbol: " <> show verTokenCs
   verTn <- VerToken.verTokenName
   logInfo' $ "Ver token name: " <> show verTn
@@ -88,7 +90,7 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
   logInfo' $ "Protocol UTxOs list: " <> show protocolUtxos
   protocolUtxo <- getProtocolUtxo givenProtocol protocolUtxos
   logInfo' $ "Desired protocol UTxO: " <> show protocolUtxo
-  protocolDatum <- liftContractM "Impossible to get Protocol Datum" $ Helpers.extractDatumFromUTxO protocolUtxo
+  protocolDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
   logInfo' $ "Protocol Datum: " <> show protocolDatum
 
   let
@@ -108,7 +110,7 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
   when (frDurationMinutes > maxDurationMinutes) $ liftEffect $ throw ("Fundraising duration too long. It must be less than " <> toString maxDurationMinutes <> ".")
 
   now@(POSIXTime now') <- currentTime
-  let deadline = Helpers.addTimes now (minutesToPosixTime frDurationMinutes)
+  let deadline = addTimes now (minutesToPosixTime frDurationMinutes)
   desc <- liftContractM "Impossible to serialize description" $ byteArrayFromAscii (take descLength description)
 
   let
@@ -149,7 +151,7 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
   let
     nftValue = Value.singleton nftCs nftTn one
     verTokenValue = Value.singleton verTokenCs verTn one
-    paymentToProtocol = Helpers.extractValueFromUTxO protocolUtxo
+    paymentToProtocol = extractValueFromUTxO protocolUtxo
     paymentToFr = minAdaValue <> minAdaValue <> nftValue <> verTokenValue
 
     constraints :: Constraints.TxConstraints Void Void
@@ -213,6 +215,6 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
     , deadline: deadline
     , threadTokenCurrency: nftCs
     , threadTokenName: nftTn
-    , path: Helpers.currencySymbolToString nftCs
+    , path: currencySymbolToString nftCs
     }
 

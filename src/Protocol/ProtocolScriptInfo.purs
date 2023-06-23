@@ -13,7 +13,7 @@ import Info.AppInfo (getProtocolUtxo)
 import Protocol.Datum (PProtocolDatum)
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
-import Shared.Helpers (extractDatumFromUTxO, extractValueFromUTxO)
+import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO)
 
 newtype ProtocolScriptInfo = ProtocolScriptInfo
   { pValidator :: Validator

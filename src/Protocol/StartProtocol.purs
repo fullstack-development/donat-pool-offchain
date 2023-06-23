@@ -24,8 +24,9 @@ import Protocol.Datum (PProtocolDatum(..))
 import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName, protocolValidatorScript)
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, protocolToData)
-import Shared.Helpers as Helpers
 import Shared.TestnetConfig (mkTestnetNamiConfig)
+import Shared.Utxo (filterNonCollateral)
+import Ext.Contract.Value (mkCurrencySymbol)
 
 runStartProtocol :: (ProtocolData -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
 runStartProtocol onComplete onError params = do
@@ -48,8 +49,8 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   logInfo' $ "UTxOs found on address: " <> show utxos
   oref <-
     liftContractM "Utxo set is empty"
-      (fst <$> Array.head (Helpers.filterNonCollateral $ Map.toUnfoldable utxos))
-  mp /\ cs <- Helpers.mkCurrencySymbol (NFT.mintingPolicy oref)
+      (fst <$> Array.head (filterNonCollateral $ Map.toUnfoldable utxos))
+  mp /\ cs <- mkCurrencySymbol (NFT.mintingPolicy oref)
   tn <- protocolTokenName
   let
     protocol = Protocol

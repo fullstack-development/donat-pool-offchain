@@ -14,7 +14,7 @@ import Contract.Value as Value
 import Data.Array as Array
 import Data.BigInt (fromInt)
 import Effect.Exception (throw)
-import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Models (Protocol(..))

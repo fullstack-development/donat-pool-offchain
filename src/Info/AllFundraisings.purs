@@ -11,12 +11,12 @@ import Data.Array (mapMaybe)
 import Data.Map as Map
 import Effect.Aff (runAff_)
 import Effect.Exception (Error, message)
+import Ext.Contract.Value (mkCurrencySymbol)
 import Fundraising.FundraisingScript (getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
 import Info.UserData (FundraisingInfo, mapToFundraisingInfo)
 import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.UserData (ProtocolData, dataToProtocol)
-import Shared.Helpers as Helpers
 import Shared.TestnetConfig (mkTestnetNamiConfig)
 
 runGetAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
@@ -31,7 +31,7 @@ runGetAllFundraisings onComplete onError protocolData = do
 getAllFundraisings :: ProtocolData -> Contract (Array FundraisingInfo)
 getAllFundraisings protocolData = do
   protocol <- dataToProtocol protocolData
-  _ /\ verTokenCs <- Helpers.mkCurrencySymbol (VerToken.mintingPolicy protocol)
+  _ /\ verTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
   verTn <- VerToken.verTokenName
   let
     fundraising = Fundraising

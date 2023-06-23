@@ -28,7 +28,8 @@ import Data.Array (head, singleton) as Array
 import Data.Map (toUnfoldable) as Map
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Effect.Exception (error)
-import Shared.Helpers (runMkTokenName, mkCurrencySymbol, filterNonCollateral, filterByToken)
+import Shared.Utxo (filterNonCollateral, filterByToken)
+import Ext.Contract.Value (runMkTokenName, mkCurrencySymbol)
 import Data.BigInt (fromInt)
 import Ctl.Internal.Types.ByteArray (hexToByteArrayUnsafe)
 import Data.UInt as UInt

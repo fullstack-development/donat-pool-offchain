@@ -16,10 +16,10 @@ import Protocol.Models (PProtocolConfig, Protocol(..))
 import Protocol.StartProtocol as StartProtocol
 import Protocol.UpdateProtocol as UpdateProtocol
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, mapToProtocolConfig, protocolToData)
-import Shared.Helpers as Helpers
 import Test.Plutip.Contracts.StartProtocol (startProtocolParams)
 import Test.Plutip.Utils (isExpectedError)
 import Test.Spec.Assertions (shouldSatisfy)
+import Ext.Contract.Value (runMkTokenName)
 
 suite :: TestPlanM ContractTest Unit
 suite = do
@@ -80,6 +80,6 @@ updateProtocolConfig =
 
 incorrectProtocol :: Contract ProtocolData
 incorrectProtocol = do
-  tn <- Helpers.runMkTokenName "Protocol"
+  tn <- runMkTokenName "Protocol"
   let protocol = Protocol { protocolCurrency: Value.adaSymbol, protocolTokenName: tn }
   protocolToData protocol

@@ -3,7 +3,7 @@ module Fundraising.Calculations where
 import Contract.Prelude
 
 import Data.BigInt (BigInt, fromInt)
-import Shared.Helpers (mkBigIntRational, roundBigIntRatio)
+import Ext.Data.Ratio (mkBigIntRational, roundBigIntRatio)
 import Shared.MinAda (minAda)
 
 calcFee :: BigInt -> BigInt -> Maybe BigInt

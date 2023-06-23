@@ -14,7 +14,7 @@ import Control.Monad.Error.Class (liftMaybe)
 import Data.Array (singleton) as Array
 import Effect.Exception (error)
 import Protocol.Models (Protocol)
-import Shared.Helpers as Helpers
+import Ext.Contract.Value (runMkTokenName)
 
 foreign import verTokenPolicy :: String
 
@@ -37,4 +37,4 @@ mkMintVerTokenPolicy unappliedPolicy protocol =
     applyArgs unappliedPolicy mintingPolicyArgs
 
 verTokenName :: forall (r :: Row Type). Contract Value.TokenName
-verTokenName = Helpers.runMkTokenName "VerificationToken"
+verTokenName = runMkTokenName "VerificationToken"

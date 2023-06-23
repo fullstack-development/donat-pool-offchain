@@ -2,19 +2,19 @@ module Info.AppInfo where
 
 import Contract.Prelude
 
-import Contract.Address (addressWithNetworkTagToBech32, getNetworkId, validatorHashBaseAddress)
+import Contract.Address (getNetworkId, validatorHashBaseAddress)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.Utxos (utxosAt)
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
 import Effect.Aff (runAff_)
 import Effect.Exception (Error, message)
-import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
-import Info.UserData (AppInfo(..), UserInfo(..))
+import Shared.OwnCredentials (getOwnUserInfo)
+import Info.UserData (AppInfo(..))
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash)
 import Protocol.UserData (ProtocolData, dataToProtocol, getConfigFromProtocolDatum)
-import Shared.Helpers (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
+import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
 import Shared.TestnetConfig (mkTestnetNamiConfig)
 
 runGetAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
@@ -36,16 +36,11 @@ appInfoContract protocolData = do
     liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress networkId protocolValidatorHash
   utxos <- utxosAt protocolAddress
   protocolUtxo <- getProtocolUtxo protocol utxos
-  (OwnCredentials creds) <- getOwnCreds
-
   protocolDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
   logInfo' $ "Current datum: " <> show protocolDatum
   let managerPkh = unwrap >>> _.managerPkh $ protocolDatum
-  let
-    userInfo = UserInfo
-      { address: addressWithNetworkTagToBech32 creds.ownAddressWithNetworkTag
-      , isManager: creds.ownPkh == managerPkh
-      }
+  userInfo <- getOwnUserInfo managerPkh
+
   let
     appInfo = AppInfo
       { protocolConfig: getConfigFromProtocolDatum protocolDatum

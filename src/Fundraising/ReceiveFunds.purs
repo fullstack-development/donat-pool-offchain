@@ -23,14 +23,14 @@ import Fundraising.Calculations (calcFee)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
 import Fundraising.Models (Fundraising(..))
-import Fundraising.OwnCredentials (OwnCredentials(..), getOwnCreds)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.UserData (ProtocolData, dataToProtocol)
-import Shared.Helpers (checkTokenInUTxO)
+import Shared.Utxo (checkTokenInUTxO)
 import Shared.MinAda (minAda)
 import Shared.RunContract (runContractWithUnitResult)
 

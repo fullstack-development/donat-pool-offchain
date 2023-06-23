@@ -14,7 +14,7 @@ import Protocol.Models (Protocol)
 import Contract.PlutusData (PlutusData, toData)
 import Data.Array (singleton) as Array
 import Contract.Value as Value
-import Shared.Helpers as Helpers
+import Ext.Contract.Value (runMkTokenName)
 
 foreign import protocolValidator :: String
 
@@ -43,4 +43,4 @@ getProtocolValidatorHash protocol = do
   pure $ validatorHash validator
 
 protocolTokenName :: forall (r :: Row Type). Contract Value.TokenName
-protocolTokenName = Helpers.runMkTokenName "DonatPoolProtocol"
+protocolTokenName = runMkTokenName "DonatPoolProtocol"

@@ -10,7 +10,7 @@ import Control.Monad.Error.Class (liftMaybe)
 import Data.Array (singleton) as Array
 import Effect.Exception (error)
 import Fundraising.Models (Fundraising)
-import Shared.Helpers as Helpers
+import Ext.Contract.Value (mkTokenName)
 
 foreign import fundraisingValidator :: String
 
@@ -39,4 +39,4 @@ getFundraisingTokenName :: forall (r :: Row Type). Contract Value.TokenName
 getFundraisingTokenName = liftContractM "Cannot make Fundraising token name" $ fundraisingTokenName
 
 fundraisingTokenName :: Maybe Value.TokenName
-fundraisingTokenName = Helpers.mkTokenName "FundraisingThreadToken"
+fundraisingTokenName = mkTokenName "FundraisingThreadToken"
