@@ -5,6 +5,8 @@ You can edit this file as you like.
 { name = "ctl-package-example"
 , dependencies =
   [ "aff"
+  , "argonaut-codecs"
+  , "argonaut-core"
   , "arrays"
   , "bigints"
   , "cardano-transaction-lib"
@@ -18,6 +20,9 @@ You can edit this file as you like.
   , "monad-logger"
   , "mote"
   , "newtype"
+  , "node-buffer"
+  , "node-fs"
+  , "node-path"
   , "ordered-collections"
   , "partial"
   , "posix-types"
