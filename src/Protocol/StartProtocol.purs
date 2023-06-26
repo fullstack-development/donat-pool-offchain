@@ -30,15 +30,15 @@ import Shared.Utxo (filterNonCollateral)
 import Effect.Aff (launchAff_)
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
-initialProtocolConfigParams = ProtocolConfigParams {
-  minAmountParam: fromInt 50000000,
-  maxAmountParam: fromInt 1000000000,
-  minDurationParam: fromInt 5,
-  maxDurationParam: fromInt 86400,
-  protocolFeeParam: fromInt 10
-}
+initialProtocolConfigParams = ProtocolConfigParams
+  { minAmountParam: fromInt 50000000
+  , maxAmountParam: fromInt 1000000000
+  , minDurationParam: fromInt 5
+  , maxDurationParam: fromInt 86400
+  , protocolFeeParam: fromInt 10
+  }
 
-runStartProtocol ::  Effect Unit
+runStartProtocol :: Effect Unit
 runStartProtocol = launchAff_ $ runContract testnetKeyWalletConfig (contract initialProtocolConfigParams)
 
 contract :: ProtocolConfigParams -> Contract ProtocolData

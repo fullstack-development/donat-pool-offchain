@@ -5,7 +5,7 @@ import Contract.Prelude
 import Contract.Address (getWalletAddressesWithNetworkTag)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedE, liftedM, runContract )
+import Contract.Monad (Contract, liftedE, liftedM, runContract)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)

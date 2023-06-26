@@ -66,13 +66,13 @@ suite = do
 
 updateProtocolConfig :: ProtocolConfigParams
 updateProtocolConfig =
-      ProtocolConfigParams
-        { minAmountParam: BigInt.fromInt 2_000_000
-        , maxAmountParam: BigInt.fromInt 100_000_000
-        , minDurationParam: BigInt.fromInt 5 -- minutes
-        , maxDurationParam: BigInt.fromInt 250 -- minutes
-        , protocolFeeParam: BigInt.fromInt 3 -- percentage
-        }
+  ProtocolConfigParams
+    { minAmountParam: BigInt.fromInt 2_000_000
+    , maxAmountParam: BigInt.fromInt 100_000_000
+    , minDurationParam: BigInt.fromInt 5 -- minutes
+    , maxDurationParam: BigInt.fromInt 250 -- minutes
+    , protocolFeeParam: BigInt.fromInt 3 -- percentage
+    }
 
 incorrectProtocol :: Contract ProtocolData
 incorrectProtocol = do

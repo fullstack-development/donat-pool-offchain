@@ -23,3 +23,6 @@ package-lock.json
 *.skey
 *.vkey
 *.local.conf
+dist/start-protocol.js
+dist/update-protocol.js
+dist/close-protocol.js

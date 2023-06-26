@@ -13,7 +13,7 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile, writeTextFile)
 import Protocol.UserData (ProtocolConfigParams(..))
 
-type DonatPoolConfig = 
+type DonatPoolConfig =
   { minAmountParam :: Number
   , maxAmountParam :: Number
   , minDurationParam :: Number
@@ -36,11 +36,11 @@ writeDonatPoolConfig donatPoolConfig = do
 
 mapFromProtocolConfigParams :: ProtocolConfigParams -> DonatPoolConfig
 mapFromProtocolConfigParams (ProtocolConfigParams params) =
-  { minAmountParam: toNumber params.minAmountParam  
-  , maxAmountParam: toNumber params.maxAmountParam 
-  , minDurationParam: toNumber params.minDurationParam  
-  , maxDurationParam: toNumber params.maxDurationParam  
-  , protocolFeeParam: toNumber params.protocolFeeParam  
+  { minAmountParam: toNumber params.minAmountParam
+  , maxAmountParam: toNumber params.maxAmountParam
+  , minDurationParam: toNumber params.minDurationParam
+  , maxDurationParam: toNumber params.maxDurationParam
+  , protocolFeeParam: toNumber params.protocolFeeParam
   }
 
 mapToProtocolConfigParams :: DonatPoolConfig -> Effect ProtocolConfigParams

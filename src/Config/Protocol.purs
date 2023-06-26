@@ -30,8 +30,8 @@ writeProtocolConfig protocolConfig = do
   let jProtocolConfig = stringify $ encodeJson protocolConfig
   liftEffect $ writeTextFile UTF8 "conf/protocol.local.conf" jProtocolConfig
 
-mapFromProtocolData :: ProtocolData -> ProtocolConfig 
-mapFromProtocolData (ProtocolData {protocolCurrency, protocolTokenName}) =
+mapFromProtocolData :: ProtocolData -> ProtocolConfig
+mapFromProtocolData (ProtocolData { protocolCurrency, protocolTokenName }) =
   { protocolCurrency: protocolCurrency
   , protocolTokenName: protocolTokenName
   }

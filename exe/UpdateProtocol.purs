@@ -1,4 +1,4 @@
-module CLI.UpdateProtocol where
+module CLI.UpdateProtocol.Main where
 
 import Prelude
 

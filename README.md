@@ -89,3 +89,25 @@ To run Plutip tests type `npm run plutip-tests` from the project root (under `ni
 ```
 make format
 ```
+
+
+### TO run from CLI:
+
+1. Start `ogmios + cardano node` docker container and `kupo`.
+
+2. Enter `cardano-node-ogmios` container and make payment and stake keys:
+
+```
+cardano-cli address key-gen  --verification-key-file payment.vkey --signing-key-file payment.skey
+cardano-cli stake-address key-gen --verification-key-file stake.vkey --signing-key-file stake.skey
+```
+
+3. Copy private keys to `wallet` directory in the project. On the first start contract will fail, because no utxo on the new wallet. Use wallet address from logs to receive TADA from faucet or another wallet.
+
+4. Deploy automatic scripts:
+- Remove old `node-modules` and run `npm i`
+- Run `nix develop`
+- Run `sh bundle-apps.sh`, it will create `.js` files in `dist` directory
+- To start Protocol run: `npm run start-protocol`. In result of this script, protocol token will be written to the `dist/protocol.local.conf` file.
+- To update Protocol edit `conf/config.local.conf` with new values, then run: `npm run update-protocol`.
+- To close Protocol run: `npm run close-protocol`

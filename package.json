@@ -10,6 +10,8 @@
     "test": "spago run --main Test.Main",
     "unit-tests": "spago test --main Test.UnitTests",
     "plutip-tests": "spago run --main Test.Plutip",
+    "dev": "make run-dev",
+    "build": "make run-build",
     "serve": "BROWSER_RUNTIME=1 webpack serve --config webpack/webpack.ui.config.ts",
 
     "start-protocol": "spago run --main CLI.StartProtocol.Main",

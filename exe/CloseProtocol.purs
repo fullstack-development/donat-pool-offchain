@@ -1,4 +1,4 @@
-module CLI.CloseProtocol where
+module CLI.CloseProtocol.Main where
 
 import Prelude
 
