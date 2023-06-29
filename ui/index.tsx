@@ -8,20 +8,10 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 const App = () => {
 
-  const startProtocolParams = {
-    minAmountParam: 50000000,
-    maxAmountParam: 1000000000,
-    minDurationParam: 5,  // 5 minutes
-    maxDurationParam: 86400,  // 60 days
-    protocolFeeParam: 10,
-  };
-  const updatedParams = {
-    minAmountParam: 50000000,
-    maxAmountParam: 1000000000,
-    minDurationParam: 5,  // 5 minutes
-    maxDurationParam: 86400,  // 60 days
-    protocolFeeParam: 9,
-  };
+  const protocolData = {
+    protocolCurrency: "965eb584a53eb856210865238a9ef1bfc7a5f00efa895da519185364",
+    protocolTokenName: "DonatPoolProtocol"
+  }
 
   const fundraisingDuration = {
     days: 0,
@@ -35,21 +25,12 @@ const App = () => {
     duration: fundraisingDuration
   };
 
-  const [protocol, setProtocol] = useState();
-
   const [fundraisingData, setFundraisingData] = useState<{
     frThreadTokenCurrency: any;
     frThreadTokenName: any;
   }>();
  
-  const onStartProtocolComplete = completedProtocol => {
-    console.log(completedProtocol);
-    setProtocol(completedProtocol);
-  };
 
-  const onUpdateProtocolComplete = something => {
-    console.log('update success');
-  };
 
   const onCreateFundraisingComplete = createdFundraisingResponse => {
     const frData = {
@@ -60,40 +41,27 @@ const App = () => {
     setFundraisingData(frData);
   };
 
-  const onStartProtocolClick = () => {
-    a.main.value0.startProtocol(onStartProtocolComplete)(console.log)(
-      startProtocolParams
-    )();
-  };
-  const onUpdateProtocolClick = () => {
-    a.main.value0.updateProtocol(onUpdateProtocolComplete)(console.log)(
-      protocol
-    )(updatedParams)();
-  };
-  const onCloseProtocolClick = () => {
-    a.main.value0.closeProtocol(console.log)(console.log)(protocol)();
-  };
 
   const onCreateFundraisingClick = () => {
     a.main.value0.createFundraising(onCreateFundraisingComplete)(console.log)(
-      protocol
+      protocolData
     )(createFundraisingParams)();
   };
 
   const onDonate = () => {   
-    a.main.value0.donate(console.log)(console.log)(protocol)(fundraisingData)(100)();
+    a.main.value0.donate(console.log)(console.log)(protocolData)(fundraisingData)(100)();
   };
 
   const onReceiveFunds = () => {
-    a.main.value0.receiveFunds(console.log)(console.log)(protocol)(fundraisingData)();
+    a.main.value0.receiveFunds(console.log)(console.log)(protocolData)(fundraisingData)();
   }
   
   const onGetAllFundraising = () => {
-    a.main.value0.getAllFundraisings(console.log)(console.log)(protocol)();
+    a.main.value0.getAllFundraisings(console.log)(console.log)(protocolData)();
   };
 
   const onGetUserRelatedFundraisings = () => {
-    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocol)();
+    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)();
   };
 
   const onConnectWallet = () => {
@@ -101,16 +69,13 @@ const App = () => {
   };
 
   const onGetAppInfo = () => {
-    a.main.value0.getAppInfo(console.log)(console.log)(protocol)();
+    a.main.value0.getAppInfo(console.log)(console.log)(protocolData)();
   };
 
   return (
     <div>
       <h1>Offchain integration</h1>
       <button onClick={onConnectWallet}>Connect wallet</button>
-      <button onClick={onStartProtocolClick}>Start Protocol</button>
-      <button onClick={onUpdateProtocolClick}>Update Protocol</button>
-      <button onClick={onCloseProtocolClick}>Close Protocol</button>
       <button onClick={onCreateFundraisingClick}>Create fundraising</button>
       <button onClick={onDonate}>Donate 100 Ada</button>
       <button onClick={onReceiveFunds}>Receive funds</button>

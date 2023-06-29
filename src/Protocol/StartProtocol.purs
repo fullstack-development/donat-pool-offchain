@@ -2,6 +2,7 @@ module Protocol.StartProtocol where
 
 import Contract.Prelude
 
+import Config.Protocol (mapFromProtocolData, writeProtocolConfig)
 import Contract.Address (getNetworkId, getWalletAddresses, getWalletAddressesWithNetworkTag, ownPaymentPubKeysHashes, addressToBech32, validatorHashBaseAddress)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Credential (Credential(ScriptCredential))
@@ -16,35 +17,39 @@ import Contract.Value as Value
 import Data.Array (head) as Array
 import Data.BigInt (fromInt)
 import Data.Map (toUnfoldable) as Map
-import Effect.Aff (runAff_)
-import Effect.Exception (Error, message)
+import Ext.Contract.Value (mkCurrencySymbol)
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Datum (PProtocolDatum(..))
 import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName, protocolValidatorScript)
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, protocolToData)
-import Shared.TestnetConfig (mkTestnetNamiConfig)
+import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
+import Shared.KeyWalletConfig (testnetKeyWalletConfig)
 import Shared.Utxo (filterNonCollateral)
-import Ext.Contract.Value (mkCurrencySymbol)
+import Effect.Aff (launchAff_)
 
-runStartProtocol :: (ProtocolData -> Effect Unit) -> (String -> Effect Unit) -> ProtocolConfigParams -> Effect Unit
-runStartProtocol onComplete onError params = do
-  testnetNamiConfig <- mkTestnetNamiConfig
-  runAff_ handler $ runContract testnetNamiConfig (contract params)
-  where
-  handler :: Either Error ProtocolData -> Effect Unit
-  handler (Right protocolData) = onComplete protocolData
-  handler (Left error) = onError $ message error
+initialProtocolConfigParams ∷ ProtocolConfigParams
+initialProtocolConfigParams = ProtocolConfigParams
+  { minAmountParam: fromInt 50000000
+  , maxAmountParam: fromInt 1000000000
+  , minDurationParam: fromInt 5
+  , maxDurationParam: fromInt 86400
+  , protocolFeeParam: fromInt 10
+  }
+
+runStartProtocol :: Effect Unit
+runStartProtocol = launchAff_ $ runContract testnetKeyWalletConfig (contract initialProtocolConfigParams)
 
 contract :: ProtocolConfigParams -> Contract ProtocolData
-contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
+contract params@(ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
   logInfo' "Running startDonatPool protocol contract"
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
   logInfo' $ "Own Payment pkh is: " <> show ownPkh
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
-  logInfo' $ "Own address is: " <> show ownAddress
+  ownBech32Address <- addressToBech32 ownAddress
+  logInfo' $ "Own address is: " <> show ownBech32Address
   utxos <- utxosAt ownAddress
   logInfo' $ "UTxOs found on address: " <> show utxos
   oref <-
@@ -110,4 +115,11 @@ contract (ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationPara
   logInfo' $ "Current protocol address: " <> show bech32Address
   logInfo' "Transaction submitted successfully"
   protocolData <- protocolToData protocol
+
+  let protocolConfig = mapFromProtocolData protocolData
+  liftEffect $ writeProtocolConfig protocolConfig
+
+  let donatPoolConfig = mapFromProtocolConfigParams params
+  liftEffect $ writeDonatPoolConfig donatPoolConfig
+
   pure protocolData

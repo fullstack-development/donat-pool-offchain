@@ -12,10 +12,10 @@ import Ctl.Internal.Test.TestPlanM (TestPlanM)
 import Data.BigInt as BigInt
 import Data.Tuple.Nested (type (/\), (/\))
 import Mote (group, test)
-import Protocol.Models (PProtocolConfig, Protocol(..))
+import Protocol.Models (Protocol(..))
 import Protocol.StartProtocol as StartProtocol
 import Protocol.UpdateProtocol as UpdateProtocol
-import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, mapToProtocolConfig, protocolToData)
+import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, protocolToData)
 import Test.Plutip.Contracts.StartProtocol (startProtocolParams)
 import Test.Plutip.Utils (isExpectedError)
 import Test.Spec.Assertions (shouldSatisfy)
@@ -64,19 +64,15 @@ suite = do
         let errMsg = "Protocol UTxO with given nft not found"
         result `shouldSatisfy` (isExpectedError errMsg)
 
-updateProtocolConfig :: PProtocolConfig
+updateProtocolConfig :: ProtocolConfigParams
 updateProtocolConfig =
-  let
-    params =
-      ProtocolConfigParams
-        { minAmountParam: BigInt.fromInt 2_000_000
-        , maxAmountParam: BigInt.fromInt 100_000_000
-        , minDurationParam: BigInt.fromInt 5 -- minutes
-        , maxDurationParam: BigInt.fromInt 250 -- minutes
-        , protocolFeeParam: BigInt.fromInt 3 -- percentage
-        }
-  in
-    mapToProtocolConfig params
+  ProtocolConfigParams
+    { minAmountParam: BigInt.fromInt 2_000_000
+    , maxAmountParam: BigInt.fromInt 100_000_000
+    , minDurationParam: BigInt.fromInt 5 -- minutes
+    , maxDurationParam: BigInt.fromInt 250 -- minutes
+    , protocolFeeParam: BigInt.fromInt 3 -- percentage
+    }
 
 incorrectProtocol :: Contract ProtocolData
 incorrectProtocol = do

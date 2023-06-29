@@ -2,6 +2,7 @@ module Protocol.UpdateProtocol where
 
 import Contract.Prelude
 
+import Config.Protocol (mapToProtocolData, readProtocolConfig)
 import Contract.Address (getWalletAddressesWithNetworkTag, getWalletAddresses, ownPaymentPubKeysHashes)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Credential (Credential(ScriptCredential))
@@ -15,28 +16,27 @@ import Contract.Utxos (utxosAt)
 import Ctl.Internal.Types.Datum (Datum(..))
 import Data.Array (head) as Array
 import Data.Lens (view)
-import Effect.Aff (runAff_)
-import Effect.Exception (Error, message, throw)
+import Effect.Aff (launchAff_)
+import Effect.Exception (throw)
 import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
 import Protocol.Models (PProtocolConfig(..))
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolConfigParams, ProtocolData, dataToProtocol, getConfigFromProtocolDatum, mapToProtocolConfig)
+import Shared.Config (mapToProtocolConfigParams, readDonatPoolConfig)
+import Shared.KeyWalletConfig (testnetKeyWalletConfig)
 import Shared.Utxo (getNonCollateralUtxo)
-import Shared.TestnetConfig (mkTestnetNamiConfig)
 
-runUpdateProtocol :: (ProtocolConfigParams -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> ProtocolConfigParams -> Effect Unit
-runUpdateProtocol onComplete onError protocolData params = do
-  testnetNamiConfig <- mkTestnetNamiConfig
-  let protocolConfig = mapToProtocolConfig params
-  runAff_ handler $ runContract testnetNamiConfig (contract protocolData protocolConfig)
-  where
-  handler :: Either Error ProtocolConfigParams -> Effect Unit
-  handler (Right protocolConfigParams) = onComplete protocolConfigParams
-  handler (Left error) = onError $ message error
+runUpdateProtocol :: Effect Unit
+runUpdateProtocol = do
+  protocolConfig <- readProtocolConfig
+  let protocolData = mapToProtocolData protocolConfig
+  donatPoolConfig <- readDonatPoolConfig
+  protocolConfigParams <- mapToProtocolConfigParams donatPoolConfig
+  launchAff_ $ runContract testnetKeyWalletConfig (contract protocolData protocolConfigParams)
 
-contract :: ProtocolData -> PProtocolConfig -> Contract ProtocolConfigParams
-contract protocolData protocolConfig = do
+contract :: ProtocolData -> ProtocolConfigParams -> Contract ProtocolConfigParams
+contract protocolData protocolConfigParams = do
   logInfo' "Running update protocol"
   protocol <- dataToProtocol protocolData
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
@@ -48,6 +48,7 @@ contract protocolData protocolConfig = do
   let manager = view _managerPkh protocolInfo.pDatum
   when (manager /= ownPkh) $ liftEffect $ throw "Current user doesn't have permissions to update protocol"
 
+  let protocolConfig = mapToProtocolConfig protocolConfigParams
   let newDatum = makeDatum protocolInfo.pDatum protocolConfig
   logInfo' $ "New datum: " <> show newDatum
   let newPDatum = Datum $ toData $ newDatum

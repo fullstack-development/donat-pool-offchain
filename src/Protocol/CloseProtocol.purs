@@ -5,7 +5,7 @@ import Contract.Prelude
 import Contract.Address (getWalletAddressesWithNetworkTag)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedE, liftedM)
+import Contract.Monad (Contract, liftedE, liftedM, runContract)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
@@ -21,10 +21,15 @@ import Protocol.Models (Protocol(..))
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Protocol.Redeemer (PProtocolRedeemer(PCloseProtocol))
 import Protocol.UserData (ProtocolData, dataToProtocol)
-import Shared.RunContract (runContractWithUnitResult)
+import Shared.KeyWalletConfig (testnetKeyWalletConfig)
+import Config.Protocol (mapToProtocolData, readProtocolConfig)
+import Effect.Aff (launchAff_)
 
-runCloseProtocolTest :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
-runCloseProtocolTest onComplete onError protocolData = runContractWithUnitResult onComplete onError $ contract protocolData
+runCloseProtocol :: Effect Unit
+runCloseProtocol = do
+  protocolConfig <- readProtocolConfig
+  let protocolData = mapToProtocolData protocolConfig
+  launchAff_ $ runContract testnetKeyWalletConfig (contract protocolData)
 
 contract :: ProtocolData -> Contract Unit
 contract protocolData = do
