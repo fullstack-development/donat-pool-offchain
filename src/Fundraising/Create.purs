@@ -216,5 +216,6 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
     , threadTokenCurrency: nftCs
     , threadTokenName: nftTn
     , path: currencySymbolToString nftCs
+    , isCompleted: false
     }
 

@@ -15,6 +15,7 @@ You can edit this file as you like.
   , "either"
   , "encoding"
   , "exceptions"
+  , "foldable-traversable"
   , "math"
   , "maybe"
   , "monad-logger"

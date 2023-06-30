@@ -7,8 +7,8 @@ import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.Utxos (utxosAt)
-import Data.Array (mapMaybe)
 import Data.Map as Map
+import Data.Traversable (traverse)
 import Effect.Aff (runAff_)
 import Effect.Exception (Error, message)
 import Ext.Contract.Value (mkCurrencySymbol)
@@ -45,6 +45,6 @@ getAllFundraisings protocolData = do
   frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
 
   fundraisings <- utxosAt frAddress
-  let frInfos = mapMaybe mapToFundraisingInfo (Map.toUnfoldable fundraisings)
+  frInfos <- traverse mapToFundraisingInfo (Map.toUnfoldable fundraisings)
   logInfo' $ "Found UTxOs" <> show frInfos
   pure frInfos
