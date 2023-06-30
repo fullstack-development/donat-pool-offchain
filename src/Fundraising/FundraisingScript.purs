@@ -38,5 +38,8 @@ getFundraisingValidatorHash fundraising = do
 getFundraisingTokenName :: forall (r :: Row Type). Contract Value.TokenName
 getFundraisingTokenName = liftContractM "Cannot make Fundraising token name" $ fundraisingTokenName
 
+fundraisingTokenNameString :: String
+fundraisingTokenNameString = "FundraisingThreadToken"
+
 fundraisingTokenName :: Maybe Value.TokenName
-fundraisingTokenName = mkTokenName "FundraisingThreadToken"
+fundraisingTokenName = mkTokenName fundraisingTokenNameString
