@@ -55,7 +55,9 @@ contract pData (FundraisingData fundraisingData) = do
     managerPkh = currentDatum.managerPkh
   now <- currentTime
   let donatedAmount = Value.valueOf currentFunds adaSymbol adaToken - minAda - minAda
-  when (now <= currentDatum.frDeadline && donatedAmount /= currentDatum.frAmount) $ liftEffect $ throw "Can't receive funds while fundraising is in process"
+  when (now <= currentDatum.frDeadline && donatedAmount < currentDatum.frAmount)
+    $ liftEffect
+    $ throw "Can't receive funds while fundraising is in progress"
 
   (OwnCredentials creds) <- getOwnCreds
   when (creds.ownPkh /= currentDatum.creatorPkh) $ liftEffect $ throw "Only fundraising creator can receive funds"

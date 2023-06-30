@@ -61,5 +61,5 @@ suite = do
         frData <- createTestFundraising bob protocolData (mkFundraisingParams 80 (mkFundraisingDuration 0 0 10))
         withKeyWallet alice $ void $ Donate.contract protocolData frData 20
         result <- try $ withKeyWallet bob $ void $ ReceiveFunds.contract protocolData frData
-        let errMsg = "Can't receive funds while fundraising is in process"
+        let errMsg = "Can't receive funds while fundraising is in progress"
         result `shouldSatisfy` (isExpectedError errMsg)
