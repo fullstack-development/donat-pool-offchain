@@ -23,6 +23,8 @@ import Data.Map (toUnfoldable) as Map
 import Data.String (take)
 import Effect.Aff (runAff_)
 import Effect.Exception (throw, Error, message)
+import Ext.Contract.Time (addTimes)
+import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
 import Fundraising.Datum (PFundraisingDatum(..), titleLength)
 import Fundraising.FundraisingScript (getFundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
@@ -42,8 +44,6 @@ import Shared.Duration (durationToMinutes, minutesToPosixTime)
 import Shared.MinAda (minAdaValue)
 import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, filterNonCollateral)
-import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
-import Ext.Contract.Time (addTimes)
 
 runCreateFundraising :: (FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocolData params = do
@@ -116,6 +116,7 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   let
     initialFrDatum = PFundraisingDatum
       { creatorPkh: ownPkh
+      , creatorAddress: ownAddress
       , tokenOrigin: oref
       , frTitle: serializedTitle
       , frAmount: targetAmount
@@ -207,8 +208,10 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   bech32Address <- addressToBech32 frAddress
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
+  creatorAddress <- addressToBech32 ownAddress
   pure $ FundraisingInfo
     { creator: ownPkh
+    , creatorAddress: creatorAddress
     , title: title
     , goal: targetAmount
     , raisedAmt: fromInt 0

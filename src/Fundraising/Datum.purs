@@ -1,10 +1,11 @@
 module Fundraising.Datum where
 
-import Contract.Address (PaymentPubKeyHash)
-import Contract.Time (POSIXTime)
+import Ctl.Internal.FromData
+
+import Contract.Address (PaymentPubKeyHash, Address)
 import Contract.PlutusData (class HasPlutusSchema, type (:+), type (:=), type (@@), I, PNil, Z, genericToData)
 import Contract.Prelude (class Generic, class Show)
-import Ctl.Internal.FromData
+import Contract.Time (POSIXTime)
 import Ctl.Internal.ToData (class ToData)
 import Ctl.Internal.Types.ByteArray (ByteArray)
 import Ctl.Internal.Types.Transaction (TransactionInput)
@@ -17,6 +18,7 @@ titleLength = 35
 
 newtype PFundraisingDatum = PFundraisingDatum
   { creatorPkh :: PaymentPubKeyHash
+  , creatorAddress :: Address
   , tokenOrigin :: TransactionInput
   , frTitle :: ByteArray --  titleLength is set to limit the title size 
   , frAmount :: BigInt -- amount to raise in Lovelace
@@ -37,6 +39,8 @@ instance
     ( "PFundraisingDatum"
         :=
           ( "creatorPkh" := I PaymentPubKeyHash
+              :+ "creatorAddress"
+              := I Address
               :+ "tokenOrigin"
               := I TransactionInput
               :+ "frTitle"
