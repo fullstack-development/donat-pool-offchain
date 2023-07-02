@@ -18,7 +18,7 @@ descLength = 35
 newtype PFundraisingDatum = PFundraisingDatum
   { creatorPkh :: PaymentPubKeyHash
   , tokenOrigin :: TransactionInput
-  , frDesc :: ByteArray --  descLength is set to limit the description size 
+  , frTitle :: ByteArray --  descLength is set to limit the description size 
   , frAmount :: BigInt -- amount to raise in Lovelace
   , frDeadline :: POSIXTime
   , frFee :: BigInt -- percentage
@@ -39,7 +39,7 @@ instance
           ( "creatorPkh" := I PaymentPubKeyHash
               :+ "tokenOrigin"
               := I TransactionInput
-              :+ "frDesc"
+              :+ "frTitle"
               := I ByteArray
               :+ "frAmount"
               := I BigInt

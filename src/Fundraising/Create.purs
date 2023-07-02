@@ -117,7 +117,7 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
     initialFrDatum = PFundraisingDatum
       { creatorPkh: ownPkh
       , tokenOrigin: oref
-      , frDesc: desc
+      , frTitle: desc
       , frAmount: targetAmount
       , frDeadline: deadline
       , frFee: view _protocolFee protocolDatum

@@ -39,7 +39,7 @@ mapToFundraisingInfo utxo = do
   PFundraisingDatum currentDatum <- liftContractM "Impossible to extract datum from UTxO" $ extractDatumFromUTxO utxo
   let frVal = extractValueFromUTxO utxo
   let currentFunds = Value.valueToCoin' frVal - Value.valueToCoin' minAdaValue - Value.valueToCoin' minAdaValue
-  let ByteArray unwrappedDesc = currentDatum.frDesc
+  let ByteArray unwrappedDesc = currentDatum.frTitle
   desc <- eitherContract "Description decoding failed: " $ decodeUtf8 unwrappedDesc
   frTokenName <- getFundraisingTokenName
   cs <- liftContractM "Impossible to get currency by token name" $ getCurrencyByTokenName frVal frTokenName
