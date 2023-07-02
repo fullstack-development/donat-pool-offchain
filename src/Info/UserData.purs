@@ -21,7 +21,7 @@ import Shared.MinAda (minAdaValue)
 
 newtype FundraisingInfo = FundraisingInfo
   { creator :: PaymentPubKeyHash
-  , description :: String
+  , title :: String
   , goal :: BigInt -- Goal in lovelaces
   , raisedAmt :: BigInt -- Raised amount in lovelaces
   , deadline :: POSIXTime
@@ -39,15 +39,15 @@ mapToFundraisingInfo utxo = do
   PFundraisingDatum currentDatum <- liftContractM "Impossible to extract datum from UTxO" $ extractDatumFromUTxO utxo
   let frVal = extractValueFromUTxO utxo
   let currentFunds = Value.valueToCoin' frVal - Value.valueToCoin' minAdaValue - Value.valueToCoin' minAdaValue
-  let ByteArray unwrappedDesc = currentDatum.frTitle
-  desc <- eitherContract "Description decoding failed: " $ decodeUtf8 unwrappedDesc
+  let ByteArray unwrappedTitle = currentDatum.frTitle
+  title <- eitherContract "Title decoding failed: " $ decodeUtf8 unwrappedTitle
   frTokenName <- getFundraisingTokenName
   cs <- liftContractM "Impossible to get currency by token name" $ getCurrencyByTokenName frVal frTokenName
   let pathStr = currencySymbolToString cs
   now <- currentTime
   pure $ FundraisingInfo
     { creator: currentDatum.creatorPkh
-    , description: desc
+    , title: title
     , goal: currentDatum.frAmount
     , raisedAmt: currentFunds
     , deadline: currentDatum.frDeadline

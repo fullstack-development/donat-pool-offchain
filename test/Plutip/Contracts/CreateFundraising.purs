@@ -108,7 +108,7 @@ suite = do
 
 mkFundraisingParams :: Int -> Duration -> CreateFundraisingParams
 mkFundraisingParams amt dur = CreateFundraisingParams
-  { description: "Donate to feed stray cats"
+  { title: "Donate to feed stray cats"
   , amount: amt
   , duration: dur
   }

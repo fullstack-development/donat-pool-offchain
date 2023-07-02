@@ -12,13 +12,13 @@ import Data.BigInt (BigInt)
 import Data.Newtype (class Newtype)
 import Prelude (class Eq, class Ord)
 
-descLength :: Int
-descLength = 35
+titleLength :: Int
+titleLength = 35
 
 newtype PFundraisingDatum = PFundraisingDatum
   { creatorPkh :: PaymentPubKeyHash
   , tokenOrigin :: TransactionInput
-  , frTitle :: ByteArray --  descLength is set to limit the description size 
+  , frTitle :: ByteArray --  titleLength is set to limit the title size 
   , frAmount :: BigInt -- amount to raise in Lovelace
   , frDeadline :: POSIXTime
   , frFee :: BigInt -- percentage

@@ -23,7 +23,7 @@ import Data.Map (toUnfoldable) as Map
 import Data.String (take)
 import Effect.Aff (runAff_)
 import Effect.Exception (throw, Error, message)
-import Fundraising.Datum (PFundraisingDatum(..), descLength)
+import Fundraising.Datum (PFundraisingDatum(..), titleLength)
 import Fundraising.FundraisingScript (getFundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
 import Fundraising.UserData (CreateFundraisingParams(..))
@@ -55,7 +55,7 @@ runCreateFundraising onComplete onError protocolData params = do
   handler (Left err) = onError $ message err
 
 contract :: ProtocolData -> CreateFundraisingParams -> Contract FundraisingInfo
-contract protocolData (CreateFundraisingParams { description, amount, duration }) = do
+contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   logInfo' "Running Create Fundraising contract"
   givenProtocol <- dataToProtocol protocolData
   ownHashes <- ownPaymentPubKeysHashes
@@ -111,13 +111,13 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
 
   now@(POSIXTime now') <- currentTime
   let deadline = addTimes now (minutesToPosixTime frDurationMinutes)
-  desc <- liftContractM "Impossible to serialize description" $ byteArrayFromAscii (take descLength description)
+  serializedTitle <- liftContractM "Impossible to serialize a title" $ byteArrayFromAscii (take titleLength title)
 
   let
     initialFrDatum = PFundraisingDatum
       { creatorPkh: ownPkh
       , tokenOrigin: oref
-      , frTitle: desc
+      , frTitle: serializedTitle
       , frAmount: targetAmount
       , frDeadline: deadline
       , frFee: view _protocolFee protocolDatum
@@ -209,7 +209,7 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
 
   pure $ FundraisingInfo
     { creator: ownPkh
-    , description: description
+    , title: title
     , goal: targetAmount
     , raisedAmt: fromInt 0
     , deadline: deadline

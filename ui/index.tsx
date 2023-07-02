@@ -20,7 +20,7 @@ const App = () => {
   };
   
   const createFundraisingParams = {
-    description: 'Donate to feed stray cats',
+    title: 'Donate to feed stray cats',
     amount: 200,
     duration: fundraisingDuration
   };
