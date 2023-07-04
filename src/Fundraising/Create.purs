@@ -25,6 +25,7 @@ import Effect.Aff (runAff_)
 import Effect.Exception (throw, Error, message)
 import Ext.Contract.Time (addTimes)
 import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
+import Ext.Seriaization.Key (pkhToBech32M)
 import Fundraising.Datum (PFundraisingDatum(..), titleLength)
 import Fundraising.FundraisingScript (getFundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
@@ -207,8 +208,9 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   bech32Address <- addressToBech32 frAddress
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
+  creatorPkh <- pkhToBech32M ownPkh
   pure $ FundraisingInfo
-    { creator: ownPkh
+    { creator: creatorPkh
     , title: title
     , goal: targetAmount
     , raisedAmt: fromInt 0

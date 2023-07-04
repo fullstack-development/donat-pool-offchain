@@ -14,7 +14,7 @@ pkhFromBech32 ∷ Bech32String → Maybe PaymentPubKeyHash
 pkhFromBech32 pkhStr = (PubKeyHash >>> PaymentPubKeyHash) <$> ed25519KeyHashFromBech32 pkhStr
 
 pkhToBech32M ∷ PaymentPubKeyHash → Contract Bech32String
-pkhToBech32M pkh = liftContractM "Impossible to encode manager pkh" $ pkhToBech32 pkh
+pkhToBech32M pkh = liftContractM "Impossible to serialize pkh" $ pkhToBech32 pkh
 
 pkhFromBech32M ∷ Bech32String → Contract PaymentPubKeyHash
-pkhFromBech32M pkhStr = liftContractM "Impossible to make new manager pkh" $ pkhFromBech32 pkhStr
+pkhFromBech32M pkhStr = liftContractM "Impossible to deserialize pkh" $ pkhFromBech32 pkhStr

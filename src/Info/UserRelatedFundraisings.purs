@@ -8,6 +8,7 @@ import Contract.Monad (Contract, liftContractM, runContract)
 import Data.Array as Array
 import Effect.Aff (runAff_)
 import Effect.Exception (Error, message)
+import Ext.Seriaization.Key (pkhToBech32M)
 import Info.AllFundraisings (getAllFundraisings)
 import Info.UserData (FundraisingInfo, filterByPkh)
 import Protocol.UserData (ProtocolData)
@@ -28,6 +29,7 @@ getUserRelatedFundraisings protocolData = do
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
   logInfo' $ "Own Payment pkh is: " <> show ownPkh
-  let userFrs = filterByPkh ownPkh allFrs
+  pkh <- pkhToBech32M ownPkh
+  let userFrs = filterByPkh pkh allFrs
   logInfo' $ "Discovered items: " <> show userFrs
   pure userFrs
