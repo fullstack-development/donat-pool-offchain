@@ -116,7 +116,6 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   let
     initialFrDatum = PFundraisingDatum
       { creatorPkh: ownPkh
-      , creatorAddress: ownAddress
       , tokenOrigin: oref
       , frTitle: serializedTitle
       , frAmount: targetAmount
@@ -208,10 +207,8 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   bech32Address <- addressToBech32 frAddress
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
-  creatorAddress <- addressToBech32 ownAddress
   pure $ FundraisingInfo
     { creator: ownPkh
-    , creatorAddress: creatorAddress
     , title: title
     , goal: targetAmount
     , raisedAmt: fromInt 0

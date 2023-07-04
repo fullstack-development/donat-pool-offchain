@@ -2,7 +2,7 @@ module Info.UserData where
 
 import Contract.Prelude
 
-import Contract.Address (PaymentPubKeyHash, Bech32String, addressToBech32)
+import Contract.Address (PaymentPubKeyHash, Bech32String)
 import Contract.Chain (currentTime)
 import Contract.Monad (Contract, liftContractM)
 import Contract.Time (POSIXTime)
@@ -21,7 +21,6 @@ import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO)
 
 newtype FundraisingInfo = FundraisingInfo
   { creator :: PaymentPubKeyHash -- TODO: ask if we use this field on frontend (remove if we are not)
-  , creatorAddress :: Bech32String
   , title :: String
   , goal :: BigInt -- Goal in lovelaces
   , raisedAmt :: BigInt -- Raised amount in lovelaces
@@ -46,10 +45,8 @@ mapToFundraisingInfo utxo = do
   cs <- liftContractM "Impossible to get currency by token name" $ getCurrencyByTokenName frVal frTokenName
   let pathStr = currencySymbolToString cs
   now <- currentTime
-  creatorAddress <- addressToBech32 currentDatum.creatorAddress
   pure $ FundraisingInfo
     { creator: currentDatum.creatorPkh
-    , creatorAddress: creatorAddress
     , title: title
     , goal: currentDatum.frAmount
     , raisedAmt: currentFunds
