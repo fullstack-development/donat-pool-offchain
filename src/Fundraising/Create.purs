@@ -23,7 +23,10 @@ import Data.Map (toUnfoldable) as Map
 import Data.String (take)
 import Effect.Aff (runAff_)
 import Effect.Exception (throw, Error, message)
-import Fundraising.Datum (PFundraisingDatum(..), descLength)
+import Ext.Contract.Time (addTimes)
+import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
+import Ext.Seriaization.Key (pkhToBech32M)
+import Fundraising.Datum (PFundraisingDatum(..), titleLength)
 import Fundraising.FundraisingScript (getFundraisingTokenName, fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
 import Fundraising.UserData (CreateFundraisingParams(..))
@@ -42,8 +45,6 @@ import Shared.Duration (durationToMinutes, minutesToPosixTime)
 import Shared.MinAda (minAdaValue)
 import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, filterNonCollateral)
-import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
-import Ext.Contract.Time (addTimes)
 
 runCreateFundraising :: (FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
 runCreateFundraising onComplete onError protocolData params = do
@@ -55,7 +56,7 @@ runCreateFundraising onComplete onError protocolData params = do
   handler (Left err) = onError $ message err
 
 contract :: ProtocolData -> CreateFundraisingParams -> Contract FundraisingInfo
-contract protocolData (CreateFundraisingParams { description, amount, duration }) = do
+contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   logInfo' "Running Create Fundraising contract"
   givenProtocol <- dataToProtocol protocolData
   ownHashes <- ownPaymentPubKeysHashes
@@ -111,13 +112,13 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
 
   now@(POSIXTime now') <- currentTime
   let deadline = addTimes now (minutesToPosixTime frDurationMinutes)
-  desc <- liftContractM "Impossible to serialize description" $ byteArrayFromAscii (take descLength description)
+  serializedTitle <- liftContractM "Impossible to serialize a title" $ byteArrayFromAscii (take titleLength title)
 
   let
     initialFrDatum = PFundraisingDatum
       { creatorPkh: ownPkh
       , tokenOrigin: oref
-      , frDesc: desc
+      , frTitle: serializedTitle
       , frAmount: targetAmount
       , frDeadline: deadline
       , frFee: view _protocolFee protocolDatum
@@ -207,9 +208,10 @@ contract protocolData (CreateFundraisingParams { description, amount, duration }
   bech32Address <- addressToBech32 frAddress
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
+  creatorPkh <- pkhToBech32M ownPkh
   pure $ FundraisingInfo
-    { creator: ownPkh
-    , description: description
+    { creator: creatorPkh
+    , title: title
     , goal: targetAmount
     , raisedAmt: fromInt 0
     , deadline: deadline

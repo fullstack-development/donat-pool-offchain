@@ -9,7 +9,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 const App = () => {
 
   const protocolData = {
-    protocolCurrency: "965eb584a53eb856210865238a9ef1bfc7a5f00efa895da519185364",
+    protocolCurrency: "6697f44bf023bba314bf77affe384d2ac73e028861c1a1e5ec58d090",
     protocolTokenName: "DonatPoolProtocol"
   }
 
@@ -20,7 +20,7 @@ const App = () => {
   };
   
   const createFundraisingParams = {
-    description: 'Donate to feed stray cats',
+    title: 'Donate to feed stray cats',
     amount: 200,
     duration: fundraisingDuration
   };
