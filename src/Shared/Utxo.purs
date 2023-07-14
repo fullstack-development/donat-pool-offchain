@@ -4,9 +4,9 @@ import Contract.Prelude
 
 import Contract.Monad (Contract, liftContractM)
 import Contract.PlutusData (Datum(..), fromData, class FromData)
-import Contract.Transaction (TransactionInput, TransactionOutputWithRefScript, OutputDatum(OutputDatum))
+import Contract.Transaction (OutputDatum(OutputDatum), ScriptRef, TransactionInput, TransactionOutputWithRefScript)
 import Contract.Value as Value
-import Ctl.Internal.Plutus.Types.Transaction (UtxoMap, _amount, _datum, _output)
+import Ctl.Internal.Plutus.Types.Transaction (UtxoMap, _amount, _datum, _output, _scriptRef)
 import Data.Array (filter, head) as Array
 import Data.BigInt (fromInt)
 import Data.Lens.Getter ((^.))
@@ -50,6 +50,19 @@ getUtxoByNFT :: String -> TokenTuple -> UtxoMap -> Contract UtxoTuple
 getUtxoByNFT scriptName nft utxos =
   liftContractM (scriptName <> " UTxO with given nft not found")
     (Array.head (filterByToken nft $ Map.toUnfoldable utxos))
+
+checkScriptRefInUTxO :: ScriptRef -> UtxoTuple -> Boolean
+checkScriptRefInUTxO scriptRef (Tuple _ txOutWithRef) =
+  txOutWithRef ^. _scriptRef == Just scriptRef
+
+filteByScriptRefInUtxo :: ScriptRef -> Array UtxoTuple -> Array UtxoTuple
+filteByScriptRefInUtxo scriptRef =
+    Array.filter (checkScriptRefInUTxO scriptRef)
+
+getUtxoByScriptRef :: String -> ScriptRef -> UtxoMap -> Contract UtxoTuple
+getUtxoByScriptRef scriptName scriptRef utxos =
+  liftContractM (scriptName <> " UTxO with script reference not found")
+    (Array.head (filteByScriptRefInUtxo scriptRef $ Map.toUnfoldable utxos))
 
 extractDatumFromUTxO
   :: forall (datum :: Type). FromData datum => UtxoTuple -> Maybe datum

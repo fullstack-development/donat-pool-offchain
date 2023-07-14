@@ -40,6 +40,7 @@ contract protocolData protocolConfigParams = do
   logInfo' "Running update protocol"
   protocol <- dataToProtocol protocolData
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
+
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
@@ -58,19 +59,22 @@ contract protocolData protocolConfigParams = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput (fst protocolInfo.pUtxo) updateProtocolRedeemer
+      Constraints.mustSpendScriptOutputUsingScriptRef
+        (fst protocolInfo.pUtxo) 
+        updateProtocolRedeemer
+        protocolInfo.pRefScriptInput
         <> Constraints.mustPayToScriptAddress
           protocolInfo.pValidatorHash
           (ScriptCredential protocolInfo.pValidatorHash)
           newPDatum
           Constraints.DatumInline
           protocolInfo.pValue
+        <> Constraints.mustReferenceOutput (fst protocolInfo.pScriptRef)
         <> Constraints.mustBeSignedBy ownPkh
   let
     lookups :: Lookups.ScriptLookups Void
     lookups =
-      Lookups.validator protocolInfo.pValidator
-        <> Lookups.unspentOutputs protocolInfo.pUtxos
+        Lookups.unspentOutputs protocolInfo.pUtxos
         <> Lookups.unspentOutputs walletUtxo
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
