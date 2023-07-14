@@ -8,13 +8,12 @@ import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChang
 import Contract.Credential (Credential(..))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
-import Contract.PlutusData (Datum(Datum), PlutusData, Redeemer(Redeemer), toData, unitDatum)
+import Contract.PlutusData (Datum(Datum), Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction (ScriptRef(..), awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
+import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Utxos (utxosAt)
 import Contract.Value as Value
-import Ctl.Internal.Types.Scripts (Validator, ValidatorHash)
 import Data.Array (head) as Array
 import Data.BigInt (fromInt)
 import Data.Map (toUnfoldable) as Map
@@ -28,10 +27,8 @@ import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName, pro
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, protocolToData)
 import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
-import Shared.MinAda (minAdaValue)
-import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.Utxo (filterNonCollateral)
-
+import Shared.ScriptRef (createRefScriptUtxo)
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
 initialProtocolConfigParams = ProtocolConfigParams
@@ -81,7 +78,7 @@ contract params@(ProtocolConfigParams { minAmountParam, maxAmountParam, minDurat
       , tokenOriginRef: oref
       }
     nftValue = Value.singleton cs tn one
-    paymentToProtocol = Value.lovelaceValueOf (fromInt 4000000) <> nftValue
+    paymentToProtocol = Value.lovelaceValueOf (fromInt 2000000) <> nftValue
 
   let
     constraints :: Constraints.TxConstraints Void Void
@@ -121,7 +118,7 @@ contract params@(ProtocolConfigParams { minAmountParam, maxAmountParam, minDurat
   logInfo' $ "Current protocol address: " <> show bech32Address
   logInfo' "Transaction submitted successfully"
 
-  createRefScriptUtxo protocolValidatorHash protocolValidator
+  createRefScriptUtxo "Protocol" protocolValidatorHash protocolValidator
   protocolData <- protocolToData protocol
 
   let protocolConfig = mapFromProtocolData protocolData
@@ -131,34 +128,3 @@ contract params@(ProtocolConfigParams { minAmountParam, maxAmountParam, minDurat
   liftEffect $ writeDonatPoolConfig donatPoolConfig
 
   pure protocolData
-
-createRefScriptUtxo ∷ ValidatorHash → Validator → Contract Unit
-createRefScriptUtxo protocolValidatorHash protocolValidator = do
-  logInfo' $ "Start to create Protocol reference script"
-  (OwnCredentials creds) <- getOwnCreds
-  let scriptRef = PlutusScriptRef (unwrap protocolValidator)
-
-  let
-    constraints :: Constraints.TxConstraints Unit Unit
-    constraints = Constraints.mustPayToScriptAddressWithScriptRef
-            protocolValidatorHash 
-            (ScriptCredential protocolValidatorHash)
-            unitDatum 
-            Constraints.DatumWitness
-            scriptRef
-            minAdaValue
-
-    lookups :: Lookups.ScriptLookups PlutusData
-    lookups = Lookups.unspentOutputs creds.ownUtxo
-
-  unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
-  addressWithNetworkTag <- liftedM "Failed to get own address with Network Tag" $ Array.head <$> getWalletAddressesWithNetworkTag
-
-  let
-    balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
-  balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
-  balancedSignedTx <- signTransaction balancedTx
-  txId <- submit balancedSignedTx
-  awaitTxConfirmed txId
-  logInfo' $ "Protocol reference script created"
