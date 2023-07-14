@@ -60,7 +60,7 @@ contract protocolData protocolConfigParams = do
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustSpendScriptOutputUsingScriptRef
-        (fst protocolInfo.pUtxo) 
+        (fst protocolInfo.pUtxo)
         updateProtocolRedeemer
         protocolInfo.pRefScriptInput
         <> Constraints.mustPayToScriptAddress
@@ -74,7 +74,7 @@ contract protocolData protocolConfigParams = do
   let
     lookups :: Lookups.ScriptLookups Void
     lookups =
-        Lookups.unspentOutputs protocolInfo.pUtxos
+      Lookups.unspentOutputs protocolInfo.pUtxos
         <> Lookups.unspentOutputs walletUtxo
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints

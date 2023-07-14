@@ -25,20 +25,21 @@ createRefScriptUtxo scriptName validatorHash validator = do
   let
     constraints :: Constraints.TxConstraints Unit Unit
     constraints = Constraints.mustPayToScriptAddressWithScriptRef
-            validatorHash 
-            (ScriptCredential validatorHash)
-            unitDatum 
-            Constraints.DatumWitness
-            scriptRef
-            minAdaValue
+      validatorHash
+      (ScriptCredential validatorHash)
+      unitDatum
+      Constraints.DatumWitness
+      scriptRef
+      minAdaValue
 
     lookups :: Lookups.ScriptLookups PlutusData
     lookups = Lookups.unspentOutputs creds.ownUtxo
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
-  addressWithNetworkTag <- 
-    liftedM "Failed to get own address with Network Tag" 
-        $ Array.head <$> getWalletAddressesWithNetworkTag
+  addressWithNetworkTag <-
+    liftedM "Failed to get own address with Network Tag"
+      $ Array.head
+      <$> getWalletAddressesWithNetworkTag
 
   let
     balanceTxConstraints :: BalanceTxConstraintsBuilder

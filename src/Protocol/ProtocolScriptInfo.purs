@@ -40,7 +40,7 @@ getProtocolScriptInfo protocol = do
   protocolUtxo <- getProtocolUtxo protocol utxos
   currentDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
   let value = extractValueFromUTxO protocolUtxo
-  
+
   let scriptRef = PlutusScriptRef (unwrap protocolValidator)
   refScriptUtxo <- getUtxoByScriptRef "Protocol" scriptRef utxos
   let refScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst refScriptUtxo) (snd refScriptUtxo)

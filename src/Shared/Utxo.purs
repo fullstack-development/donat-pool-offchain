@@ -57,7 +57,7 @@ checkScriptRefInUTxO scriptRef (Tuple _ txOutWithRef) =
 
 filteByScriptRefInUtxo :: ScriptRef -> Array UtxoTuple -> Array UtxoTuple
 filteByScriptRefInUtxo scriptRef =
-    Array.filter (checkScriptRefInUTxO scriptRef)
+  Array.filter (checkScriptRefInUTxO scriptRef)
 
 getUtxoByScriptRef :: String -> ScriptRef -> UtxoMap -> Contract UtxoTuple
 getUtxoByScriptRef scriptName scriptRef utxos =
