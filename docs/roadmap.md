@@ -74,4 +74,6 @@ This document describes main stages of Donat.Pool development. However this is n
 
 - [ ] Add logic for motivating contributors to make more donates
 
+- [ ] Add functionality for receiving donations with notifications on live streams
+
 - [ ] ...
