@@ -15,15 +15,16 @@ import Info.AppInfo as AppInfo
 import Info.UserData (AppInfo, FundraisingInfo)
 import Info.UserRelatedFundraisings as UserRelatedFundraisings
 import Protocol.UserData (ProtocolData)
+import Shared.NetworkData (NetworkParams)
 
 data Contracts = Contracts
-  { connectWallet :: (Bech32String -> Effect Unit) -> (String -> Effect Unit) -> Effect Unit
-  , getAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
-  , createFundraising :: (FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
-  , donate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> FundraisingData -> Int -> Effect Unit
-  , receiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> FundraisingData -> Effect Unit
-  , getAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
-  , getUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
+  { connectWallet :: (Bech32String -> Effect Unit) -> (String -> Effect Unit) -> NetworkParams -> Effect Unit
+  , getAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
+  , createFundraising :: (FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> CreateFundraisingParams -> Effect Unit
+  , donate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Int -> Effect Unit
+  , receiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Effect Unit
+  , getAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
+  , getUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
   }
 
 main :: Contracts

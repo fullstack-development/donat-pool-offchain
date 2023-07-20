@@ -3,21 +3,14 @@ module Common.ConnectWallet where
 import Contract.Prelude
 
 import Contract.Address (Bech32String, addressToBech32, getWalletAddresses)
-import Shared.TestnetConfig (mkTestnetNamiConfig)
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedM, runContract)
+import Contract.Monad (Contract, liftedM)
 import Data.Array (head) as Array
-import Effect.Aff (runAff_)
-import Effect.Exception (Error, message)
+import Shared.NetworkData (NetworkParams)
+import Shared.RunContract (runContractWithResult)
 
-runConnectWallet :: (Bech32String -> Effect Unit) -> (String -> Effect Unit) -> Effect Unit
-runConnectWallet onComplete onError = do
-  testnetNamiConfig <- mkTestnetNamiConfig
-  runAff_ handler $ runContract testnetNamiConfig contract
-  where
-  handler :: Either Error Bech32String -> Effect Unit
-  handler (Right response) = onComplete response
-  handler (Left err) = onError $ message err
+runConnectWallet :: (Bech32String -> Effect Unit) -> (String -> Effect Unit) -> NetworkParams -> Effect Unit
+runConnectWallet onComplete onError networkParms = runContractWithResult onComplete onError networkParms contract
 
 contract :: Contract Bech32String
 contract = do

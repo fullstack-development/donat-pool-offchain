@@ -30,13 +30,14 @@ import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.UserData (ProtocolData, dataToProtocol)
-import Shared.Utxo (checkTokenInUTxO)
 import Shared.MinAda (minAda)
-import Shared.RunContract (runContractWithUnitResult)
+import Shared.NetworkData (NetworkParams)
+import Shared.RunContract (runContractWithResult)
+import Shared.Utxo (checkTokenInUTxO)
 
-runReceiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> FundraisingData -> Effect Unit
-runReceiveFunds onComplete onError pData fundraisingData =
-  runContractWithUnitResult onComplete onError $ contract pData fundraisingData
+runReceiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Effect Unit
+runReceiveFunds onComplete onError pData networkParams fundraisingData =
+  runContractWithResult onComplete onError networkParams $ contract pData fundraisingData
 
 contract :: ProtocolData -> FundraisingData -> Contract Unit
 contract pData (FundraisingData fundraisingData) = do
