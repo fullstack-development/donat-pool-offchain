@@ -34,15 +34,6 @@ mkNetworkWalletConfig (NetworkWallet { networkId, walletType }) = do
     (Eternl /\ TestnetId) -> pure $ testnetEternlConfig host secure
     _ -> throw "Wallet/network configuration not implemented"
 
-------------- TODO: remove the function below
-mkTestnetNamiConfig :: Effect ContractParams
-mkTestnetNamiConfig = do
-  location <- WEB.window >>= WEB.location
-  host <- WEB.hostname location
-  protocol <- WEB.protocol location
-  let secure = (protocol == "https:" || protocol == "wss")
-  pure $ testnetNamiConfig host secure
-
 kupoProdConfig :: String -> Boolean -> ServerConfig
 kupoProdConfig host secure =
   let
