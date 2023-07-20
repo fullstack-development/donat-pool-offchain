@@ -7,7 +7,7 @@ import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChang
 import Contract.Chain (currentTime)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
+import Contract.Monad (Contract, liftContractM, liftedM, liftedE)
 import Contract.PlutusData (Redeemer(Redeemer), Datum(Datum), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Time (POSIXTime(..))
@@ -21,8 +21,7 @@ import Data.BigInt (fromInt, toString)
 import Data.Lens (view)
 import Data.Map (toUnfoldable) as Map
 import Data.String (take)
-import Effect.Aff (runAff_)
-import Effect.Exception (throw, Error, message)
+import Effect.Exception (throw)
 import Ext.Contract.Time (addTimes)
 import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
 import Ext.Seriaization.Key (pkhToBech32M)
@@ -43,17 +42,19 @@ import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.Duration (durationToMinutes, minutesToPosixTime)
 import Shared.MinAda (minAdaValue)
-import Shared.TestnetConfig (mkTestnetNamiConfig)
+import Shared.NetworkData (NetworkParams)
+import Shared.RunContract (runContractWithResult)
 import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, filterNonCollateral)
 
-runCreateFundraising :: (FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> CreateFundraisingParams -> Effect Unit
-runCreateFundraising onComplete onError protocolData params = do
-  testnetNamiConfig <- mkTestnetNamiConfig
-  runAff_ handler $ runContract testnetNamiConfig (contract protocolData params)
-  where
-  handler :: Either Error FundraisingInfo -> Effect Unit
-  handler (Right response) = onComplete response
-  handler (Left err) = onError $ message err
+runCreateFundraising
+  :: (FundraisingInfo -> Effect Unit)
+  -> (String -> Effect Unit)
+  -> ProtocolData
+  -> NetworkParams
+  -> CreateFundraisingParams
+  -> Effect Unit
+runCreateFundraising onComplete onError protocolData networkParams funraisingParams = do
+  runContractWithResult onComplete onError networkParams (contract protocolData funraisingParams)
 
 contract :: ProtocolData -> CreateFundraisingParams -> Contract FundraisingInfo
 contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
@@ -220,4 +221,3 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
     , path: currencySymbolToString nftCs
     , isCompleted: false
     }
-

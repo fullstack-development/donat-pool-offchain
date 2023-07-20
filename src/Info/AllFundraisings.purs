@@ -5,28 +5,22 @@ import Contract.Prelude
 import Contract.Address (validatorHashBaseAddress)
 import Contract.Config (NetworkId(TestnetId))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftContractM, runContract)
+import Contract.Monad (Contract, liftContractM)
 import Contract.Utxos (utxosAt)
 import Data.Map as Map
 import Data.Traversable (traverse)
-import Effect.Aff (runAff_)
-import Effect.Exception (Error, message)
 import Ext.Contract.Value (mkCurrencySymbol)
 import Fundraising.FundraisingScript (getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
 import Info.UserData (FundraisingInfo, mapToFundraisingInfo)
 import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.UserData (ProtocolData, dataToProtocol)
-import Shared.TestnetConfig (mkTestnetNamiConfig)
+import Shared.NetworkData (NetworkParams)
+import Shared.RunContract (runContractWithResult)
 
-runGetAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
-runGetAllFundraisings onComplete onError protocolData = do
-  testnetNamiConfig <- mkTestnetNamiConfig
-  runAff_ handler $ runContract testnetNamiConfig (getAllFundraisings protocolData)
-  where
-  handler :: Either Error (Array FundraisingInfo) -> Effect Unit
-  handler (Right response) = onComplete response
-  handler (Left err) = onError $ message err
+runGetAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
+runGetAllFundraisings onComplete onError protocolData networkParams =
+  runContractWithResult onComplete onError networkParams (getAllFundraisings protocolData)
 
 getAllFundraisings :: ProtocolData -> Contract (Array FundraisingInfo)
 getAllFundraisings protocolData = do

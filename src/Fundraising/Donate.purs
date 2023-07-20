@@ -24,12 +24,13 @@ import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
 import Shared.Utxo (checkTokenInUTxO)
 import Shared.MinAda (minAdaValue)
-import Shared.RunContract (runContractWithUnitResult)
+import Shared.NetworkData (NetworkParams)
+import Shared.RunContract (runContractWithResult)
 import Protocol.UserData (ProtocolData)
 
-runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> FundraisingData -> Int -> Effect Unit
-runDonate onComplete onError pData fundraisingData amount =
-  runContractWithUnitResult onComplete onError $ contract pData fundraisingData amount
+runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Int -> Effect Unit
+runDonate onComplete onError pData networkParams fundraisingData amount =
+  runContractWithResult onComplete onError networkParams $ contract pData fundraisingData amount
 
 contract :: ProtocolData -> FundraisingData -> Int -> Contract Unit
 contract pData (FundraisingData fundraisingData) adaAmount = do

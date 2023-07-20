@@ -9,7 +9,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 const App = () => {
 
   const protocolData = {
-    protocolCurrency: "6697f44bf023bba314bf77affe384d2ac73e028861c1a1e5ec58d090",
+    protocolCurrency: "3fa8e18f6baf0dfc70693a1f9a3c7fabb015c019d615f55707d7643e",
     protocolTokenName: "DonatPoolProtocol"
   }
 
@@ -21,7 +21,7 @@ const App = () => {
   
   const createFundraisingParams = {
     title: 'Donate to feed stray cats',
-    amount: 200,
+    amount: 150,
     duration: fundraisingDuration
   };
 
@@ -30,7 +30,10 @@ const App = () => {
     frThreadTokenName: any;
   }>();
  
-
+  const testnetLode = { 
+    wallet: "Lode",
+    isMainnet: false
+  };
 
   const onCreateFundraisingComplete = createdFundraisingResponse => {
     const frData = {
@@ -45,31 +48,31 @@ const App = () => {
   const onCreateFundraisingClick = () => {
     a.main.value0.createFundraising(onCreateFundraisingComplete)(console.log)(
       protocolData
-    )(createFundraisingParams)();
+    )(testnetLode)(createFundraisingParams)();
   };
 
   const onDonate = () => {   
-    a.main.value0.donate(console.log)(console.log)(protocolData)(fundraisingData)(100)();
+    a.main.value0.donate(console.log)(console.log)(protocolData)(testnetLode)(fundraisingData)(100)();
   };
 
   const onReceiveFunds = () => {
-    a.main.value0.receiveFunds(console.log)(console.log)(protocolData)(fundraisingData)();
+    a.main.value0.receiveFunds(console.log)(console.log)(protocolData)(testnetLode)(fundraisingData)();
   }
   
   const onGetAllFundraising = () => {
-    a.main.value0.getAllFundraisings(console.log)(console.log)(protocolData)();
+    a.main.value0.getAllFundraisings(console.log)(console.log)(protocolData)(testnetLode)();
   };
 
   const onGetUserRelatedFundraisings = () => {
-    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)();
+    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)(testnetLode)();
   };
 
   const onConnectWallet = () => {
-    a.main.value0.connectWallet(console.log)(console.log)();
+    a.main.value0.connectWallet(console.log)(console.log)(testnetLode)();
   };
 
   const onGetAppInfo = () => {
-    a.main.value0.getAppInfo(console.log)(console.log)(protocolData)();
+    a.main.value0.getAppInfo(console.log)(console.log)(protocolData)(testnetLode)();
   };
 
   return (
