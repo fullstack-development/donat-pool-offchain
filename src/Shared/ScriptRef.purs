@@ -39,7 +39,7 @@ createRefScriptUtxo scriptName validatorHash validator = do
       sevenMinAdaValue
 
     lookups :: Lookups.ScriptLookups PlutusData
-    lookups = Lookups.unspentOutputs creds.ownUtxo
+    lookups = Lookups.unspentOutputs creds.ownUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   addressWithNetworkTag <-

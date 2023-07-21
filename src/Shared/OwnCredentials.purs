@@ -7,16 +7,17 @@ import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, liftedM)
 import Contract.Transaction (TransactionInput, TransactionOutputWithRefScript)
 import Contract.Utxos (utxosAt)
-import Data.Array (head) as Array
-import Data.Map (Map)
-import Shared.Utxo (getNonCollateralUtxo)
+import Data.Array as Array
+import Data.Map as Map
 import Info.UserData (UserInfo(..))
+import Shared.Utxo (UtxoTuple, getNonCollateralUtxo)
 
 newtype OwnCredentials = OwnCredentials
   { ownPkh :: PaymentPubKeyHash
   , ownSkh :: StakePubKeyHash
   , ownAddressWithNetworkTag :: AddressWithNetworkTag
-  , ownUtxo :: (Map TransactionInput TransactionOutputWithRefScript)
+  , ownUtxos :: (Map.Map TransactionInput TransactionOutputWithRefScript)
+  , nonCollateralORef :: TransactionInput
   }
 
 getOwnCreds :: Contract OwnCredentials
@@ -24,12 +25,16 @@ getOwnCreds = do
   (ownPkh /\ ownAddressWithNetworkTag) <- getOwnPkhAndAddress
   mbOwnSkh <- join <<< Array.head <$> ownStakePubKeysHashes
   ownSkh <- liftContractM "Failed to get own SKH" mbOwnSkh
-  ownUtxo <- utxosAt ownAddressWithNetworkTag >>= getNonCollateralUtxo
+  utxos <- utxosAt ownAddressWithNetworkTag >>= getNonCollateralUtxo
+  oref <-
+    liftContractM "Utxo set is empty"
+      (fst <$> Array.head (Map.toUnfoldable utxos :: Array UtxoTuple))
   pure $ OwnCredentials
     { ownPkh: ownPkh
     , ownSkh: ownSkh
     , ownAddressWithNetworkTag: ownAddressWithNetworkTag
-    , ownUtxo: ownUtxo
+    , ownUtxos: utxos
+    , nonCollateralORef: oref
     }
 
 getOwnUserInfo :: PaymentPubKeyHash -> Contract UserInfo

@@ -74,7 +74,7 @@ contract pData (FundraisingData fundraisingData) adaAmount = do
     lookups =
       Lookups.validator frInfo.frValidator
         <> Lookups.unspentOutputs frInfo.frUtxos
-        <> Lookups.unspentOutputs creds.ownUtxo
+        <> Lookups.unspentOutputs creds.ownUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let

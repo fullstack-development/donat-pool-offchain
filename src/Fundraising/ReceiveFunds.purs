@@ -96,7 +96,7 @@ contract pData (FundraisingData fundraisingData) = do
         <> Lookups.mintingPolicy verTokenMintingPolicy
         <> Lookups.validator frInfo.frValidator
         <> Lookups.unspentOutputs frInfo.frUtxos
-        <> Lookups.unspentOutputs creds.ownUtxo
+        <> Lookups.unspentOutputs creds.ownUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let

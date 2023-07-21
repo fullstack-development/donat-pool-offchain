@@ -63,7 +63,7 @@ contract protocolData = do
     lookups =
       Lookups.mintingPolicy mp
         <> Lookups.unspentOutputs protocolInfo.pUtxos
-        <> Lookups.unspentOutputs creds.ownUtxo
+        <> Lookups.unspentOutputs creds.ownUtxos
         <> Lookups.validator protocolInfo.pValidator
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints

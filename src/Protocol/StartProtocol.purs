@@ -40,7 +40,7 @@ initialProtocolConfigParams = ProtocolConfigParams
   }
 
 runStartSystem :: Effect Unit
-runStartSystem = launchAff_ $ do 
+runStartSystem = launchAff_ $ do
   runContract testnetKeyWalletConfig (startSystem initialProtocolConfigParams)
 
 startSystem :: ProtocolConfigParams -> Contract ProtocolData
