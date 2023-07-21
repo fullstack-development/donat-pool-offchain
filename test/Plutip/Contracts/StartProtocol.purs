@@ -50,4 +50,4 @@ startProtocolParams =
 startProtocolContract
   :: ProtocolConfigParams
   -> Contract Unit
-startProtocolContract = void <<< StartProtocol.contract
+startProtocolContract = void <<< StartProtocol.startSystem

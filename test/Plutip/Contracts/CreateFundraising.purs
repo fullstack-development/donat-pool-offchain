@@ -34,7 +34,7 @@ suite = do
           ] /\
             [ BigInt.fromInt 30_000_000 ]
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        protocol <- withKeyWallet alice $ StartProtocol.startSystem startProtocolParams
         withKeyWallet bob $ void $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 6))
 
     test "Should fail if Protocol doesn't exist" do
@@ -59,7 +59,7 @@ suite = do
           ] /\
             [ BigInt.fromInt 30_000_000 ]
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        protocol <- withKeyWallet alice $ StartProtocol.startSystem startProtocolParams
         result <- try $ withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 1 (mkFundraisingDuration 0 0 6))
         let errMsg = "Fundraising amount too small. It must be greater than 2000000."
         result `shouldSatisfy` (isExpectedError errMsg)
@@ -73,7 +73,7 @@ suite = do
           ] /\
             [ BigInt.fromInt 30_000_000 ]
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        protocol <- withKeyWallet alice $ StartProtocol.startSystem startProtocolParams
         result <- try $ withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 200 (mkFundraisingDuration 0 0 6))
         let errMsg = "Fundraising amount too big. It must be less than 100000000."
         result `shouldSatisfy` (isExpectedError errMsg)
@@ -87,7 +87,7 @@ suite = do
           ] /\
             [ BigInt.fromInt 30_000_000 ]
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        protocol <- withKeyWallet alice $ StartProtocol.startSystem startProtocolParams
         result <- try $ withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 0 0 1))
         let errMsg = "Fundraising duration too short. It must be greater than 5."
         result `shouldSatisfy` (isExpectedError errMsg)
@@ -101,7 +101,7 @@ suite = do
           ] /\
             [ BigInt.fromInt 30_000_000 ]
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        protocol <- withKeyWallet alice $ StartProtocol.startSystem startProtocolParams
         result <- try $ withKeyWallet bob $ Create.contract protocol (mkFundraisingParams 80 (mkFundraisingDuration 300 0 0))
         let errMsg = "Fundraising duration too long. It must be less than 250."
         result `shouldSatisfy` (isExpectedError errMsg)
