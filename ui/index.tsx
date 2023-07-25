@@ -9,7 +9,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 const App = () => {
 
   const protocolData = {
-    protocolCurrency: "3fa8e18f6baf0dfc70693a1f9a3c7fabb015c019d615f55707d7643e",
+    protocolCurrency: "484c32d9f92cf5b5e9b649e547316501cd3d0e9bc0964341cf25e0d4",
     protocolTokenName: "DonatPoolProtocol"
   }
 
@@ -30,8 +30,8 @@ const App = () => {
     frThreadTokenName: any;
   }>();
  
-  const testnetLode = { 
-    wallet: "Lode",
+  const testnetNami = { 
+    wallet: "Nami",
     isMainnet: false
   };
 
@@ -48,31 +48,31 @@ const App = () => {
   const onCreateFundraisingClick = () => {
     a.main.value0.createFundraising(onCreateFundraisingComplete)(console.log)(
       protocolData
-    )(testnetLode)(createFundraisingParams)();
+    )(testnetNami)(createFundraisingParams)();
   };
 
   const onDonate = () => {   
-    a.main.value0.donate(console.log)(console.log)(protocolData)(testnetLode)(fundraisingData)(100)();
+    a.main.value0.donate(console.log)(console.log)(protocolData)(testnetNami)(fundraisingData)(100)();
   };
 
   const onReceiveFunds = () => {
-    a.main.value0.receiveFunds(console.log)(console.log)(protocolData)(testnetLode)(fundraisingData)();
+    a.main.value0.receiveFunds(console.log)(console.log)(protocolData)(testnetNami)(fundraisingData)();
   }
   
   const onGetAllFundraising = () => {
-    a.main.value0.getAllFundraisings(console.log)(console.log)(protocolData)(testnetLode)();
+    a.main.value0.getAllFundraisings(console.log)(console.log)(protocolData)(testnetNami)();
   };
 
   const onGetUserRelatedFundraisings = () => {
-    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)(testnetLode)();
+    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)(testnetNami)();
   };
 
   const onConnectWallet = () => {
-    a.main.value0.connectWallet(console.log)(console.log)(testnetLode)();
+    a.main.value0.connectWallet(console.log)(console.log)(testnetNami)();
   };
 
   const onGetAppInfo = () => {
-    a.main.value0.getAppInfo(console.log)(console.log)(protocolData)(testnetLode)();
+    a.main.value0.getAppInfo(console.log)(console.log)(protocolData)(testnetNami)();
   };
 
   return (

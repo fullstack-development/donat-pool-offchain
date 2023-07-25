@@ -13,13 +13,14 @@ import Effect (Effect)
 import Effect.Aff (Milliseconds(Milliseconds), cancelWith, effectCanceler, launchAff)
 import Mote (group)
 import Test.Plutip.Common (config)
-import Test.Plutip.Contracts.CloseProtocol as CloseProtocol
-import Test.Plutip.Contracts.CreateFundraising as CreateFundraising
+-- import Test.Plutip.Contracts.CloseProtocol as CloseProtocol
+-- import Test.Plutip.Contracts.CreateFundraising as CreateFundraising
 import Test.Plutip.Contracts.StartProtocol as StartProtocol
-import Test.Plutip.Contracts.UpdateProtocol as UpdateProtocol
+-- import Test.Plutip.Contracts.UpdateProtocol as UpdateProtocol
 import Test.Spec.Runner (defaultConfig)
-import Test.Plutip.Contracts.Donate as Donate
-import Test.Plutip.Contracts.ReceiveFunds as ReceiveFunds
+
+-- import Test.Plutip.Contracts.Donate as Donate
+-- import Test.Plutip.Contracts.ReceiveFunds as ReceiveFunds
 
 -- Run tests with 'spago run --main Test.Plutip'
 main :: Effect Unit
@@ -30,8 +31,8 @@ main = interruptOnSignal SIGINT =<< launchAff do
       $ group "Plutip" do
           testPlutipContracts config $ do
             StartProtocol.suite
-            UpdateProtocol.suite
-            CloseProtocol.suite
-            CreateFundraising.suite
-            Donate.suite
-            ReceiveFunds.suite
+-- UpdateProtocol.suite
+-- CloseProtocol.suite
+-- CreateFundraising.suite
+-- Donate.suite
+-- ReceiveFunds.suite

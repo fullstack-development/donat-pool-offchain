@@ -17,6 +17,7 @@ import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.NetworkData (NetworkParams)
 import Shared.RunContract (runContractWithResult)
+import Shared.Utxo (filterByToken)
 
 runGetAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
 runGetAllFundraisings onComplete onError protocolData networkParams =
@@ -39,6 +40,6 @@ getAllFundraisings protocolData = do
   frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
 
   fundraisings <- utxosAt frAddress
-  frInfos <- traverse mapToFundraisingInfo (Map.toUnfoldable fundraisings)
+  frInfos <- traverse mapToFundraisingInfo <<< filterByToken (verTokenCs /\ verTn) $ Map.toUnfoldable fundraisings
   logInfo' $ "Found UTxOs" <> show frInfos
   pure frInfos

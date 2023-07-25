@@ -64,17 +64,23 @@ contract pData (FundraisingData fundraisingData) adaAmount = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput (fst frInfo.frUtxo) donateRedeemer
-        <> Constraints.mustPayToScriptAddress frInfo.frValidatorHash (ScriptCredential frInfo.frValidatorHash) newDatum Constraints.DatumInline newValue
+      Constraints.mustSpendScriptOutputUsingScriptRef
+        (fst frInfo.frUtxo)
+        donateRedeemer
+        frInfo.frRefScriptInput
+        <> Constraints.mustPayToScriptAddress
+          frInfo.frValidatorHash
+          (ScriptCredential frInfo.frValidatorHash)
+          newDatum
+          Constraints.DatumInline
+          newValue
         <> Constraints.mustBeSignedBy creds.ownPkh
         <> Constraints.mustValidateIn donationTimeRange
+        <> Constraints.mustReferenceOutput (fst frInfo.frScriptRef)
 
   let
     lookups :: Lookups.ScriptLookups Void
-    lookups =
-      Lookups.validator frInfo.frValidator
-        <> Lookups.unspentOutputs frInfo.frUtxos
-        <> Lookups.unspentOutputs creds.ownUtxo
+    lookups = Lookups.unspentOutputs frInfo.frUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let

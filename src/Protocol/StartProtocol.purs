@@ -27,8 +27,8 @@ import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName, pro
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, protocolToData)
 import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
+import Shared.ScriptRef (mkFundraisingRefScript, mkProtocolRefScript)
 import Shared.Utxo (filterNonCollateral)
-import Shared.ScriptRef (createRefScriptUtxo)
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
 initialProtocolConfigParams = ProtocolConfigParams
@@ -39,11 +39,19 @@ initialProtocolConfigParams = ProtocolConfigParams
   , protocolFeeParam: fromInt 10
   }
 
-runStartProtocol :: Effect Unit
-runStartProtocol = launchAff_ $ runContract testnetKeyWalletConfig (contract initialProtocolConfigParams)
+runStartSystem :: Effect Unit
+runStartSystem = launchAff_ $ do
+  runContract testnetKeyWalletConfig (startSystem initialProtocolConfigParams)
 
-contract :: ProtocolConfigParams -> Contract ProtocolData
-contract params@(ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
+startSystem :: ProtocolConfigParams -> Contract ProtocolData
+startSystem params = do
+  protocolData <- startProtocol params
+  mkProtocolRefScript protocolData
+  mkFundraisingRefScript protocolData
+  pure protocolData
+
+startProtocol :: ProtocolConfigParams -> Contract ProtocolData
+startProtocol params@(ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
   logInfo' "Running startDonatPool protocol contract"
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
@@ -118,7 +126,6 @@ contract params@(ProtocolConfigParams { minAmountParam, maxAmountParam, minDurat
   logInfo' $ "Current protocol address: " <> show bech32Address
   logInfo' "Transaction submitted successfully"
 
-  createRefScriptUtxo "Protocol" protocolValidatorHash protocolValidator
   protocolData <- protocolToData protocol
 
   let protocolConfig = mapFromProtocolData protocolData

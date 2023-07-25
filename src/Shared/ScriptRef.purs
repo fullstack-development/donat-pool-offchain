@@ -11,9 +11,15 @@ import Contract.PlutusData (PlutusData, unitDatum)
 import Contract.ScriptLookups as Lookups
 import Contract.Transaction (ScriptRef(..), awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
+import Contract.Value as Value
 import Ctl.Internal.Types.Scripts (Validator, ValidatorHash)
 import Data.Array (head) as Array
-import Shared.MinAda (minAdaValue)
+import Data.BigInt (fromInt)
+import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
+import Fundraising.FundraisingScriptInfo (makeFundraising)
+import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
+import Protocol.UserData (ProtocolData, dataToProtocol)
+import Shared.MinAda (minAda)
 import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 
 createRefScriptUtxo ∷ String -> ValidatorHash → Validator → Contract Unit
@@ -30,10 +36,10 @@ createRefScriptUtxo scriptName validatorHash validator = do
       unitDatum
       Constraints.DatumWitness
       scriptRef
-      minAdaValue
+      sevenMinAdaValue
 
     lookups :: Lookups.ScriptLookups PlutusData
-    lookups = Lookups.unspentOutputs creds.ownUtxo
+    lookups = Lookups.unspentOutputs creds.ownUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   addressWithNetworkTag <-
@@ -48,4 +54,20 @@ createRefScriptUtxo scriptName validatorHash validator = do
   balancedSignedTx <- signTransaction balancedTx
   txId <- submit balancedSignedTx
   awaitTxConfirmed txId
-  logInfo' $ scriptName <> " reference script created"
+  logInfo' $ scriptName <> " UTxO with reference script created"
+  where
+  sevenMinAdaValue = Value.lovelaceValueOf (minAda * (fromInt 7))
+
+mkProtocolRefScript :: ProtocolData -> Contract Unit
+mkProtocolRefScript protocolData = do
+  protocol <- dataToProtocol protocolData
+  protocolValidatorHash <- getProtocolValidatorHash protocol
+  protocolValidator <- protocolValidatorScript protocol
+  createRefScriptUtxo "Protocol" protocolValidatorHash protocolValidator
+
+mkFundraisingRefScript :: ProtocolData -> Contract Unit
+mkFundraisingRefScript protocolData = do
+  fundraising <- makeFundraising protocolData
+  frValidator <- fundraisingValidatorScript fundraising
+  frValidatorHash <- getFundraisingValidatorHash fundraising
+  createRefScriptUtxo "Fundraising" frValidatorHash frValidator

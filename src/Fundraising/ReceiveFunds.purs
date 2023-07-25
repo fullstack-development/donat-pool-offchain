@@ -75,9 +75,10 @@ contract pData (FundraisingData fundraisingData) = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput
+      Constraints.mustSpendScriptOutputUsingScriptRef
         (fst frInfo.frUtxo)
         receiveFundsRedeemer
+        frInfo.frRefScriptInput
         <> Constraints.mustBeSignedBy currentDatum.creatorPkh
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft threadTokenName)
@@ -88,15 +89,14 @@ contract pData (FundraisingData fundraisingData) = do
         <> Constraints.mustPayToPubKeyAddress creds.ownPkh creds.ownSkh amountToReceiver
         <> Constraints.mustPayToPubKey managerPkh (Value.lovelaceValueOf feeByFundraising)
         <> Constraints.mustValidateIn (from now)
+        <> Constraints.mustReferenceOutput (fst frInfo.frScriptRef)
 
   let
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy threadTokenMintingPolicy
         <> Lookups.mintingPolicy verTokenMintingPolicy
-        <> Lookups.validator frInfo.frValidator
         <> Lookups.unspentOutputs frInfo.frUtxos
-        <> Lookups.unspentOutputs creds.ownUtxo
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let

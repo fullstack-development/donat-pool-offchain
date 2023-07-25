@@ -47,9 +47,10 @@ contract protocolData = do
 
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput
+      Constraints.mustSpendScriptOutputUsingScriptRef
         (fst protocolInfo.pUtxo)
         protocolRedeemer
+        protocolInfo.pRefScriptInput
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft protocolTokenName)
           nftToBurnValue
@@ -58,13 +59,12 @@ contract protocolData = do
           creds.ownSkh
           (Value.lovelaceValueOf (fromInt 2000000))
         <> Constraints.mustBeSignedBy creds.ownPkh
+        <> Constraints.mustReferenceOutput (fst protocolInfo.pScriptRef)
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
         <> Lookups.unspentOutputs protocolInfo.pUtxos
-        <> Lookups.unspentOutputs creds.ownUtxo
-        <> Lookups.validator protocolInfo.pValidator
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   addressWithNetworkTag <- liftedM "Failed to get own address with Network Tag" $ Array.head <$> getWalletAddressesWithNetworkTag
