@@ -1,7 +1,7 @@
 module Protocol.Datum where
 
 import Ctl.Internal.FromData
-import Contract.Address (PaymentPubKeyHash)
+import Contract.Address (Address)
 import Contract.PlutusData (class HasPlutusSchema, type (:+), type (:=), type (@@), I, PNil, Z, genericToData)
 import Contract.Prelude (class Generic, class Show)
 import Ctl.Internal.ToData (class ToData)
@@ -20,7 +20,7 @@ newtype PProtocolDatum = PProtocolDatum
   , minDuration :: BigInt
   , maxDuration :: BigInt
   , protocolFee :: BigInt -- the percentage 
-  , managerPkh :: PaymentPubKeyHash
+  , managerAddress :: Address
   , tokenOriginRef :: TransactionInput
   }
 
@@ -39,8 +39,8 @@ _maxDuration = _Newtype <<< prop (Proxy :: Proxy "maxDuration")
 _protocolFee :: Lens' PProtocolDatum BigInt
 _protocolFee = _Newtype <<< prop (Proxy :: Proxy "protocolFee")
 
-_managerPkh :: Lens' PProtocolDatum PaymentPubKeyHash
-_managerPkh = _Newtype <<< prop (Proxy :: Proxy "managerPkh")
+_managerAddress :: Lens' PProtocolDatum Address
+_managerAddress = _Newtype <<< prop (Proxy :: Proxy "managerAddress")
 
 _tokenOriginRef :: Lens' PProtocolDatum TransactionInput
 _tokenOriginRef = _Newtype <<< prop (Proxy :: Proxy "tokenOriginRef")
@@ -65,8 +65,8 @@ instance
               := I BigInt
               :+ "protocolFee"
               := I BigInt
-              :+ "managerPkh"
-              := I PaymentPubKeyHash
+              :+ "managerAddress"
+              := I Address
               :+ "tokenOriginRef"
               := I TransactionInput
               :+ PNil
