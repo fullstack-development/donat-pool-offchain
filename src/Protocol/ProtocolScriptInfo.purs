@@ -20,6 +20,13 @@ import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
 import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByScriptRef)
 
+type References =
+  { pScriptRef :: Tuple TransactionInput TransactionOutputWithRefScript
+  , pRefScriptInput :: InputWithScriptRef
+  , verTokenRef :: Tuple TransactionInput TransactionOutputWithRefScript
+  , verTokenInput :: InputWithScriptRef
+  }
+
 newtype ProtocolScriptInfo = ProtocolScriptInfo
   { pValidator :: Validator
   , pValidatorHash :: ValidatorHash
@@ -28,10 +35,7 @@ newtype ProtocolScriptInfo = ProtocolScriptInfo
   , pUtxo :: Tuple TransactionInput TransactionOutputWithRefScript
   , pDatum :: PProtocolDatum
   , pValue :: Value.Value
-  , pScriptRef :: Tuple TransactionInput TransactionOutputWithRefScript
-  , pRefScriptInput :: InputWithScriptRef
-  , verTokenRef :: Tuple TransactionInput TransactionOutputWithRefScript
-  , verTokenInput :: InputWithScriptRef
+  , references :: References
   }
 
 getProtocolScriptInfo :: Protocol -> Contract ProtocolScriptInfo
@@ -57,7 +61,13 @@ getProtocolScriptInfo protocol = do
     _ -> liftEffect $ throw "Unexpected Minting Policy script type"
   policyRefUtxo <- getUtxoByScriptRef "VerTokenPolicy" policyRef managerUtxos
   let policyRefInput = Constraints.RefInput $ mkTxUnspentOut (fst policyRefUtxo) (snd policyRefUtxo)
-
+  let
+    refs =
+      { pScriptRef: refScriptUtxo
+      , pRefScriptInput: refScriptInput
+      , verTokenRef: policyRefUtxo
+      , verTokenInput: policyRefInput
+      }
   pure $ ProtocolScriptInfo
     { pValidator: protocolValidator
     , pValidatorHash: protocolValidatorHash
@@ -66,8 +76,5 @@ getProtocolScriptInfo protocol = do
     , pUtxo: protocolUtxo
     , pDatum: currentDatum
     , pValue: value
-    , pScriptRef: refScriptUtxo
-    , pRefScriptInput: refScriptInput
-    , verTokenRef: policyRefUtxo
-    , verTokenInput: policyRefInput
+    , references: refs
     }

@@ -139,11 +139,11 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
           (Redeemer $ toData $ PMintVerToken verTn)
           verTn
           one
-          protocolInfo.verTokenInput
+          protocolInfo.references.verTokenInput
         <> Constraints.mustSpendScriptOutputUsingScriptRef
           (fst protocolInfo.pUtxo)
           protocolRedeemer
-          protocolInfo.pRefScriptInput
+          protocolInfo.references.pRefScriptInput
         <> Constraints.mustPayToScriptAddress
           protocolInfo.pValidatorHash
           (ScriptCredential protocolInfo.pValidatorHash)
@@ -157,8 +157,8 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
           Constraints.DatumInline
           paymentToFr
         <> Constraints.mustBeSignedBy creds.ownPkh
-        <> Constraints.mustReferenceOutput (fst protocolInfo.pScriptRef)
-        <> Constraints.mustReferenceOutput (fst protocolInfo.verTokenRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.references.pScriptRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.references.verTokenRef)
 
     lookups :: Lookups.ScriptLookups Void
     lookups =

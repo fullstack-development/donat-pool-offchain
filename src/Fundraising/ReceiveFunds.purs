@@ -94,12 +94,12 @@ contract pData (FundraisingData fundraisingData) = do
           (Redeemer $ toData $ PBurnVerToken fr.verTokenName)
           fr.verTokenName
           (fromInt (-1))
-          protocolInfo.verTokenInput
+          protocolInfo.references.verTokenInput
         <> Constraints.mustPayToPubKeyAddress creds.ownPkh creds.ownSkh amountToReceiver
         <> Constraints.mustPayToPubKeyAddress managerPkh managerSkh (Value.lovelaceValueOf feeByFundraising)
         <> Constraints.mustValidateIn (from now)
         <> Constraints.mustReferenceOutput (fst frInfo.frScriptRef)
-        <> Constraints.mustReferenceOutput (fst protocolInfo.verTokenRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.references.verTokenRef)
 
   let
     lookups :: Lookups.ScriptLookups Void
