@@ -7,12 +7,12 @@ import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM)
 import Contract.Utxos (utxosAt)
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
-import Shared.OwnCredentials (getOwnUserInfo)
 import Info.UserData (AppInfo(..))
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash)
 import Protocol.UserData (ProtocolData, dataToProtocol, getConfigFromProtocolDatum)
 import Shared.NetworkData (NetworkParams)
+import Shared.OwnCredentials (getOwnUserInfo, getPkhSkhFromAddress)
 import Shared.RunContract (runContractWithResult)
 import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
 
@@ -32,7 +32,7 @@ appInfoContract protocolData = do
   protocolUtxo <- getProtocolUtxo protocol utxos
   protocolDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
   logInfo' $ "Current datum: " <> show protocolDatum
-  let managerPkh = unwrap >>> _.managerPkh $ protocolDatum
+  managerPkh /\ _ <- getPkhSkhFromAddress (unwrap protocolDatum).managerAddress
   userInfo <- getOwnUserInfo managerPkh
 
   let

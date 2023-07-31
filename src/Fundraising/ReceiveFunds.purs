@@ -23,7 +23,6 @@ import Fundraising.Calculations (calcFee)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
 import Fundraising.Models (Fundraising(..))
-import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.NftMinting as NFT
@@ -32,6 +31,7 @@ import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.MinAda (minAda)
 import Shared.NetworkData (NetworkParams)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds, getPkhSkhFromAddress)
 import Shared.RunContract (runContractWithResult)
 import Shared.Utxo (checkTokenInUTxO)
 
@@ -41,7 +41,6 @@ runReceiveFunds onComplete onError pData networkParams fundraisingData =
 
 contract :: ProtocolData -> FundraisingData -> Contract Unit
 contract pData (FundraisingData fundraisingData) = do
-  -- TODO: use mustPayToPubKeyAddress for managerPkh (need stake key hash)
   logInfo' "Running receive funds"
   protocol <- dataToProtocol pData
   let threadTokenCurrency = fundraisingData.frThreadTokenCurrency
@@ -53,7 +52,7 @@ contract pData (FundraisingData fundraisingData) = do
   let
     currentFunds = frInfo.frValue
     (PFundraisingDatum currentDatum) = frInfo.frDatum
-    managerPkh = currentDatum.managerPkh
+  managerPkh /\ managerSkh <- getPkhSkhFromAddress currentDatum.managerAddress
   now <- currentTime
   let donatedAmount = Value.valueOf currentFunds adaSymbol adaToken - minAda - minAda
   when (now <= currentDatum.frDeadline && donatedAmount < currentDatum.frAmount)
@@ -87,7 +86,7 @@ contract pData (FundraisingData fundraisingData) = do
           (Redeemer $ toData $ PBurnNft fr.verTokenName)
           verTokenToBurnValue
         <> Constraints.mustPayToPubKeyAddress creds.ownPkh creds.ownSkh amountToReceiver
-        <> Constraints.mustPayToPubKey managerPkh (Value.lovelaceValueOf feeByFundraising)
+        <> Constraints.mustPayToPubKeyAddress managerPkh managerSkh (Value.lovelaceValueOf feeByFundraising)
         <> Constraints.mustValidateIn (from now)
         <> Constraints.mustReferenceOutput (fst frInfo.frScriptRef)
 

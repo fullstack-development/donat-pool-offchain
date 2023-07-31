@@ -82,7 +82,7 @@ startProtocol params@(ProtocolConfigParams { minAmountParam, maxAmountParam, min
       , minDuration: minDurationParam
       , maxDuration: maxDurationParam
       , protocolFee: protocolFeeParam
-      , managerPkh: ownPkh
+      , managerAddress: ownAddress
       , tokenOriginRef: oref
       }
     nftValue = Value.singleton cs tn one
