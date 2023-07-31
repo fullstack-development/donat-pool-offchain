@@ -16,7 +16,8 @@
 
     "start-protocol": "spago run --main CLI.StartProtocol.Main",
     "update-protocol": "spago run --main CLI.UpdateProtocol.Main",
-    "close-protocol": "spago run --main CLI.CloseProtocol.Main"
+    "close-protocol": "spago run --main CLI.CloseProtocol.Main",
+    "mint-gov-tokens": "spago run --main CLI.MintGovernanceTokens.Main"
   },
   "author": "",
   "license": "MIT",
