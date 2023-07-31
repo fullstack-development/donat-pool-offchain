@@ -31,7 +31,7 @@ import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
 import MintingPolicy.VerTokenRedeemers (PVerTokenRedeemer(..))
-import Protocol.Datum (_protocolFee, _minDuration, _maxDuration, _minAmount, _maxAmount, _managerPkh)
+import Protocol.Datum (_protocolFee, _minDuration, _maxDuration, _minAmount, _maxAmount, _managerAddress)
 import Protocol.Models (PFundriseConfig(..))
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Protocol.Redeemer (PProtocolRedeemer(..))
@@ -94,7 +94,7 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
       , frAmount: targetAmount
       , frDeadline: deadline
       , frFee: view _protocolFee protocolInfo.pDatum
-      , managerPkh: view _managerPkh protocolInfo.pDatum
+      , managerAddress: view _managerAddress protocolInfo.pDatum
       }
 
   let

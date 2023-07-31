@@ -2,6 +2,7 @@ module Protocol.CloseProtocol where
 
 import Contract.Prelude
 
+import Config.Protocol (mapToProtocolData, readProtocolConfig)
 import Contract.Address (getWalletAddressesWithNetworkTag)
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Log (logInfo')
@@ -13,8 +14,8 @@ import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Data.Array as Array
 import Data.BigInt (fromInt)
+import Effect.Aff (launchAff_)
 import Effect.Exception (throw)
-import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Models (Protocol(..))
@@ -22,8 +23,7 @@ import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInf
 import Protocol.Redeemer (PProtocolRedeemer(PCloseProtocol))
 import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
-import Config.Protocol (mapToProtocolData, readProtocolConfig)
-import Effect.Aff (launchAff_)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds, getPkhSkhFromAddress)
 
 runCloseProtocol :: Effect Unit
 runCloseProtocol = do
@@ -36,7 +36,7 @@ contract protocolData = do
   logInfo' "Running closeProtocol"
   protocol@(Protocol { protocolCurrency, protocolTokenName }) <- dataToProtocol protocolData
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
-  let managerPkh = (unwrap protocolInfo.pDatum).managerPkh
+  managerPkh /\ _ <- getPkhSkhFromAddress (unwrap protocolInfo.pDatum).managerAddress
   (OwnCredentials creds) <- getOwnCreds
   when (managerPkh /= creds.ownPkh) $ liftEffect $ throw "current user doesn't have permissions to close protocol"
   let nftOref = (unwrap protocolInfo.pDatum).tokenOriginRef

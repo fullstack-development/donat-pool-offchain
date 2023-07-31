@@ -2,7 +2,7 @@ module Fundraising.Datum where
 
 import Ctl.Internal.FromData
 
-import Contract.Address (PaymentPubKeyHash)
+import Contract.Address (Address, PaymentPubKeyHash)
 import Contract.PlutusData (class HasPlutusSchema, type (:+), type (:=), type (@@), I, PNil, Z, genericToData)
 import Contract.Prelude (class Generic, class Show)
 import Contract.Time (POSIXTime)
@@ -23,7 +23,7 @@ newtype PFundraisingDatum = PFundraisingDatum
   , frAmount :: BigInt -- amount to raise in Lovelace
   , frDeadline :: POSIXTime
   , frFee :: BigInt -- percentage
-  , managerPkh :: PaymentPubKeyHash
+  , managerAddress :: Address
   }
 
 derive instance Generic PFundraisingDatum _
@@ -48,8 +48,8 @@ instance
               := I POSIXTime
               :+ "frFee"
               := I BigInt
-              :+ "managerPkh"
-              := I PaymentPubKeyHash
+              :+ "managerAddress"
+              := I Address
               :+ PNil
           )
         @@ Z

@@ -18,13 +18,14 @@ import Data.Array (head) as Array
 import Data.Lens (view)
 import Effect.Aff (launchAff_)
 import Effect.Exception (throw)
-import Protocol.Datum (PProtocolDatum(..), _managerPkh, _tokenOriginRef)
+import Protocol.Datum (PProtocolDatum(..), _managerAddress, _tokenOriginRef)
 import Protocol.Models (PProtocolConfig(..))
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolConfigParams, ProtocolData, dataToProtocol, getConfigFromProtocolDatum, mapToProtocolConfig)
 import Shared.Config (mapToProtocolConfigParams, readDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
+import Shared.OwnCredentials (getPkhSkhFromAddress)
 import Shared.Utxo (getNonCollateralUtxo)
 
 runUpdateProtocol :: Effect Unit
@@ -46,7 +47,7 @@ contract protocolData protocolConfigParams = do
   ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
   walletUtxo <- utxosAt ownAddress >>= getNonCollateralUtxo
 
-  let manager = view _managerPkh protocolInfo.pDatum
+  manager /\ _ <- getPkhSkhFromAddress $ view _managerAddress protocolInfo.pDatum
   when (manager /= ownPkh) $ liftEffect $ throw "Current user doesn't have permissions to update protocol"
 
   let protocolConfig = mapToProtocolConfig protocolConfigParams
@@ -96,6 +97,6 @@ makeDatum currentDatum (PProtocolConfig { minAmount, maxAmount, minDuration, max
     , minDuration: minDuration
     , maxDuration: maxDuration
     , protocolFee: protocolFee
-    , managerPkh: view _managerPkh currentDatum
+    , managerAddress: view _managerAddress currentDatum
     , tokenOriginRef: view _tokenOriginRef currentDatum
     }
