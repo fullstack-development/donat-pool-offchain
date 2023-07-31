@@ -11,6 +11,7 @@ import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftedE, liftContractM)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
+import Contract.Scripts (MintingPolicyHash, mintingPolicyHash)
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
@@ -28,6 +29,8 @@ import Fundraising.UserData (FundraisingData(..))
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import MintingPolicy.VerTokenMinting as VerToken
+import MintingPolicy.VerTokenRedeemers (PVerTokenRedeemer(..))
+import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.MinAda (minAda)
 import Shared.NetworkData (NetworkParams)
@@ -64,13 +67,17 @@ contract pData (FundraisingData fundraisingData) = do
 
   let receiveFundsRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
 
-  let verTokenToBurnValue = Value.singleton fr.verTokenCurrency fr.verTokenName (fromInt (-1))
   let threadTokenToBurnValue = Value.singleton threadTokenCurrency threadTokenName (fromInt (-1))
   threadTokenMintingPolicy <- NFT.mintingPolicy currentDatum.tokenOrigin
   verTokenMintingPolicy <- VerToken.mintingPolicy protocol
   feeByFundraising <- liftContractM "Can't create BigInt after round" $ calcFee currentDatum.frFee donatedAmount
-  let amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - feeByFundraising)
+  let
+    amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - feeByFundraising)
 
+    vetTokenPolicyHash :: MintingPolicyHash
+    vetTokenPolicyHash = mintingPolicyHash verTokenMintingPolicy
+
+  (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
@@ -82,19 +89,22 @@ contract pData (FundraisingData fundraisingData) = do
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft threadTokenName)
           threadTokenToBurnValue
-        <> Constraints.mustMintValueWithRedeemer
-          (Redeemer $ toData $ PBurnNft fr.verTokenName)
-          verTokenToBurnValue
+        <> Constraints.mustMintCurrencyWithRedeemerUsingScriptRef
+          vetTokenPolicyHash
+          (Redeemer $ toData $ PBurnVerToken fr.verTokenName)
+          fr.verTokenName
+          (fromInt (-1))
+          protocolInfo.verTokenInput
         <> Constraints.mustPayToPubKeyAddress creds.ownPkh creds.ownSkh amountToReceiver
         <> Constraints.mustPayToPubKeyAddress managerPkh managerSkh (Value.lovelaceValueOf feeByFundraising)
         <> Constraints.mustValidateIn (from now)
         <> Constraints.mustReferenceOutput (fst frInfo.frScriptRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.verTokenRef)
 
   let
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy threadTokenMintingPolicy
-        <> Lookups.mintingPolicy verTokenMintingPolicy
         <> Lookups.unspentOutputs frInfo.frUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints

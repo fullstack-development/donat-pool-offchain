@@ -4,6 +4,7 @@ import Contract.Prelude
 
 import Contract.Address (Address, getNetworkId, validatorHashBaseAddress)
 import Contract.Monad (Contract, liftContractM)
+import Contract.Scripts (MintingPolicy(..))
 import Contract.Transaction (ScriptRef(..), TransactionInput, TransactionOutputWithRefScript, mkTxUnspentOut)
 import Contract.TxConstraints (InputWithScriptRef)
 import Contract.TxConstraints as Constraints
@@ -11,7 +12,9 @@ import Contract.Utxos (utxosAt)
 import Contract.Value as Value
 import Ctl.Internal.Types.Scripts (Validator, ValidatorHash)
 import Data.Map (Map)
+import Effect.Exception (throw)
 import Info.AppInfo (getProtocolUtxo)
+import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.Datum (PProtocolDatum)
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
@@ -22,11 +25,13 @@ newtype ProtocolScriptInfo = ProtocolScriptInfo
   , pValidatorHash :: ValidatorHash
   , pAddress :: Address
   , pUtxos :: Map TransactionInput TransactionOutputWithRefScript
-  , pUtxo :: (Tuple TransactionInput TransactionOutputWithRefScript)
+  , pUtxo :: Tuple TransactionInput TransactionOutputWithRefScript
   , pDatum :: PProtocolDatum
   , pValue :: Value.Value
-  , pScriptRef :: (Tuple TransactionInput TransactionOutputWithRefScript)
+  , pScriptRef :: Tuple TransactionInput TransactionOutputWithRefScript
   , pRefScriptInput :: InputWithScriptRef
+  , verTokenRef :: Tuple TransactionInput TransactionOutputWithRefScript
+  , verTokenInput :: InputWithScriptRef
   }
 
 getProtocolScriptInfo :: Protocol -> Contract ProtocolScriptInfo
@@ -45,6 +50,14 @@ getProtocolScriptInfo protocol = do
   refScriptUtxo <- getUtxoByScriptRef "Protocol" scriptRef utxos
   let refScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst refScriptUtxo) (snd refScriptUtxo)
 
+  managerUtxos <- utxosAt (unwrap currentDatum).managerAddress
+  verTokenMpWrapped <- VerToken.mintingPolicy protocol
+  policyRef <- case verTokenMpWrapped of
+    PlutusMintingPolicy policy -> pure $ PlutusScriptRef policy
+    _ -> liftEffect $ throw "Unexpected Minting Policy script type"
+  policyRefUtxo <- getUtxoByScriptRef "VerTokenPolicy" policyRef managerUtxos
+  let policyRefInput = Constraints.RefInput $ mkTxUnspentOut (fst policyRefUtxo) (snd policyRefUtxo)
+
   pure $ ProtocolScriptInfo
     { pValidator: protocolValidator
     , pValidatorHash: protocolValidatorHash
@@ -55,4 +68,6 @@ getProtocolScriptInfo protocol = do
     , pValue: value
     , pScriptRef: refScriptUtxo
     , pRefScriptInput: refScriptInput
+    , verTokenRef: policyRefUtxo
+    , verTokenInput: policyRefInput
     }

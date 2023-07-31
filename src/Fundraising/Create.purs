@@ -10,6 +10,7 @@ import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, liftedE)
 import Contract.PlutusData (Redeemer(Redeemer), Datum(Datum), toData)
 import Contract.ScriptLookups as Lookups
+import Contract.Scripts (MintingPolicyHash, mintingPolicyHash)
 import Contract.Time (POSIXTime(..))
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
@@ -65,6 +66,9 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
 
   verTokenMp /\ verTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
   verTn <- VerToken.verTokenName
+  let
+    vetTokenPolicyHash :: MintingPolicyHash
+    vetTokenPolicyHash = mintingPolicyHash verTokenMp
 
   let
     minAmount = view _minAmount protocolInfo.pDatum
@@ -130,9 +134,12 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PMintNft nftTn)
           nftValue
-        <> Constraints.mustMintValueWithRedeemer
+        <> Constraints.mustMintCurrencyWithRedeemerUsingScriptRef
+          vetTokenPolicyHash
           (Redeemer $ toData $ PMintVerToken verTn)
-          verTokenValue
+          verTn
+          one
+          protocolInfo.verTokenInput
         <> Constraints.mustSpendScriptOutputUsingScriptRef
           (fst protocolInfo.pUtxo)
           protocolRedeemer
@@ -151,11 +158,11 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
           paymentToFr
         <> Constraints.mustBeSignedBy creds.ownPkh
         <> Constraints.mustReferenceOutput (fst protocolInfo.pScriptRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.verTokenRef)
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy nftMp
-        <> Lookups.mintingPolicy verTokenMp
         <> Lookups.unspentOutputs creds.ownUtxos
         <> Lookups.unspentOutputs protocolInfo.pUtxos
 
