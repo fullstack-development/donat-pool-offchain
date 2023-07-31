@@ -1,10 +1,8 @@
 module Governance.MintGovernanceTokens where
 
 import Contract.Prelude
-import Ext.Data.Maybe (maybeC)
-import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 
-import Contract.Address (PaymentPubKeyHash(..), toPubKeyHash)
+import Contract.Address (PaymentPubKeyHash, StakePubKeyHash)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
@@ -18,6 +16,7 @@ import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol, tokenNameTo
 import Governance.Config (writeGovernanceConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
 import Shared.MintingPolicy.GovernancePolicyScript (GovernanceTokensRedeemer(..), governanceMintingPolicy, governanceTokenName)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds, getPkhSkhFromAddress)
 import Shared.Tx (completeTx)
 
 runMintGovernanceTokens :: Aff Unit
@@ -31,13 +30,13 @@ mintGovernanceTokens amount = do
   governanceMp /\ governanceCs <- mkCurrencySymbol (governanceMintingPolicy ownCreds.nonCollateralORef)
   governanceTn <- governanceTokenName
   let governanceNft = Value.singleton governanceCs governanceTn amount
-  distributionPkh <- getDistributionPkh
+  distributionPkh /\ disributionSkh <- getDistributionPkh
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustSpendPubKeyOutput ownCreds.nonCollateralORef
         <> Constraints.mustMintValueWithRedeemer (Redeemer $ toData $ PMintGovernanceTokens amount ownCreds.ownPkh) governanceNft
-        <> Constraints.mustPayToPubKey distributionPkh governanceNft
+        <> Constraints.mustPayToPubKeyAddress distributionPkh disributionSkh governanceNft
         <> Constraints.mustBeSignedBy ownCreds.ownPkh
 
     lookups :: Lookups.ScriptLookups Void
@@ -61,9 +60,8 @@ mintGovernanceTokens amount = do
 
   logInfo' "Governance tokens successfully sent to discribution address."
 
-getDistributionPkh :: Contract PaymentPubKeyHash
+getDistributionPkh :: Contract (PaymentPubKeyHash /\ StakePubKeyHash)
 getDistributionPkh = do
   let bech32Addr = "addr_test1qzusxk7w3zqxm2frq68ctc8wwndv03vng9qexy0mz0dn7fz4wlsygw0hkq07nk9cw52efu3eccymjta0lpwuygp2tn6q3w78nd"
   address <- liftContractM "Cannot make governance tokens distribution address" $ addressFromBech32 bech32Addr >>= toPlutusAddress
-  pkh <- maybeC "Can't make pkh from governance tokens dictribution address" $ PaymentPubKeyHash <$> toPubKeyHash address
-  pure pkh
+  getPkhSkhFromAddress address
