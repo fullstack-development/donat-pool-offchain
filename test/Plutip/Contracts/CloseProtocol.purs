@@ -28,7 +28,7 @@ suite = do
         distribution = withStakeKey privateStakeKey aliceUtxos
       withWallets distribution \alice -> do
         withKeyWallet alice $ do
-          protocol <- StartProtocol.contract startProtocolParams
+          protocol <- StartProtocol.startSystem startProtocolParams
           void $ CloseProtocol.contract protocol
 
     test "Should fail if user doesn't have permissions to close Protocol" do
@@ -45,7 +45,7 @@ suite = do
           withStakeKey privateStakeKey aliceUtxos
             /\ withStakeKey privateStakeKey bobUtxos
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        protocol <- withKeyWallet alice $ StartProtocol.startSystem startProtocolParams
         result <- try $ withKeyWallet bob $ CloseProtocol.contract protocol
         let errMsg = "current user doesn't have permissions to close protocol"
         result `shouldSatisfy` (isExpectedError errMsg)

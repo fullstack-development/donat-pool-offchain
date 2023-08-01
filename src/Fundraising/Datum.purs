@@ -1,10 +1,11 @@
 module Fundraising.Datum where
 
-import Contract.Address (PaymentPubKeyHash)
-import Contract.Time (POSIXTime)
+import Ctl.Internal.FromData
+
+import Contract.Address (Address, PaymentPubKeyHash)
 import Contract.PlutusData (class HasPlutusSchema, type (:+), type (:=), type (@@), I, PNil, Z, genericToData)
 import Contract.Prelude (class Generic, class Show)
-import Ctl.Internal.FromData
+import Contract.Time (POSIXTime)
 import Ctl.Internal.ToData (class ToData)
 import Ctl.Internal.Types.ByteArray (ByteArray)
 import Ctl.Internal.Types.Transaction (TransactionInput)
@@ -12,17 +13,17 @@ import Data.BigInt (BigInt)
 import Data.Newtype (class Newtype)
 import Prelude (class Eq, class Ord)
 
-descLength :: Int
-descLength = 35
+titleLength :: Int
+titleLength = 35
 
 newtype PFundraisingDatum = PFundraisingDatum
   { creatorPkh :: PaymentPubKeyHash
   , tokenOrigin :: TransactionInput
-  , frDesc :: ByteArray --  descLength is set to limit the description size 
+  , frTitle :: ByteArray --  titleLength is set to limit the title size 
   , frAmount :: BigInt -- amount to raise in Lovelace
   , frDeadline :: POSIXTime
   , frFee :: BigInt -- percentage
-  , managerPkh :: PaymentPubKeyHash
+  , managerAddress :: Address
   }
 
 derive instance Generic PFundraisingDatum _
@@ -39,7 +40,7 @@ instance
           ( "creatorPkh" := I PaymentPubKeyHash
               :+ "tokenOrigin"
               := I TransactionInput
-              :+ "frDesc"
+              :+ "frTitle"
               := I ByteArray
               :+ "frAmount"
               := I BigInt
@@ -47,8 +48,8 @@ instance
               := I POSIXTime
               :+ "frFee"
               := I BigInt
-              :+ "managerPkh"
-              := I PaymentPubKeyHash
+              :+ "managerAddress"
+              := I Address
               :+ PNil
           )
         @@ Z

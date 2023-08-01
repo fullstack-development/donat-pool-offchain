@@ -11,3 +11,4 @@ minAda = fromInt minAdaInt
 
 minAdaValue :: Value.Value
 minAdaValue = Value.lovelaceValueOf minAda
+

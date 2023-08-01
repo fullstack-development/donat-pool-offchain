@@ -6,6 +6,7 @@ import Contract.Monad (Contract)
 import Contract.Test.Plutip (InitialUTxOs, withWallets)
 import Contract.Wallet (withKeyWallet)
 import Control.Monad.Error.Class (try)
+import Ctl.Internal.Test.ContractTest (ContractTest)
 import Ctl.Internal.Test.TestPlanM (TestPlanM)
 import Data.BigInt as BigInt
 import Mote (group, test)
@@ -13,7 +14,6 @@ import Protocol.StartProtocol as StartProtocol
 import Protocol.UserData (ProtocolConfigParams(..))
 import Test.Plutip.Utils (isExpectedError)
 import Test.Spec.Assertions (shouldSatisfy)
-import Ctl.Internal.Test.ContractTest (ContractTest)
 
 suite :: TestPlanM ContractTest Unit
 suite = do
@@ -26,7 +26,16 @@ suite = do
           [ BigInt.fromInt 1_000_000_000
           , BigInt.fromInt 2_000_000_000
           ]
-      withWallets distribution \alice -> withKeyWallet alice $ startProtocolContract startProtocolParams
+      withWallets distribution \alice -> withKeyWallet alice $ void $ StartProtocol.startProtocol startProtocolParams
+
+    -- test "Should successfully start system" do
+    --   let
+    --     distribution :: InitialUTxOs
+    --     distribution =
+    --       [ BigInt.fromInt 1_000_000_000
+    --       , BigInt.fromInt 2_000_000_000
+    --       ]
+    --   withWallets distribution \alice -> withKeyWallet alice $ startProtocolContract startProtocolParams
 
     test "Should fail if user wallet doesn't have any UTxOs" do
       let
@@ -50,4 +59,4 @@ startProtocolParams =
 startProtocolContract
   :: ProtocolConfigParams
   -> Contract Unit
-startProtocolContract = void <<< StartProtocol.contract
+startProtocolContract = void <<< StartProtocol.startSystem

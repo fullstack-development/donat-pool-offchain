@@ -9,7 +9,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 const App = () => {
 
   const protocolData = {
-    protocolCurrency: "965eb584a53eb856210865238a9ef1bfc7a5f00efa895da519185364",
+    protocolCurrency: "484c32d9f92cf5b5e9b649e547316501cd3d0e9bc0964341cf25e0d4",
     protocolTokenName: "DonatPoolProtocol"
   }
 
@@ -20,8 +20,8 @@ const App = () => {
   };
   
   const createFundraisingParams = {
-    description: 'Donate to feed stray cats',
-    amount: 200,
+    title: 'Donate to feed stray cats',
+    amount: 150,
     duration: fundraisingDuration
   };
 
@@ -30,7 +30,10 @@ const App = () => {
     frThreadTokenName: any;
   }>();
  
-
+  const testnetNami = { 
+    wallet: "Nami",
+    isMainnet: false
+  };
 
   const onCreateFundraisingComplete = createdFundraisingResponse => {
     const frData = {
@@ -45,31 +48,31 @@ const App = () => {
   const onCreateFundraisingClick = () => {
     a.main.value0.createFundraising(onCreateFundraisingComplete)(console.log)(
       protocolData
-    )(createFundraisingParams)();
+    )(testnetNami)(createFundraisingParams)();
   };
 
   const onDonate = () => {   
-    a.main.value0.donate(console.log)(console.log)(protocolData)(fundraisingData)(100)();
+    a.main.value0.donate(console.log)(console.log)(protocolData)(testnetNami)(fundraisingData)(100)();
   };
 
   const onReceiveFunds = () => {
-    a.main.value0.receiveFunds(console.log)(console.log)(protocolData)(fundraisingData)();
+    a.main.value0.receiveFunds(console.log)(console.log)(protocolData)(testnetNami)(fundraisingData)();
   }
   
   const onGetAllFundraising = () => {
-    a.main.value0.getAllFundraisings(console.log)(console.log)(protocolData)();
+    a.main.value0.getAllFundraisings(console.log)(console.log)(protocolData)(testnetNami)();
   };
 
   const onGetUserRelatedFundraisings = () => {
-    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)();
+    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)(testnetNami)();
   };
 
   const onConnectWallet = () => {
-    a.main.value0.connectWallet(console.log)(console.log)();
+    a.main.value0.connectWallet(console.log)(console.log)(testnetNami)();
   };
 
   const onGetAppInfo = () => {
-    a.main.value0.getAppInfo(console.log)(console.log)(protocolData)();
+    a.main.value0.getAppInfo(console.log)(console.log)(protocolData)(testnetNami)();
   };
 
   return (

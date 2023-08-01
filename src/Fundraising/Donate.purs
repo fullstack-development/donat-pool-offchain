@@ -24,12 +24,13 @@ import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
 import Shared.Utxo (checkTokenInUTxO)
 import Shared.MinAda (minAdaValue)
-import Shared.RunContract (runContractWithUnitResult)
+import Shared.NetworkData (NetworkParams)
+import Shared.RunContract (runContractWithResult)
 import Protocol.UserData (ProtocolData)
 
-runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> FundraisingData -> Int -> Effect Unit
-runDonate onComplete onError pData fundraisingData amount =
-  runContractWithUnitResult onComplete onError $ contract pData fundraisingData amount
+runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Int -> Effect Unit
+runDonate onComplete onError pData networkParams fundraisingData amount =
+  runContractWithResult onComplete onError networkParams $ contract pData fundraisingData amount
 
 contract :: ProtocolData -> FundraisingData -> Int -> Contract Unit
 contract pData (FundraisingData fundraisingData) adaAmount = do
@@ -63,17 +64,23 @@ contract pData (FundraisingData fundraisingData) adaAmount = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendScriptOutput (fst frInfo.frUtxo) donateRedeemer
-        <> Constraints.mustPayToScriptAddress frInfo.frValidatorHash (ScriptCredential frInfo.frValidatorHash) newDatum Constraints.DatumInline newValue
+      Constraints.mustSpendScriptOutputUsingScriptRef
+        (fst frInfo.frUtxo)
+        donateRedeemer
+        frInfo.frRefScriptInput
+        <> Constraints.mustPayToScriptAddress
+          frInfo.frValidatorHash
+          (ScriptCredential frInfo.frValidatorHash)
+          newDatum
+          Constraints.DatumInline
+          newValue
         <> Constraints.mustBeSignedBy creds.ownPkh
         <> Constraints.mustValidateIn donationTimeRange
+        <> Constraints.mustReferenceOutput (fst frInfo.frScriptRef)
 
   let
     lookups :: Lookups.ScriptLookups Void
-    lookups =
-      Lookups.validator frInfo.frValidator
-        <> Lookups.unspentOutputs frInfo.frUtxos
-        <> Lookups.unspentOutputs creds.ownUtxo
+    lookups = Lookups.unspentOutputs frInfo.frUtxos
 
   unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
   let

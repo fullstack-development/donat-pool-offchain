@@ -7,7 +7,7 @@ import Info.UserData (FundraisingInfo(..))
 import Shared.Duration (Duration)
 
 newtype CreateFundraisingParams = CreateFundraisingParams
-  { description :: String -- 35 symbols max
+  { title :: String -- 35 symbols max
   , amount :: Int -- amount to raise in Ada (not Lovelace)
   , duration :: Duration
   }

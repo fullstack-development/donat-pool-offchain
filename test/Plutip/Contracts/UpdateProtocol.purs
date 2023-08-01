@@ -34,7 +34,7 @@ suite = do
           ]
       withWallets distribution \alice -> do
         withKeyWallet alice $ do
-          protocol <- StartProtocol.contract startProtocolParams
+          protocol <- StartProtocol.startSystem startProtocolParams
           void $ UpdateProtocol.contract protocol updateProtocolConfig
 
     test "Should fail if user doesn't have permissions to update Protocol" do
@@ -46,7 +46,7 @@ suite = do
           ] /\
             [ BigInt.fromInt 30_000_000 ]
       withWallets distribution \(alice /\ bob) -> do
-        protocol <- withKeyWallet alice $ StartProtocol.contract startProtocolParams
+        protocol <- withKeyWallet alice $ StartProtocol.startSystem startProtocolParams
         result <- try $ withKeyWallet bob $ UpdateProtocol.contract protocol updateProtocolConfig
         let errMsg = "Current user doesn't have permissions to update protocol"
         result `shouldSatisfy` (isExpectedError errMsg)

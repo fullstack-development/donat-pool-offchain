@@ -4,23 +4,18 @@ import Contract.Prelude
 
 import Contract.Address (ownPaymentPubKeysHashes)
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftContractM, runContract)
+import Contract.Monad (Contract, liftContractM)
 import Data.Array as Array
-import Effect.Aff (runAff_)
-import Effect.Exception (Error, message)
+import Ext.Seriaization.Key (pkhToBech32M)
 import Info.AllFundraisings (getAllFundraisings)
 import Info.UserData (FundraisingInfo, filterByPkh)
 import Protocol.UserData (ProtocolData)
-import Shared.TestnetConfig (mkTestnetNamiConfig)
+import Shared.NetworkData (NetworkParams)
+import Shared.RunContract (runContractWithResult)
 
-runGetUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
-runGetUserRelatedFundraisings onComplete onError protocolData = do
-  testnetNamiConfig <- mkTestnetNamiConfig
-  runAff_ handler $ runContract testnetNamiConfig (getUserRelatedFundraisings protocolData)
-  where
-  handler :: Either Error (Array FundraisingInfo) -> Effect Unit
-  handler (Right response) = onComplete response
-  handler (Left err) = onError $ message err
+runGetUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
+runGetUserRelatedFundraisings onComplete onError protocolData networkParams = do
+  runContractWithResult onComplete onError networkParams (getUserRelatedFundraisings protocolData)
 
 getUserRelatedFundraisings :: ProtocolData -> Contract (Array FundraisingInfo)
 getUserRelatedFundraisings protocolData = do
@@ -28,6 +23,7 @@ getUserRelatedFundraisings protocolData = do
   ownHashes <- ownPaymentPubKeysHashes
   ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
   logInfo' $ "Own Payment pkh is: " <> show ownPkh
-  let userFrs = filterByPkh ownPkh allFrs
+  pkh <- pkhToBech32M ownPkh
+  let userFrs = filterByPkh pkh allFrs
   logInfo' $ "Discovered items: " <> show userFrs
   pure userFrs

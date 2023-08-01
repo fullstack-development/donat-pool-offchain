@@ -4,27 +4,21 @@ import Contract.Prelude
 
 import Contract.Address (getNetworkId, validatorHashBaseAddress)
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftContractM, runContract)
+import Contract.Monad (Contract, liftContractM)
 import Contract.Utxos (utxosAt)
 import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
-import Effect.Aff (runAff_)
-import Effect.Exception (Error, message)
-import Shared.OwnCredentials (getOwnUserInfo)
 import Info.UserData (AppInfo(..))
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash)
 import Protocol.UserData (ProtocolData, dataToProtocol, getConfigFromProtocolDatum)
+import Shared.NetworkData (NetworkParams)
+import Shared.OwnCredentials (getOwnUserInfo, getPkhSkhFromAddress)
+import Shared.RunContract (runContractWithResult)
 import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, getUtxoByNFT)
-import Shared.TestnetConfig (mkTestnetNamiConfig)
 
-runGetAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> Effect Unit
-runGetAppInfo onComplete onError protocolData = do
-  testnetNamiConfig <- mkTestnetNamiConfig
-  runAff_ handler $ runContract testnetNamiConfig (appInfoContract protocolData)
-  where
-  handler :: Either Error AppInfo -> Effect Unit
-  handler (Right appInfo) = onComplete appInfo
-  handler (Left error) = onError $ message error
+runGetAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
+runGetAppInfo onComplete onError protocolData networkParams =
+  runContractWithResult onComplete onError networkParams (appInfoContract protocolData)
 
 appInfoContract :: ProtocolData -> Contract AppInfo
 appInfoContract protocolData = do
@@ -38,7 +32,7 @@ appInfoContract protocolData = do
   protocolUtxo <- getProtocolUtxo protocol utxos
   protocolDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
   logInfo' $ "Current datum: " <> show protocolDatum
-  let managerPkh = unwrap >>> _.managerPkh $ protocolDatum
+  managerPkh /\ _ <- getPkhSkhFromAddress (unwrap protocolDatum).managerAddress
   userInfo <- getOwnUserInfo managerPkh
 
   let

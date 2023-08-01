@@ -1,0 +1,17 @@
+services:
+  cardano-node-ogmios:
+    image: cardanosolutions/cardano-node-ogmios:v5.6.0_1.35.7-preprod
+    ports:
+      - "1337:1337"
+    volumes:
+      - cardano-node-ogmios:/db
+  kupo:
+    image: cardanosolutions/kupo:v2.5.0
+    ports:
+      - "1442:1442"
+    volumes:
+      - kupo:/db
+    command: --ogmios-host cardano-node-ogmios --ogmios-port 1337 --since origin --match * --workdir /db --defer-db-indexes --host 0.0.0.0
+volumes:
+  cardano-node-ogmios:
+  kupo:
