@@ -3,7 +3,7 @@ module Shared.TestnetConfig where
 import Prelude
 
 import Contract.Address (NetworkId(..))
-import Contract.Config (defaultKupoServerConfig, defaultOgmiosWsConfig, testnetConfig)
+import Contract.Config (defaultOgmiosWsConfig, testnetConfig)
 import Contract.Prelude (log, (/\))
 import Ctl.Internal.Contract.Monad (ContractParams)
 import Ctl.Internal.Contract.QueryBackend (mkCtlBackendParams, QueryBackendParams)
@@ -53,6 +53,14 @@ ogmiosProdWsConfig =
   , path: Nothing
   }
 
+kupoConfig :: ServerConfig
+kupoConfig =
+  { port: UInt.fromInt 1442
+  , host: "localhost"
+  , secure: false
+  , path: Nothing
+  }
+
 testnetWalletConfig :: String -> Boolean -> ContractParams
 testnetWalletConfig host secure = testnetConfig
   { backendParams = backParams host secure
@@ -62,7 +70,7 @@ testnetWalletConfig host secure = testnetConfig
 backParams :: String -> Boolean -> QueryBackendParams
 backParams host secure = mkCtlBackendParams
   { ogmiosConfig: if isProduction then ogmiosProdWsConfig else defaultOgmiosWsConfig
-  , kupoConfig: if isProduction then kupoProdConfig host secure else defaultKupoServerConfig
+  , kupoConfig: if isProduction then kupoProdConfig host secure else kupoConfig
   }
   where
   isProduction = not $ host == "localhost"
