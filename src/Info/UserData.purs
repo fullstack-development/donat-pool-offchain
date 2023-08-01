@@ -15,7 +15,7 @@ import Ext.Contract.Value (getCurrencyByTokenName, currencySymbolToString)
 import Ext.Data.Either (eitherContract)
 import Ext.Seriaization.Key (pkhToBech32M)
 import Fundraising.Datum (PFundraisingDatum(..))
-import Fundraising.FundraisingScript (getFundraisingTokenName)
+import Fundraising.FundraisingScript (fundraisingTokenNameString, getFundraisingTokenName)
 import Protocol.UserData (ProtocolConfigParams)
 import Shared.MinAda (minAdaValue)
 import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO)
@@ -26,9 +26,8 @@ newtype FundraisingInfo = FundraisingInfo
   , goal :: BigInt -- Goal in lovelaces
   , raisedAmt :: BigInt -- Raised amount in lovelaces
   , deadline :: POSIXTime
-  , threadTokenCurrency :: Value.CurrencySymbol
-  , threadTokenName :: Value.TokenName
-  , path :: String
+  , threadTokenCurrency :: String
+  , threadTokenName :: String
   , isCompleted :: Boolean
   }
 
@@ -44,7 +43,6 @@ mapToFundraisingInfo utxo = do
   title <- eitherContract "Title decoding failed: " $ decodeUtf8 unwrappedTitle
   frTokenName <- getFundraisingTokenName
   cs <- liftContractM "Impossible to get currency by token name" $ getCurrencyByTokenName frVal frTokenName
-  let pathStr = currencySymbolToString cs
   now <- currentTime
   creator <- pkhToBech32M currentDatum.creatorPkh
   pure $ FundraisingInfo
@@ -53,9 +51,8 @@ mapToFundraisingInfo utxo = do
     , goal: currentDatum.frAmount
     , raisedAmt: currentFunds
     , deadline: currentDatum.frDeadline
-    , threadTokenCurrency: cs
-    , threadTokenName: frTokenName
-    , path: pathStr
+    , threadTokenCurrency: currencySymbolToString cs
+    , threadTokenName: fundraisingTokenNameString
     , isCompleted: now > currentDatum.frDeadline || currentFunds >= currentDatum.frAmount
     }
 

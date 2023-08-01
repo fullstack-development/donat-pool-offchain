@@ -2,7 +2,6 @@ module Fundraising.UserData where
 
 import Contract.Prelude
 
-import Contract.Value (CurrencySymbol, TokenName)
 import Info.UserData (FundraisingInfo(..))
 import Shared.Duration (Duration)
 
@@ -16,8 +15,8 @@ derive newtype instance Show CreateFundraisingParams
 derive newtype instance Eq CreateFundraisingParams
 
 newtype FundraisingData = FundraisingData
-  { frThreadTokenCurrency :: CurrencySymbol
-  , frThreadTokenName :: TokenName
+  { frThreadTokenCurrency :: String
+  , frThreadTokenName :: String
   }
 
 derive newtype instance Show FundraisingData

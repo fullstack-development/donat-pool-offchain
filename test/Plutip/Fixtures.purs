@@ -8,7 +8,7 @@ import Contract.Value as Value
 import Data.BigInt as BigInt
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
-import Ext.Contract.Value (runMkTokenName)
+import Ext.Contract.Value (currencySymbolToString)
 import Fundraising.UserData (FundraisingData(..))
 import Protocol.UserData (ProtocolConfigParams(..))
 import Test.Plutip.Common (privateStakeKey)
@@ -29,8 +29,7 @@ distribution =
 
 incorrectFundraisingData :: Contract FundraisingData
 incorrectFundraisingData = do
-  tn <- runMkTokenName "FundraisingThreadToken"
-  pure $ FundraisingData { frThreadTokenCurrency: Value.adaSymbol, frThreadTokenName: tn }
+  pure $ FundraisingData { frThreadTokenCurrency: currencySymbolToString Value.adaSymbol, frThreadTokenName: "FundraisingThreadToken" }
 
 minDurationStartProtocolParams :: ProtocolConfigParams
 minDurationStartProtocolParams = ProtocolConfigParams
