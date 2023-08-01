@@ -19,65 +19,22 @@ Also before starting make sure to have files with plutus scripts in the scripts/
 
 ### Running in Pre-Production testnet 
 
-1. Cardano-node with Ogmios bundle
-
-For simplicity you may use Cardano node with Ogmios bundle for the pre-production testnet for docker. Call the following command to download image from dockerhub and run services:
-```
-docker run -it -d \
-  --name cardano-node-ogmios \
-  -p 1337:1337 \
-  -v cardano-node-ogmios-db:/db \
-  cardanosolutions/cardano-node-ogmios:v5.6.0_1.35.5-preprod
-  ```
-You may call the same command with `bash ./environment/preprod/nodeWithOgmios.sh`.
-
-2. Kupo
-
-After building project dependencies you have built binary file for Kupo as well. You may either use the binary file from /nix/store/.. folder or build the [service](https://github.com/CardanoSolutions/kupo) by yourself.
-Run the service with the following command:
-```
-kupo \
-  --ogmios-host localhost \
-  --ogmios-port 1337 \
-  --since origin \
-  --match "*" \
-  --workdir pathToKupoDb
-```
-
-Notes: 
-- Alternatively may run `bash ./environment/preprod/kupo.sh` from the project root to run the Kupo service for current project configuration.
-- If it's the first time you run Kupo, you also better to add `--defer-db-indexes` flag to speed up the initial indexer synchronization.
-- You may specify the `since` argument with different value (please see the Kupo [manual](https://cardanosolutions.github.io/kupo/)) 
-- Instead of connecting via Ogmios you may also connect to Cardano-Node directly. In this case replace `--ogmios-host` and `--ogmios-port` arguments with
+1. The project runtime dependencies are settled in the docker-compose file, so to run Cardano node, Ogmios and Kupo just type 
 
 ```
-  --node-socket some-folder/cardano-node/node.socket \
-  --node-config some-folder/cardano-node/config.json \
+docker-compose up -d
 ```
+in terminal opened from the project root
 
-- To run kupo using Docker container:
-
-```
-docker pull cardanosolutions/kupo:v2.4.0
-
-docker run --network host -d --name kupo \
-  cardanosolutions/kupo:v2.4.0 \
-  --ogmios-host 0.0.0.0 \
-  --ogmios-port 1337 \
-  --since origin \
-  --match "*" \
-  --workdir . 
-```
-
-3. Create new dist for frontend:
+2. Create new dist for frontend:
 
 Run `sh build.sh` from project root
 
-4. Run server
+3. Run server
 
-Before running the server open terminal from the project root and type `npm install` to create node modules (make sure to do it not under `nix develop`). Then run the environment in different terminals, build the project with `spago build` (under `nix develop`) and then create new dists (`sh build.sh` under `nix develop`). You may run the server on port 4008 with `npm run serve` command (under `nix develop` as well). Then go to `localhost:4008` with the Chrome browser and explore.
+First make sure to run the runtime dependencies. Than open terminal from the project root and type `npm install` to create node modules (make sure to do it not under `nix develop`). Than build the project with `spago build` (under `nix develop`) and then create new dists (`sh build.sh` under `nix develop`). You may run the server on port 4008 with `npm run serve` command (under `nix develop` as well). Then go to `localhost:4008` with the Chrome browser and explore.
 
-Note that the current offchain version functionality is available for Chrome browser with installed Nami wallet extension only. To test it with Nami wallet make sure to switch on the PreProduction testnet network (Nami -> Settings -> Network -> Preprod), you also have to lock 5 Ada as collateral (Nami -> Collateral -> Confirm).
+Note that the current PreProduction testnet offchain version functionality is available for Chrome browser with installed Nami, Lode, Eternl or Flint light wallet extensions. To test it make sure to switch on the PreProduction testnet network in light wallet extension (i.e. for Nami: Nami -> Settings -> Network -> Preprod), you also have to lock 5 Ada as collateral (i.e. for Nami: Nami -> Collateral -> Confirm).
 
 ### Tests
 
