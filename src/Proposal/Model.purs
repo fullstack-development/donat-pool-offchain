@@ -43,7 +43,7 @@ instance FromData PProposal where
 newtype PProposalParameters = PProposalParameters
   { minAmount :: BigInt
   , maxAmount :: BigInt
-  , minDuration :: BigInt 
+  , minDuration :: BigInt
   , maxDuration :: BigInt
   , protocolFee :: BigInt
   }

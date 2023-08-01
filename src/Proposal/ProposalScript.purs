@@ -40,7 +40,7 @@ getProposalValidatorHash proposal = do
   pure $ validatorHash validator
 
 proposalTokenName :: Contract Value.TokenName
-proposalTokenName =  runMkTokenName "ProposalId"
+proposalTokenName = runMkTokenName "ProposalId"
 
 proposalVerTokenName :: Contract Value.TokenName
 proposalVerTokenName = runMkTokenName "ProposalVerified"

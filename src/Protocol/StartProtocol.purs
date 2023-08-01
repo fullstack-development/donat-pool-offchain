@@ -5,8 +5,7 @@ module Protocol.StartProtocol
   , runStartSystem
   , startSystem
   , startProtocol
-  )
-  where
+  ) where
 
 import Contract.Prelude
 import Governance.UserData (StartGovernanceData(..))
@@ -39,7 +38,6 @@ import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
 import Shared.ScriptRef (mkFundraisingRefScript, mkGovernanceRefScript, mkProposalRefScript, mkProtocolRefScript)
 
-
 initialProtocolConfigParams ∷ ProtocolConfigParams
 initialProtocolConfigParams = ProtocolConfigParams
   { minAmountParam: fromInt 50000000
@@ -62,7 +60,7 @@ runStartSystem = launchAff_ $ do
 startSystem :: ProtocolConfigParams -> Contract ProtocolData
 startSystem params = do
   protocolData <- startProtocol params
-  mkProtocolRefScript protocolData 
+  mkProtocolRefScript protocolData
   mkFundraisingRefScript protocolData
   protocol <- dataToProtocol protocolData
   mkGovernanceRefScript protocol
@@ -73,7 +71,7 @@ startProtocol :: ProtocolConfigParams -> Contract ProtocolData
 startProtocol params@(ProtocolConfigParams confParams) = do
   logInfo' "Running startDonatPool protocol contract"
   OwnCredentials ownCreds <- getOwnCreds
-  
+
   mp /\ cs <- mkCurrencySymbol (NFT.mintingPolicy ownCreds.nonCollateralORef)
   protocolTn <- protocolTokenName
   let
@@ -171,8 +169,8 @@ getGovernanceConstraints protocol'@(Protocol protocol) = do
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustMintValueWithRedeemer
-          (Redeemer $ toData $ PMintNft tn)
-          nftValue
+        (Redeemer $ toData $ PMintNft tn)
+        nftValue
         <> Constraints.mustPayToScriptAddress
           govValidatorHash
           (ScriptCredential govValidatorHash)

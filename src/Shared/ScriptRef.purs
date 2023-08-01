@@ -81,10 +81,11 @@ mkProposalRefScript :: Protocol -> Contract Unit
 mkProposalRefScript (Protocol protocol) = do
   governanceConfig <- liftEffect readGovernanceConfig
   governanceCurrency <- deserializeCurrency governanceConfig.governanceCurrency
-  let proposal = PProposal {
-    protocolCurrency: protocol.protocolCurrency
-    , govCurrency: governanceCurrency
-  }
+  let
+    proposal = PProposal
+      { protocolCurrency: protocol.protocolCurrency
+      , govCurrency: governanceCurrency
+      }
   proposalValidatorHash <- getProposalValidatorHash proposal
   proposalValidator <- proposalValidatorScript proposal
   createRefScriptUtxo "Proposal" proposalValidatorHash proposalValidator

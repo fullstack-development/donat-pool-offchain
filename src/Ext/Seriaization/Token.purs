@@ -1,6 +1,5 @@
 module Ext.Seriaization.Token where
 
-
 import Contract.Prelude
 import Contract.Monad (Contract, liftContractM)
 import Contract.Value as Value
