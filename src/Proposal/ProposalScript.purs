@@ -1,4 +1,4 @@
-module Shared.Scripts.Proposal.Script where
+module Proposal.ProposalScript where
 
 import Contract.Prelude
 
