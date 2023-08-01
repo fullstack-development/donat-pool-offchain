@@ -63,14 +63,14 @@ contract protocolData protocolConfigParams = do
       Constraints.mustSpendScriptOutputUsingScriptRef
         (fst protocolInfo.pUtxo)
         updateProtocolRedeemer
-        protocolInfo.pRefScriptInput
+        protocolInfo.references.pRefScriptInput
         <> Constraints.mustPayToScriptAddress
           protocolInfo.pValidatorHash
           (ScriptCredential protocolInfo.pValidatorHash)
           newPDatum
           Constraints.DatumInline
           protocolInfo.pValue
-        <> Constraints.mustReferenceOutput (fst protocolInfo.pScriptRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.references.pScriptRef)
         <> Constraints.mustBeSignedBy ownPkh
   let
     lookups :: Lookups.ScriptLookups Void

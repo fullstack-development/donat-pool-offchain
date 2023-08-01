@@ -27,7 +27,7 @@ import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName, pro
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, protocolToData)
 import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
-import Shared.ScriptRef (mkFundraisingRefScript, mkProtocolRefScript)
+import Shared.ScriptRef (mkFundraisingRefScript, mkProtocolRefScript, mkVerTokenPolicyRef)
 import Shared.Utxo (filterNonCollateral)
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
@@ -48,6 +48,7 @@ startSystem params = do
   protocolData <- startProtocol params
   mkProtocolRefScript protocolData
   mkFundraisingRefScript protocolData
+  mkVerTokenPolicyRef protocolData
   pure protocolData
 
 startProtocol :: ProtocolConfigParams -> Contract ProtocolData

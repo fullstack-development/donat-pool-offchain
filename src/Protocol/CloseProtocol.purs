@@ -50,7 +50,7 @@ contract protocolData = do
       Constraints.mustSpendScriptOutputUsingScriptRef
         (fst protocolInfo.pUtxo)
         protocolRedeemer
-        protocolInfo.pRefScriptInput
+        protocolInfo.references.pRefScriptInput
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft protocolTokenName)
           nftToBurnValue
@@ -59,7 +59,7 @@ contract protocolData = do
           creds.ownSkh
           (Value.lovelaceValueOf (fromInt 2000000))
         <> Constraints.mustBeSignedBy creds.ownPkh
-        <> Constraints.mustReferenceOutput (fst protocolInfo.pScriptRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.references.pScriptRef)
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
