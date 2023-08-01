@@ -2,7 +2,7 @@ module Shared.TestnetConfig where
 
 import Prelude
 
-import Contract.Config (defaultKupoServerConfig, defaultOgmiosWsConfig, testnetConfig)
+import Contract.Config (defaultOgmiosWsConfig, testnetConfig)
 import Ctl.Internal.Contract.Monad (ContractParams)
 import Ctl.Internal.Contract.QueryBackend (mkCtlBackendParams)
 import Ctl.Internal.ServerConfig (ServerConfig)
@@ -42,11 +42,19 @@ ogmiosProdWsConfig =
   , path: Nothing
   }
 
+kupoConfig :: ServerConfig
+kupoConfig =
+  { port: UInt.fromInt 1442
+  , host: "localhost"
+  , secure: false
+  , path: Nothing
+  }
+
 testnetNamiConfig :: String -> Boolean -> ContractParams
 testnetNamiConfig host secure = testnetConfig
   { backendParams = mkCtlBackendParams
       { ogmiosConfig: if isProduction then ogmiosProdWsConfig else defaultOgmiosWsConfig
-      , kupoConfig: if isProduction then kupoProdConfig host secure else defaultKupoServerConfig
+      , kupoConfig: if isProduction then kupoProdConfig host secure else kupoConfig
       }
   , walletSpec = Just ConnectToNami
   , logLevel = Debug
