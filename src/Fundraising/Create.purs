@@ -67,8 +67,8 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   verTokenMp /\ verTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
   verTn <- VerToken.verTokenName
   let
-    vetTokenPolicyHash :: MintingPolicyHash
-    vetTokenPolicyHash = mintingPolicyHash verTokenMp
+    verTokenPolicyHash :: MintingPolicyHash
+    verTokenPolicyHash = mintingPolicyHash verTokenMp
 
   let
     minAmount = view _minAmount protocolInfo.pDatum
@@ -135,7 +135,7 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
           (Redeemer $ toData $ PMintNft nftTn)
           nftValue
         <> Constraints.mustMintCurrencyWithRedeemerUsingScriptRef
-          vetTokenPolicyHash
+          verTokenPolicyHash
           (Redeemer $ toData $ PMintVerToken verTn)
           verTn
           one

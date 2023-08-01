@@ -74,8 +74,8 @@ contract pData (FundraisingData fundraisingData) = do
   let
     amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - feeByFundraising)
 
-    vetTokenPolicyHash :: MintingPolicyHash
-    vetTokenPolicyHash = mintingPolicyHash verTokenMintingPolicy
+    verTokenPolicyHash :: MintingPolicyHash
+    verTokenPolicyHash = mintingPolicyHash verTokenMintingPolicy
 
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
   let
@@ -90,7 +90,7 @@ contract pData (FundraisingData fundraisingData) = do
           (Redeemer $ toData $ PBurnNft threadTokenName)
           threadTokenToBurnValue
         <> Constraints.mustMintCurrencyWithRedeemerUsingScriptRef
-          vetTokenPolicyHash
+          verTokenPolicyHash
           (Redeemer $ toData $ PBurnVerToken fr.verTokenName)
           fr.verTokenName
           (fromInt (-1))
