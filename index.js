@@ -1,1 +1,3 @@
-window.offchain = import('./output').then(m => m.default.main.value0)
+import('./output').then(m => { 
+  window.donatPool = m.default.main.value0;
+})
