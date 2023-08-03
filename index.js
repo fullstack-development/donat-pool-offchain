@@ -1,3 +1,1 @@
-import('./output').then(m => { 
-  window.donatPool = m.default.main.value0;
-})
+window.donatPool = import('./output').then(m => m.default.main.value0)
