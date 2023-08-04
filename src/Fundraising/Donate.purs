@@ -16,6 +16,7 @@ import Ctl.Internal.Types.Datum (Datum(..))
 import Ctl.Internal.Types.Interval (from)
 import Data.BigInt (fromInt)
 import Effect.Exception (throw)
+import Ext.Contract.Value (mkCurrencySymbolFromString, runMkTokenName)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
 import Fundraising.Models (Fundraising(..))
@@ -35,9 +36,8 @@ runDonate onComplete onError pData networkParams fundraisingData amount =
 contract :: ProtocolData -> FundraisingData -> Int -> Contract Unit
 contract pData (FundraisingData fundraisingData) adaAmount = do
   logInfo' "Running donate"
-  let
-    threadTokenCurrency = fundraisingData.frThreadTokenCurrency
-    threadTokenName = fundraisingData.frThreadTokenName
+  threadTokenCurrency <- mkCurrencySymbolFromString fundraisingData.frThreadTokenCurrency
+  threadTokenName <- runMkTokenName fundraisingData.frThreadTokenName
   fundraising@(Fundraising fr) <- makeFundraising pData
   (FundraisingScriptInfo frInfo) <- getFundraisingScriptInfo fundraising threadTokenCurrency threadTokenName
   let isVerTokenInUtxo = checkTokenInUTxO (fr.verTokenCurrency /\ fr.verTokenName) frInfo.frUtxo

@@ -20,6 +20,7 @@ import Ctl.Internal.Types.Interval (from)
 import Ctl.Internal.Types.TokenName (adaToken)
 import Data.BigInt (fromInt)
 import Effect.Exception (throw)
+import Ext.Contract.Value (mkCurrencySymbolFromString, runMkTokenName)
 import Fundraising.Calculations (calcFee)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
@@ -46,8 +47,8 @@ contract :: ProtocolData -> FundraisingData -> Contract Unit
 contract pData (FundraisingData fundraisingData) = do
   logInfo' "Running receive funds"
   protocol <- dataToProtocol pData
-  let threadTokenCurrency = fundraisingData.frThreadTokenCurrency
-  let threadTokenName = fundraisingData.frThreadTokenName
+  threadTokenCurrency <- mkCurrencySymbolFromString fundraisingData.frThreadTokenCurrency
+  threadTokenName <- runMkTokenName fundraisingData.frThreadTokenName
   fundraising@(Fundraising fr) <- makeFundraising pData
   (FundraisingScriptInfo frInfo) <- getFundraisingScriptInfo fundraising threadTokenCurrency threadTokenName
   let isVerTokenInUtxo = checkTokenInUTxO (fr.verTokenCurrency /\ fr.verTokenName) frInfo.frUtxo

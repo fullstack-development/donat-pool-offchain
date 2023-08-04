@@ -71,7 +71,7 @@ mkFundraisingRefScript protocolData = do
 createPolicyRefUtxo :: String -> MintingPolicy → Contract Unit
 createPolicyRefUtxo _ (NativeMintingPolicy _) = liftEffect $ throw "Unexpected minting policy type"
 createPolicyRefUtxo mpName (PlutusMintingPolicy policy) = do
-  logInfo' $ "Creating UTxO with " <> mpName <> " minting policy name"
+  logInfo' $ "Creating UTxO with " <> mpName <> " minting policy reference"
   (OwnCredentials creds) <- getOwnCreds
   let
     scriptRef = PlutusScriptRef policy

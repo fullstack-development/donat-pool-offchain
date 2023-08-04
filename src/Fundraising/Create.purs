@@ -24,7 +24,7 @@ import Ext.Contract.Time (addTimes)
 import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
 import Ext.Seriaization.Key (pkhToBech32M)
 import Fundraising.Datum (PFundraisingDatum(..), titleLength)
-import Fundraising.FundraisingScript (getFundraisingTokenName, getFundraisingValidatorHash)
+import Fundraising.FundraisingScript (fundraisingTokenNameString, getFundraisingTokenName, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
 import Fundraising.UserData (CreateFundraisingParams(..))
 import Info.UserData (FundraisingInfo(..))
@@ -182,14 +182,14 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
   creatorPkh <- pkhToBech32M creds.ownPkh
+
   pure $ FundraisingInfo
     { creator: creatorPkh
     , title: title
     , goal: targetAmount
     , raisedAmt: fromInt 0
     , deadline: deadline
-    , threadTokenCurrency: nftCs
-    , threadTokenName: nftTn
-    , path: currencySymbolToString nftCs
+    , threadTokenCurrency: currencySymbolToString nftCs
+    , threadTokenName: fundraisingTokenNameString
     , isCompleted: false
     }
