@@ -34,17 +34,6 @@ mkNetworkWalletConfig (NetworkWallet { networkId, walletType }) = do
     (Eternl /\ TestnetId) -> pure $ testnetEternlConfig host secure
     _ -> throw "Wallet/network configuration not implemented"
 
-kupoProdConfig :: String -> Boolean -> ServerConfig
-kupoProdConfig host secure =
-  let
-    port = if secure then 443 else 80
-  in
-    { port: UInt.fromInt port
-    , host: host
-    , secure: secure
-    , path: Just "kupo"
-    }
-
 ogmiosProdWsConfig :: ServerConfig
 ogmiosProdWsConfig =
   { port: UInt.fromInt 443
@@ -53,10 +42,18 @@ ogmiosProdWsConfig =
   , path: Nothing
   }
 
+kupoProdConfig :: ServerConfig
+kupoProdConfig =
+  { port: UInt.fromInt 443
+  , host: "kupo.donat-pool.io"
+  , secure: true
+  , path: Nothing
+  }
+
 kupoConfig :: ServerConfig
 kupoConfig =
   { port: UInt.fromInt 1442
-  , host: "localhost"
+  , host: "0.0.0.0"
   , secure: false
   , path: Nothing
   }
@@ -68,9 +65,9 @@ testnetWalletConfig host secure = testnetConfig
   }
 
 backParams :: String -> Boolean -> QueryBackendParams
-backParams host secure = mkCtlBackendParams
+backParams host _ = mkCtlBackendParams
   { ogmiosConfig: if isProduction then ogmiosProdWsConfig else defaultOgmiosWsConfig
-  , kupoConfig: if isProduction then kupoProdConfig host secure else kupoConfig
+  , kupoConfig: if isProduction then kupoProdConfig else kupoConfig
   }
   where
   isProduction = not $ host == "localhost"
