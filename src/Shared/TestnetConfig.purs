@@ -70,7 +70,7 @@ testnetWalletConfig host secure = testnetConfig
 backParams :: String -> Boolean -> QueryBackendParams
 backParams host secure = mkCtlBackendParams
   { ogmiosConfig: if isProduction then ogmiosProdWsConfig else defaultOgmiosWsConfig
-  , kupoConfig: if isProduction then kupoProdConfig host secure else kupoConfig
+  , kupoConfig: kupoConfig
   }
   where
   isProduction = not $ host == "localhost"
