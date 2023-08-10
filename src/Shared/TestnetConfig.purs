@@ -42,6 +42,14 @@ ogmiosProdWsConfig =
   , path: Nothing
   }
 
+kupoProdConfig :: ServerConfig
+kupoProdConfig =
+  { port: UInt.fromInt 443
+  , host: "kupo.donat-pool.io"
+  , secure: true
+  , path: Nothing
+  }
+
 kupoConfig :: ServerConfig
 kupoConfig =
   { port: UInt.fromInt 1442
@@ -59,7 +67,7 @@ testnetWalletConfig host secure = testnetConfig
 backParams :: String -> Boolean -> QueryBackendParams
 backParams host _ = mkCtlBackendParams
   { ogmiosConfig: if isProduction then ogmiosProdWsConfig else defaultOgmiosWsConfig
-  , kupoConfig: kupoConfig
+  , kupoConfig: if isProduction then kupoProdConfig else kupoConfig
   }
   where
   isProduction = not $ host == "localhost"
