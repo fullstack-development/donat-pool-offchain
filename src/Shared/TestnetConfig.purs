@@ -53,7 +53,7 @@ kupoProdConfig =
 kupoConfig :: ServerConfig
 kupoConfig =
   { port: UInt.fromInt 1442
-  , host: "0.0.0.0"
+  , host: "localhost"
   , secure: false
   , path: Nothing
   }
