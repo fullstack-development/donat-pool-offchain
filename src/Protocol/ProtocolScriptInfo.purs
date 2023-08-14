@@ -45,21 +45,20 @@ getProtocolScriptInfo protocol = do
   networkId <- getNetworkId
   protocolAddress <-
     liftContractM "Impossible to get Protocol script address" $ validatorHashBaseAddress networkId protocolValidatorHash
-  utxos <- utxosAt protocolAddress
-  protocolUtxo <- getProtocolUtxo protocol utxos
+  protocolUtxos <- utxosAt protocolAddress
+  protocolUtxo <- getProtocolUtxo protocol protocolUtxos
   currentDatum <- liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO protocolUtxo
   let value = extractValueFromUTxO protocolUtxo
 
   let scriptRef = PlutusScriptRef (unwrap protocolValidator)
-  refScriptUtxo <- getUtxoByScriptRef "Protocol" scriptRef utxos
+  refScriptUtxo <- getUtxoByScriptRef "Protocol" scriptRef protocolUtxos
   let refScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst refScriptUtxo) (snd refScriptUtxo)
 
-  managerUtxos <- utxosAt (unwrap currentDatum).managerAddress
   verTokenMpWrapped <- VerToken.mintingPolicy protocol
   policyRef <- case verTokenMpWrapped of
     PlutusMintingPolicy policy -> pure $ PlutusScriptRef policy
     _ -> liftEffect $ throw "Unexpected Minting Policy script type"
-  policyRefUtxo <- getUtxoByScriptRef "VerTokenPolicy" policyRef managerUtxos
+  policyRefUtxo <- getUtxoByScriptRef "VerTokenPolicy" policyRef protocolUtxos
   let policyRefInput = Constraints.RefInput $ mkTxUnspentOut (fst policyRefUtxo) (snd policyRefUtxo)
   let
     refs =
@@ -72,7 +71,7 @@ getProtocolScriptInfo protocol = do
     { pValidator: protocolValidator
     , pValidatorHash: protocolValidatorHash
     , pAddress: protocolAddress
-    , pUtxos: utxos
+    , pUtxos: protocolUtxos
     , pUtxo: protocolUtxo
     , pDatum: currentDatum
     , pValue: value
