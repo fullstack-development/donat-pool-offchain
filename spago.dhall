@@ -35,7 +35,6 @@ You can edit this file as you like.
   , "transformers"
   , "tuples"
   , "uint"
-  , "web-html"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "exe/**/*.purs", "test/**/*.purs" ]

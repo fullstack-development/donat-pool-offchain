@@ -3,7 +3,7 @@ module Shared.TestnetConfig where
 import Prelude
 
 import Contract.Address (NetworkId(..))
-import Contract.Config (defaultOgmiosWsConfig, testnetConfig)
+import Contract.Config (testnetConfig)
 import Contract.Prelude (log, (/\))
 import Ctl.Internal.Contract.Monad (ContractParams)
 import Ctl.Internal.Contract.QueryBackend (mkCtlBackendParams, QueryBackendParams)
@@ -15,77 +15,60 @@ import Data.UInt as UInt
 import Effect (Effect)
 import Effect.Exception (throw)
 import Shared.NetworkData (NetworkWallet(..), WalletType(..))
-import Web.HTML (window) as WEB
-import Web.HTML.Location (hostname, protocol) as WEB
-import Web.HTML.Window (location) as WEB
 
 mkNetworkWalletConfig :: NetworkWallet -> Effect ContractParams
 mkNetworkWalletConfig (NetworkWallet { networkId, walletType }) = do
   log $ "NetworkId: " <> show networkId
   log $ "WalletType: " <> show walletType
-  location <- WEB.window >>= WEB.location
-  host <- WEB.hostname location
-  protocol <- WEB.protocol location
-  let secure = (protocol == "https:" || protocol == "wss")
   case (walletType /\ networkId) of
-    (Nami /\ TestnetId) -> pure $ testnetNamiConfig host secure
-    (Flint /\ TestnetId) -> pure $ testnetFlintConfig host secure
-    (Lode /\ TestnetId) -> pure $ testnetLodeConfig host secure
-    (Eternl /\ TestnetId) -> pure $ testnetEternlConfig host secure
+    (Nami /\ TestnetId) -> pure testnetNamiConfig
+    (Flint /\ TestnetId) -> pure testnetFlintConfig
+    (Lode /\ TestnetId) -> pure testnetLodeConfig
+    (Eternl /\ TestnetId) -> pure testnetEternlConfig
     _ -> throw "Wallet/network configuration not implemented"
 
-ogmiosProdWsConfig :: ServerConfig
-ogmiosProdWsConfig =
+ogmiosConfig :: ServerConfig
+ogmiosConfig =
   { port: UInt.fromInt 443
   , host: "ogmios.donat-pool.io"
   , secure: true
   , path: Nothing
   }
 
-kupoProdConfig :: ServerConfig
-kupoProdConfig =
+kupoConfig :: ServerConfig
+kupoConfig =
   { port: UInt.fromInt 443
   , host: "kupo.donat-pool.io"
   , secure: true
   , path: Nothing
   }
 
-kupoConfig :: ServerConfig
-kupoConfig =
-  { port: UInt.fromInt 1442
-  , host: "localhost"
-  , secure: false
-  , path: Nothing
-  }
-
-testnetWalletConfig :: String -> Boolean -> ContractParams
-testnetWalletConfig host secure = testnetConfig
-  { backendParams = backParams host secure
+testnetWalletConfig :: ContractParams
+testnetWalletConfig = testnetConfig
+  { backendParams = backParams
   , logLevel = Debug
   }
 
-backParams :: String -> Boolean -> QueryBackendParams
-backParams host _ = mkCtlBackendParams
-  { ogmiosConfig: if isProduction then ogmiosProdWsConfig else defaultOgmiosWsConfig
-  , kupoConfig: if isProduction then kupoProdConfig else kupoConfig
+backParams :: QueryBackendParams
+backParams = mkCtlBackendParams
+  { ogmiosConfig: ogmiosConfig
+  , kupoConfig: kupoConfig
   }
-  where
-  isProduction = not $ host == "localhost"
 
-testnetNamiConfig :: String -> Boolean -> ContractParams
-testnetNamiConfig host secure = (testnetWalletConfig host secure) { walletSpec = Just ConnectToNami }
+testnetNamiConfig :: ContractParams
+testnetNamiConfig = testnetWalletConfig { walletSpec = Just ConnectToNami }
 
-testnetGeroConfig :: String -> Boolean -> ContractParams
-testnetGeroConfig host secure = (testnetWalletConfig host secure) { walletSpec = Just ConnectToGero }
+testnetGeroConfig :: ContractParams
+testnetGeroConfig = testnetWalletConfig { walletSpec = Just ConnectToGero }
 
-testnetFlintConfig :: String -> Boolean -> ContractParams
-testnetFlintConfig host secure = (testnetWalletConfig host secure) { walletSpec = Just ConnectToFlint }
+testnetFlintConfig :: ContractParams
+testnetFlintConfig = testnetWalletConfig { walletSpec = Just ConnectToFlint }
 
-testnetLodeConfig :: String -> Boolean -> ContractParams
-testnetLodeConfig host secure = (testnetWalletConfig host secure) { walletSpec = Just ConnectToLode }
+testnetLodeConfig :: ContractParams
+testnetLodeConfig = testnetWalletConfig { walletSpec = Just ConnectToLode }
 
-testnetEternlConfig :: String -> Boolean -> ContractParams
-testnetEternlConfig host secure = (testnetWalletConfig host secure) { walletSpec = Just ConnectToEternl }
+testnetEternlConfig :: ContractParams
+testnetEternlConfig = testnetWalletConfig { walletSpec = Just ConnectToEternl }
 
-testnetNuFiConfig :: String -> Boolean -> ContractParams
-testnetNuFiConfig host secure = (testnetWalletConfig host secure) { walletSpec = Just ConnectToNuFi }
+testnetNuFiConfig :: ContractParams
+testnetNuFiConfig = testnetWalletConfig { walletSpec = Just ConnectToNuFi }
