@@ -4,11 +4,10 @@ import Contract.Prelude
 
 import Contract.Config (PrivateStakeKeySource(..), testnetConfig)
 import Ctl.Internal.Contract.Monad (ContractParams)
+import Ctl.Internal.Contract.QueryBackend (mkCtlBackendParams, QueryBackendParams)
 import Ctl.Internal.Wallet.Spec (PrivatePaymentKeySource(..), WalletSpec(..))
 import Node.Path (FilePath)
-import Ctl.Internal.ServerConfig (ServerConfig, defaultOgmiosWsConfig)
-import Data.UInt as UInt
-import Ctl.Internal.Contract.QueryBackend (mkCtlBackendParams, QueryBackendParams)
+import Shared.TestnetConfig (kupoConfig, ogmiosConfig)
 
 privatePaymentKeyFilePath ∷ FilePath
 privatePaymentKeyFilePath = "wallet/payment.skey"
@@ -26,16 +25,8 @@ testnetKeyWalletConfig = testnetConfig
   , logLevel = Info
   }
 
-kupoConfig :: ServerConfig
-kupoConfig =
-  { port: UInt.fromInt 1442
-  , host: "127.0.0.1"
-  , secure: false
-  , path: Nothing
-  }
-
 backendParams ∷ QueryBackendParams
 backendParams = mkCtlBackendParams
-  { ogmiosConfig: defaultOgmiosWsConfig
+  { ogmiosConfig: ogmiosConfig
   , kupoConfig: kupoConfig
   }
