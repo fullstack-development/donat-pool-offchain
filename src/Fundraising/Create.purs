@@ -10,6 +10,7 @@ import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, liftedE)
 import Contract.PlutusData (Redeemer(Redeemer), Datum(Datum), toData)
 import Contract.ScriptLookups as Lookups
+import Contract.Scripts (MintingPolicyHash, mintingPolicyHash)
 import Contract.Time (POSIXTime(..))
 import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
@@ -23,7 +24,7 @@ import Ext.Contract.Time (addTimes)
 import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
 import Ext.Seriaization.Key (pkhToBech32M)
 import Fundraising.Datum (PFundraisingDatum(..), titleLength)
-import Fundraising.FundraisingScript (getFundraisingTokenName, getFundraisingValidatorHash)
+import Fundraising.FundraisingScript (fundraisingTokenNameString, getFundraisingTokenName, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
 import Fundraising.UserData (CreateFundraisingParams(..))
 import Info.UserData (FundraisingInfo(..))
@@ -65,6 +66,9 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
 
   verTokenMp /\ verTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
   verTn <- VerToken.verTokenName
+  let
+    verTokenPolicyHash :: MintingPolicyHash
+    verTokenPolicyHash = mintingPolicyHash verTokenMp
 
   let
     minAmount = view _minAmount protocolInfo.pDatum
@@ -130,13 +134,16 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PMintNft nftTn)
           nftValue
-        <> Constraints.mustMintValueWithRedeemer
+        <> Constraints.mustMintCurrencyWithRedeemerUsingScriptRef
+          verTokenPolicyHash
           (Redeemer $ toData $ PMintVerToken verTn)
-          verTokenValue
+          verTn
+          one
+          protocolInfo.references.verTokenInput
         <> Constraints.mustSpendScriptOutputUsingScriptRef
           (fst protocolInfo.pUtxo)
           protocolRedeemer
-          protocolInfo.pRefScriptInput
+          protocolInfo.references.pRefScriptInput
         <> Constraints.mustPayToScriptAddress
           protocolInfo.pValidatorHash
           (ScriptCredential protocolInfo.pValidatorHash)
@@ -150,12 +157,12 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
           Constraints.DatumInline
           paymentToFr
         <> Constraints.mustBeSignedBy creds.ownPkh
-        <> Constraints.mustReferenceOutput (fst protocolInfo.pScriptRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.references.pScriptRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.references.verTokenRef)
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy nftMp
-        <> Lookups.mintingPolicy verTokenMp
         <> Lookups.unspentOutputs creds.ownUtxos
         <> Lookups.unspentOutputs protocolInfo.pUtxos
 
@@ -175,14 +182,14 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
   creatorPkh <- pkhToBech32M creds.ownPkh
+
   pure $ FundraisingInfo
     { creator: creatorPkh
     , title: title
     , goal: targetAmount
     , raisedAmt: fromInt 0
     , deadline: deadline
-    , threadTokenCurrency: nftCs
-    , threadTokenName: nftTn
-    , path: currencySymbolToString nftCs
+    , threadTokenCurrency: currencySymbolToString nftCs
+    , threadTokenName: fundraisingTokenNameString
     , isCompleted: false
     }

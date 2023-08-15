@@ -6,7 +6,8 @@ import Contract.Monad (Contract, liftContractM)
 import Contract.Prim.ByteArray (byteArrayFromAscii)
 import Contract.Scripts (MintingPolicy)
 import Contract.Value as Value
-import Ctl.Internal.Types.ByteArray (byteArrayToHex, ByteArray(..))
+import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
+import Ctl.Internal.Types.ByteArray (ByteArray(..), byteArrayToHex, hexToByteArray)
 import Data.Array (filter) as Array
 import Data.TextDecoder (decodeUtf8)
 
@@ -35,6 +36,13 @@ getCurrencyByTokenName val tokenName =
 
 currencySymbolToString :: Value.CurrencySymbol -> String
 currencySymbolToString = byteArrayToHex <<< Value.getCurrencySymbol
+
+currencyFromString :: String -> Maybe Value.CurrencySymbol
+currencyFromString csString = hexToByteArray csString >>= CurrencySymbol.mkCurrencySymbol
+
+mkCurrencySymbolFromString :: String -> Contract Value.CurrencySymbol
+mkCurrencySymbolFromString cs =
+  liftContractM "Impossible to make currency symbol from String" $ currencyFromString cs
 
 tokenNameToString :: Value.TokenName -> Maybe String
 tokenNameToString tn =
