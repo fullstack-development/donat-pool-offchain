@@ -10,6 +10,7 @@ import Fundraising.Create as CreateFundraising
 import Fundraising.Donate as Donate
 import Fundraising.ReceiveFunds as ReceiveFunds
 import Fundraising.UserData (CreateFundraisingParams, FundraisingData)
+import Governance.MintGovernanceTokens as GovTokens
 import Info.AllFundraisings as AllFundraisings
 import Info.AppInfo as AppInfo
 import Info.UserData (AppInfo, FundraisingInfo)
@@ -25,6 +26,7 @@ data Contracts = Contracts
   , receiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Effect Unit
   , getAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
   , getUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
+  , mintGovernanceTokens :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> NetworkParams -> Effect Unit
   }
 
 main :: Contracts
@@ -36,4 +38,5 @@ main = Contracts
   , receiveFunds: ReceiveFunds.runReceiveFunds
   , getAllFundraisings: AllFundraisings.runGetAllFundraisings
   , getUserRelatedFundraisings: UserRelatedFundraisings.runGetUserRelatedFundraisings
+  , mintGovernanceTokens: GovTokens.runMintGovernanceTokens
   }

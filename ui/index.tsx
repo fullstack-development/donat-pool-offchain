@@ -75,6 +75,10 @@ const App = () => {
     a.main.value0.getAppInfo(console.log)(console.log)(protocolData)(testnetNami)();
   };
 
+  const onMintGovernanceClick = () => {
+    a.main.value0.mintGovernanceTokens(console.log)(console.log)(testnetNami)();
+  };
+
   return (
     <div>
       <h1>Offchain integration</h1>
@@ -85,6 +89,7 @@ const App = () => {
       <button onClick={onGetAllFundraising}>Get All Fundraisings</button>
       <button onClick={onGetUserRelatedFundraisings}>Get User related Fundraisings</button>
       <button onClick={onGetAppInfo}>Get app info</button>
+      <button onClick={onMintGovernanceClick}>Mint 50000 governance tokens</button>
     </div>
   );
 };
