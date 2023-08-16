@@ -25,7 +25,7 @@ import Data.Array (head) as Array
 import Data.BigInt (fromInt)
 import Effect.Aff (launchAff_)
 import Ext.Contract.Value (mkCurrencySymbol)
-import Governance.Config (getGovCurrencySymbolFromConfig)
+import Governance.Config (getGovTokenFromConfig)
 import Governance.Datum (GovernanceDatum(..))
 import Governance.GovernanceScript (getGovernanceValidatorHash, governanceTokenName, governanceValidatorScript)
 import MintingPolicy.NftMinting as NFT
@@ -51,6 +51,7 @@ initialGovernanceConf :: StartGovernanceData
 initialGovernanceConf = StartGovernanceData
   { quorum: fromInt 60
   , fee: fromInt 10_000_000
+  , duration: fromInt 60
   }
 
 runStartSystem :: Effect Unit
@@ -151,7 +152,7 @@ startProtocol params@(ProtocolConfigParams confParams) = do
 getGovernanceConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void)
 getGovernanceConstraints protocol'@(Protocol protocol) = do
   let StartGovernanceData govData = initialGovernanceConf
-  govCurrency <- getGovCurrencySymbolFromConfig
+  (govCurrency /\ govTokenName) <- getGovTokenFromConfig
   tn <- governanceTokenName
 
   govValidatorHash <- getGovernanceValidatorHash protocol'
@@ -162,6 +163,8 @@ getGovernanceConstraints protocol'@(Protocol protocol) = do
       { quorum: govData.quorum
       , fee: govData.fee
       , govCurrency: govCurrency
+      , govTokenName: govTokenName
+      , duration: govData.duration
       }
     nftValue = Value.singleton protocol.protocolCurrency tn one
     paymentToGov = Value.lovelaceValueOf (fromInt 2000000) <> nftValue

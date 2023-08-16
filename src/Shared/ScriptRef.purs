@@ -72,7 +72,6 @@ mkFundraisingRefScript protocolData = do
   let scriptRef = PlutusScriptRef (unwrap frValidator)
   createRefScriptUtxo "Fundraising" scriptRef frValidatorHash
 
-
 mkProposalRefScript :: Protocol -> Contract Unit
 mkProposalRefScript (Protocol protocol) = do
   governanceConfig <- liftEffect readGovernanceConfig
@@ -93,7 +92,7 @@ mkGovernanceRefScript protocol = do
   governanceValidator <- governanceValidatorScript protocol
   let scriptRef = PlutusScriptRef (unwrap governanceValidator)
   createRefScriptUtxo "Governance" scriptRef governanceValidatorHash
-  
+
 createPolicyRefUtxo :: String -> MintingPolicy → ValidatorHash → Contract Unit
 createPolicyRefUtxo _ (NativeMintingPolicy _) _ = liftEffect $ throw "Unexpected minting policy type"
 createPolicyRefUtxo mpName (PlutusMintingPolicy policy) validatorHash = do

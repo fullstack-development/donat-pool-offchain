@@ -7,6 +7,7 @@ import Data.BigInt (BigInt)
 newtype StartGovernanceData = StartGovernanceData
   { quorum :: BigInt
   , fee :: BigInt
+  , duration :: BigInt
   }
 
 derive newtype instance Show StartGovernanceData

@@ -9,11 +9,14 @@ import Data.BigInt (BigInt)
 import Data.Newtype (class Newtype)
 import Prelude (class Eq, class Ord)
 import Ctl.Internal.Plutus.Types.CurrencySymbol (CurrencySymbol)
+import Ctl.Internal.Types.TokenName (TokenName)
 
 newtype GovernanceDatum = GovernanceDatum
   { quorum :: BigInt
   , fee :: BigInt
   , govCurrency :: CurrencySymbol
+  , govTokenName :: TokenName
+  , duration :: BigInt
   }
 
 derive newtype instance Show GovernanceDatum
@@ -30,6 +33,10 @@ instance
               := I BigInt
               :+ "govCurrency"
               := I CurrencySymbol
+              :+ "govTokenName"
+              := I TokenName
+              :+ "duration"
+              := I BigInt
               :+ PNil
           )
         @@ Z
