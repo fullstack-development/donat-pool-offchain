@@ -7,10 +7,11 @@ import Contract.Value as Value
 import Ctl.Internal.FromData (class FromData, genericFromData)
 import Ctl.Internal.ToData (class ToData)
 import Data.BigInt (BigInt)
+import Protocol.Models (Protocol(..))
 
 newtype PProposal = PProposal
   { protocolCurrency :: Value.CurrencySymbol
-  , govCurrency :: Value.CurrencySymbol
+  , verTokenCurrency :: Value.CurrencySymbol
   }
 
 derive newtype instance Show PProposal
@@ -23,7 +24,7 @@ instance
     ( "PProposal"
         :=
           ( "protocolCurrency" := I Value.CurrencySymbol
-              :+ "govCurrency"
+              :+ "verTokenCurrency"
               := I Value.CurrencySymbol
               :+ PNil
           )
@@ -80,3 +81,10 @@ instance ToData PProposalParameters where
 
 instance FromData PProposalParameters where
   fromData = genericFromData
+
+mkProposal :: Protocol -> Value.CurrencySymbol -> PProposal
+mkProposal (Protocol protocol) verCurrency = do
+  PProposal
+    { protocolCurrency: protocol.protocolCurrency
+    , verTokenCurrency: verCurrency
+    }

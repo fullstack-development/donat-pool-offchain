@@ -2,7 +2,7 @@ module Proposal.Redeemer where
 
 import Contract.Prelude
 
-import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, S, Z, genericToData)
+import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, Z, genericToData)
 import Ctl.Internal.Types.PubKeyHash (PaymentPubKeyHash)
 import Data.BigInt (BigInt)
 
@@ -19,7 +19,7 @@ instance
     PProposalRedeemer
     ( "PVote"
         := PNil
-        @@ (S Z)
+        @@ Z
         :+ PNil
     )
 

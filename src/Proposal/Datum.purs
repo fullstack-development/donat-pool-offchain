@@ -2,14 +2,15 @@ module Proposal.Datum where
 
 import Contract.Prelude
 
+import Contract.Address (Address)
 import Contract.PlutusData (class HasPlutusSchema, type (:+), type (:=), type (@@), I, PNil, Z, genericToData)
 import Ctl.Internal.FromData (class FromData, genericFromData)
 import Ctl.Internal.ToData (class ToData)
+import Ctl.Internal.Types.Interval (POSIXTime)
 import Ctl.Internal.Types.Transaction (TransactionInput)
 import Data.BigInt (BigInt)
 import Data.Newtype (class Newtype)
 import Proposal.Model (PProposalParameters)
-import Contract.Address (Address)
 
 newtype PProposalDatum = PProposalDatum
   { proposal :: PProposalParameters
@@ -18,6 +19,8 @@ newtype PProposalDatum = PProposalDatum
   , policyRef :: TransactionInput
   , quorum :: BigInt
   , initiator :: Address
+  , deadline :: POSIXTime
+  , applied :: BigInt -- 0 or 1
   }
 
 derive instance Generic PProposalDatum _
@@ -39,6 +42,10 @@ instance
               := I BigInt
               :+ "initiator"
               := I Address
+              :+ "deadline"
+              := I POSIXTime
+              :+ "applied"
+              := I BigInt
               :+ PNil
           )
         @@ Z

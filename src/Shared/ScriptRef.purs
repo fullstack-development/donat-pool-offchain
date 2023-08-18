@@ -1,30 +1,34 @@
 module Shared.ScriptRef where
 
 import Contract.Prelude
-import Governance.GovernanceScript (getGovernanceValidatorHash, governanceValidatorScript)
+
 import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Credential (Credential(..))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedE)
+import Contract.Monad (Contract, liftContractM, liftedE)
 import Contract.PlutusData (PlutusData, unitDatum)
 import Contract.ScriptLookups as Lookups
-import Contract.Scripts (MintingPolicy(..))
+import Contract.Scripts (MintingPolicy(..), PlutusScript)
 import Contract.Transaction (ScriptRef(..), awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
+import Ctl.Internal.Plutus.Types.Transaction (UtxoMap)
 import Ctl.Internal.Types.Scripts (ValidatorHash)
-import Ext.Seriaization.Token (deserializeCurrency)
+import Data.Array as Array
+import Data.Map as Map
+import Effect.Exception (throw)
+import Ext.Contract.Value (mkCurrencySymbol)
 import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.FundraisingScriptInfo (makeFundraising)
-import Governance.Config (readGovernanceConfig)
-import Proposal.Model (PProposal(..))
-import Protocol.Models (Protocol(..))
-import Effect.Exception (throw)
+import Governance.GovernanceScript (getGovernanceValidatorHash, governanceValidatorScript)
 import MintingPolicy.VerTokenMinting as VerToken
+import Proposal.Model (mkProposal)
+import Proposal.ProposalScript (getProposalValidatorHash, proposalValidatorScript)
+import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
 import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.MinAda (sevenMinAdaValue)
 import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
-import Proposal.ProposalScript (getProposalValidatorHash, proposalValidatorScript)
+import Shared.Utxo (UtxoTuple)
 
 createRefScriptUtxo ∷ String -> ScriptRef -> ValidatorHash → Contract Unit
 createRefScriptUtxo _ (NativeScriptRef _) _ = liftEffect $ throw "Unexpected scriptRef type: waiting for PlutusScriptRef"
@@ -73,14 +77,9 @@ mkFundraisingRefScript protocolData = do
   createRefScriptUtxo "Fundraising" scriptRef frValidatorHash
 
 mkProposalRefScript :: Protocol -> Contract Unit
-mkProposalRefScript (Protocol protocol) = do
-  governanceConfig <- liftEffect readGovernanceConfig
-  governanceCurrency <- deserializeCurrency governanceConfig.governanceCurrency
-  let
-    proposal = PProposal
-      { protocolCurrency: protocol.protocolCurrency
-      , govCurrency: governanceCurrency
-      }
+mkProposalRefScript protocol = do
+  _ /\ proposalVerTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
+  let proposal = mkProposal protocol proposalVerTokenCs
   proposalValidatorHash <- getProposalValidatorHash proposal
   proposalValidator <- proposalValidatorScript proposal
   let scriptRef = PlutusScriptRef (unwrap proposalValidator)
@@ -107,3 +106,18 @@ mkVerTokenPolicyRef protocolData = do
   protocolValidatorHash <- getProtocolValidatorHash protocol
   policy <- VerToken.mintingPolicy protocol
   createPolicyRefUtxo "VerToken" policy protocolValidatorHash
+
+hasExpectedRefScript :: PlutusScript -> UtxoTuple -> Boolean
+hasExpectedRefScript plutusScript (_ /\ txOutput) =
+  (unwrap txOutput).scriptRef == Just (PlutusScriptRef plutusScript)
+
+findUtxoWithRefScript :: PlutusScript -> UtxoMap -> Maybe UtxoTuple
+findUtxoWithRefScript plutusScript utxoMap =
+  let
+    (utxoArray :: Array UtxoTuple) = Map.toUnfoldable utxoMap
+  in
+    Array.find (hasExpectedRefScript plutusScript) utxoArray
+
+getUtxoWithRefScript :: PlutusScript -> UtxoMap -> Contract UtxoTuple
+getUtxoWithRefScript plutusScript utxoMap =
+  liftContractM "UTxO with expected reference script not found" $ findUtxoWithRefScript plutusScript utxoMap

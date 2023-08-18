@@ -3,7 +3,6 @@
 module Scaffold.Main (main, Contracts) where
 
 import Contract.Prelude
-
 import Common.ConnectWallet as ConnectWallet
 import Contract.Address (Bech32String)
 import Fundraising.Create as CreateFundraising
@@ -15,6 +14,9 @@ import Info.AllFundraisings as AllFundraisings
 import Info.AppInfo as AppInfo
 import Info.UserData (AppInfo, FundraisingInfo)
 import Info.UserRelatedFundraisings as UserRelatedFundraisings
+import Management.Proposal.UserData (ProposalInfo)
+import Proposal.Create as CreateProposal
+import Proposal.Model (PProposalParameters)
 import Protocol.UserData (ProtocolData)
 import Shared.NetworkData (NetworkParams)
 
@@ -27,6 +29,7 @@ data Contracts = Contracts
   , getAllFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
   , getUserRelatedFundraisings :: (Array FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
   , mintGovernanceTokens :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> NetworkParams -> Effect Unit
+  , createProposal :: (ProposalInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> PProposalParameters -> NetworkParams -> Effect Unit
   }
 
 main :: Contracts
@@ -39,4 +42,5 @@ main = Contracts
   , getAllFundraisings: AllFundraisings.runGetAllFundraisings
   , getUserRelatedFundraisings: UserRelatedFundraisings.runGetUserRelatedFundraisings
   , mintGovernanceTokens: GovTokens.runMintGovernanceTokens
+  , createProposal: CreateProposal.runCreateProposal
   }
