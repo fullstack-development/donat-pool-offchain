@@ -3,11 +3,11 @@ module Proposal.Redeemer where
 import Contract.Prelude
 
 import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, Z, genericToData)
-import Ctl.Internal.Types.PubKeyHash (PaymentPubKeyHash)
+import Ctl.Internal.Plutus.Types.Address (Address)
 import Data.BigInt (BigInt)
 
 type IsVoteFor = BigInt -- "against" = 0, "for" = 1
-type Voter = PaymentPubKeyHash
+type Voter = Address
 
 data PProposalRedeemer =
   PVote IsVoteFor Voter

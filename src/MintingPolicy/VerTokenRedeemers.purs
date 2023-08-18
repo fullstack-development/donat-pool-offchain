@@ -16,8 +16,8 @@ import Contract.PlutusData
 
 import Contract.Value as Value
 
-data PVerTokenRedeemer = 
-  PMintVerToken Value.TokenName 
+data PVerTokenRedeemer
+  = PMintVerToken Value.TokenName
   | PBurnVerToken Value.TokenName
   | PMintProposalVerToken Value.TokenName
 
@@ -28,9 +28,11 @@ instance
     PVerTokenRedeemer
     ( "PMintVerToken" := PNil @@ Z
         :+ "PBurnVerToken"
-        := PNil @@ (S Z)
+        := PNil
+        @@ (S Z)
         :+ "PMintProposalVerToken"
-        := PNil @@ (S (S Z))
+        := PNil
+        @@ (S (S Z))
         :+ PNil
     )
 
