@@ -3,20 +3,15 @@ module Protocol.StartProtocol where
 import Contract.Prelude
 
 import Config.Protocol (mapFromProtocolData, writeProtocolConfig)
-import Contract.Address (getNetworkId, getWalletAddresses, getWalletAddressesWithNetworkTag, ownPaymentPubKeysHashes, addressToBech32, validatorHashBaseAddress)
-import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
+import Contract.Address (addressToBech32, getNetworkId, validatorHashBaseAddress)
 import Contract.Credential (Credential(..))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
+import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.PlutusData (Datum(Datum), Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
-import Contract.Utxos (utxosAt)
 import Contract.Value as Value
-import Data.Array (head) as Array
 import Data.BigInt (fromInt)
-import Data.Map (toUnfoldable) as Map
 import Effect.Aff (launchAff_)
 import Ext.Contract.Value (mkCurrencySymbol)
 import MintingPolicy.NftMinting as NFT
@@ -27,8 +22,9 @@ import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName, pro
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, protocolToData)
 import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.ScriptRef (mkFundraisingRefScript, mkProtocolRefScript, mkVerTokenPolicyRef)
-import Shared.Utxo (filterNonCollateral)
+import Shared.Tx (completeTx)
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
 initialProtocolConfigParams = ProtocolConfigParams
@@ -54,19 +50,8 @@ startSystem params = do
 startProtocol :: ProtocolConfigParams -> Contract ProtocolData
 startProtocol params@(ProtocolConfigParams { minAmountParam, maxAmountParam, minDurationParam, maxDurationParam, protocolFeeParam }) = do
   logInfo' "Running startDonatPool protocol contract"
-  ownHashes <- ownPaymentPubKeysHashes
-  ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
-  logInfo' $ "Own Payment pkh is: " <> show ownPkh
-  ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
-  ownBech32Address <- addressToBech32 ownAddress
-  logInfo' $ "Own address is: " <> show ownBech32Address
-  utxos <- utxosAt ownAddress
-  logInfo' $ "UTxOs found on address: " <> show utxos
-  oref <-
-    liftContractM "Utxo set is empty"
-      (fst <$> Array.head (filterNonCollateral $ Map.toUnfoldable utxos))
-
-  mp /\ cs <- mkCurrencySymbol (NFT.mintingPolicy oref)
+  ownCreds@(OwnCredentials creds) <- getOwnCreds
+  mp /\ cs <- mkCurrencySymbol (NFT.mintingPolicy creds.nonCollateralORef)
   tn <- protocolTokenName
   let
     protocol = Protocol
@@ -83,8 +68,8 @@ startProtocol params@(ProtocolConfigParams { minAmountParam, maxAmountParam, min
       , minDuration: minDurationParam
       , maxDuration: maxDurationParam
       , protocolFee: protocolFeeParam
-      , managerAddress: ownAddress
-      , tokenOriginRef: oref
+      , managerAddress: (unwrap creds.ownAddressWithNetworkTag).address
+      , tokenOriginRef: creds.nonCollateralORef
       }
     nftValue = Value.singleton cs tn one
     paymentToProtocol = Value.lovelaceValueOf (fromInt 2000000) <> nftValue
@@ -92,7 +77,7 @@ startProtocol params@(ProtocolConfigParams { minAmountParam, maxAmountParam, min
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendPubKeyOutput oref
+      Constraints.mustSpendPubKeyOutput creds.nonCollateralORef
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PMintNft tn)
           nftValue
@@ -106,18 +91,10 @@ startProtocol params@(ProtocolConfigParams { minAmountParam, maxAmountParam, min
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
-        <> Lookups.unspentOutputs utxos
+        <> Lookups.unspentOutputs creds.ownUtxos
         <> Lookups.validator protocolValidator
 
-  unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
-  addressWithNetworkTag <- liftedM "Failed to get own address with Network Tag" $ Array.head <$> getWalletAddressesWithNetworkTag
-  let
-    balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
-  balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
-  balancedSignedTx <- signTransaction balancedTx
-  txId <- submit balancedSignedTx
-  awaitTxConfirmed txId
+  completeTx lookups constraints ownCreds
 
   logInfo' $ "Current protocol: " <> show protocol
   networkId <- getNetworkId

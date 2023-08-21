@@ -5,14 +5,12 @@ module Fundraising.ReceiveFunds
 
 import Contract.Prelude
 
-import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedE, liftContractM)
+import Contract.Monad (Contract, liftContractM)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Scripts (MintingPolicyHash, mintingPolicyHash)
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.CurrencySymbol (adaSymbol)
@@ -37,6 +35,7 @@ import Shared.MinAda (minAda)
 import Shared.NetworkData (NetworkParams)
 import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds, getPkhSkhFromAddress)
 import Shared.RunContract (runContractWithResult)
+import Shared.Tx (completeTx)
 import Shared.Utxo (checkTokenInUTxO)
 
 runReceiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Effect Unit
@@ -63,7 +62,7 @@ contract pData (FundraisingData fundraisingData) = do
     $ liftEffect
     $ throw "Can't receive funds while fundraising is in progress"
 
-  (OwnCredentials creds) <- getOwnCreds
+  ownCreds@(OwnCredentials creds) <- getOwnCreds
   when (creds.ownPkh /= currentDatum.creatorPkh) $ liftEffect $ throw "Only fundraising creator can receive funds"
 
   let receiveFundsRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
@@ -108,12 +107,6 @@ contract pData (FundraisingData fundraisingData) = do
       Lookups.mintingPolicy threadTokenMintingPolicy
         <> Lookups.unspentOutputs frInfo.frUtxos
 
-  unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
-  let
-    balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress creds.ownAddressWithNetworkTag
-  balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
-  balancedSignedTx <- signTransaction balancedTx
-  txId <- submit balancedSignedTx
-  awaitTxConfirmed txId
+  completeTx lookups constraints ownCreds
+
   logInfo' "Receive funds finished successfully"

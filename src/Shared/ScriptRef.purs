@@ -2,14 +2,13 @@ module Shared.ScriptRef where
 
 import Contract.Prelude
 
-import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Credential (Credential(..))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedE)
-import Contract.PlutusData (PlutusData, unitDatum)
+import Contract.Monad (Contract)
+import Contract.PlutusData (unitDatum)
 import Contract.ScriptLookups as Lookups
 import Contract.Scripts (MintingPolicy(..), ValidatorHash)
-import Contract.Transaction (ScriptRef(..), awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
+import Contract.Transaction (ScriptRef(..))
 import Contract.TxConstraints as Constraints
 import Effect.Exception (throw)
 import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
@@ -18,16 +17,16 @@ import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
 import Protocol.UserData (ProtocolData, dataToProtocol)
 import Shared.MinAda (sevenMinAdaValue)
-import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
+import Shared.OwnCredentials (getOwnCreds)
+import Shared.Tx (completeTx)
 
 createRefScriptUtxo ∷ String -> ScriptRef -> ValidatorHash → Contract Unit
 createRefScriptUtxo _ (NativeScriptRef _) _ = liftEffect $ throw "Unexpected scriptRef type: waiting for PlutusScriptRef"
 createRefScriptUtxo scriptName scriptRef@(PlutusScriptRef _) validatorHash = do
   logInfo' $ "Start to create " <> scriptName <> " reference script"
-  (OwnCredentials creds) <- getOwnCreds
-
+  ownCreds <- getOwnCreds
   let
-    constraints :: Constraints.TxConstraints Unit Unit
+    constraints :: Constraints.TxConstraints Void Void
     constraints = Constraints.mustPayToScriptAddressWithScriptRef
       validatorHash
       (ScriptCredential validatorHash)
@@ -36,18 +35,11 @@ createRefScriptUtxo scriptName scriptRef@(PlutusScriptRef _) validatorHash = do
       scriptRef
       sevenMinAdaValue
 
-    lookups :: Lookups.ScriptLookups PlutusData
+    lookups :: Lookups.ScriptLookups Void
     lookups = mempty
 
-  unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
+  completeTx lookups constraints ownCreds
 
-  let
-    balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress creds.ownAddressWithNetworkTag
-  balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
-  balancedSignedTx <- signTransaction balancedTx
-  txId <- submit balancedSignedTx
-  awaitTxConfirmed txId
   logInfo' $ scriptName <> " UTxO with reference script created"
 
 mkProtocolRefScript :: ProtocolData -> Contract Unit
