@@ -12,6 +12,7 @@ import Contract.Time (POSIXTime(..))
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.TransactionUnspentOutput (mkTxUnspentOut)
+import Ctl.Internal.Scripts (mintingPolicyHash)
 import Data.BigInt (fromInt)
 import Effect.Exception (throw)
 import Ext.Contract.Time (addTimes)
@@ -47,7 +48,6 @@ contract protocolData proposalParams = do
   ownCreds'@(OwnCredentials ownCreds) <- getOwnCreds
 
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
-  let refs = protocolInfo.references
   GovernanceScriptInfo govScriptInfo <- getGovernanceScriptInfo protocol
   let (GovernanceDatum govDatum) = govScriptInfo.govDatum
 
@@ -55,11 +55,12 @@ contract protocolData proposalParams = do
   let policyRef = ownCreds.nonCollateralORef
   threadMp /\ threadCs /\ threadTn <- createProposalThreadToken policyRef
   verMp /\ verCs /\ verTn <- createProposalVerToken protocol
+  let verTokenPolicyHash = mintingPolicyHash verMp
+
   let proposal = mkProposal protocol verCs
   proposalValidatorHash <- getProposalValidatorHash proposal
   proposalAddress <- liftContractM "Impossible to get Proposal script address" $ validatorHashBaseAddress networkId proposalValidatorHash
   let govRefScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst govScriptInfo.govRefScriptUtxo) (snd govScriptInfo.govRefScriptUtxo)
-
   checkProposedValues proposalParams protocolInfo.pDatum
   now@(POSIXTime now') <- currentTime
   let deadline = addTimes now (minutesToPosixTime govDatum.duration)
@@ -92,9 +93,12 @@ contract protocolData proposalParams = do
         <> Constraints.mustMintValueWithRedeemer
           (toRedeemer $ Proposal.PMintThreadToken threadTn)
           threadValue
-        <> Constraints.mustMintValueWithRedeemer
+        <> Constraints.mustMintCurrencyWithRedeemerUsingScriptRef
+          verTokenPolicyHash
           (toRedeemer $ VerToken.PMintProposalVerToken verTn)
-          verValue
+          verTn
+          one
+          protocolInfo.references.verTokenInput
 
         <> Constraints.mustSpendScriptOutputUsingScriptRef
           (fst govScriptInfo.govUtxo)
@@ -106,24 +110,19 @@ contract protocolData proposalParams = do
           (toDatum govScriptInfo.govDatum)
           Constraints.DatumInline
           govScriptInfo.govValue
-
         <> Constraints.mustPayToScriptAddress
           proposalValidatorHash
           (ScriptCredential proposalValidatorHash)
           (toDatum proposalDatum)
           Constraints.DatumInline
           paymentToProposal
-
         <> Constraints.mustBeSignedBy ownCreds.ownPkh
-        <> Constraints.mustReferenceOutput (fst govScriptInfo.govRefScriptUtxo)
-        <> Constraints.mustReferenceOutput (fst refs.pScriptRef)
-
-    -- <> Constraints.mustReferenceOutput (fst refs.verTokenRef)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.pUtxo)
+        <> Constraints.mustReferenceOutput (fst protocolInfo.references.verTokenRef)
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy threadMp
-        <> Lookups.mintingPolicy verMp
         <> Lookups.unspentOutputs ownCreds.ownUtxos
         <> Lookups.unspentOutputs govScriptInfo.govUtxos
         <> Lookups.unspentOutputs protocolInfo.pUtxos
