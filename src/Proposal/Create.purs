@@ -8,7 +8,6 @@ import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM)
 import Contract.ScriptLookups as Lookups
-import Contract.Time (POSIXTime(..))
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.TransactionUnspentOutput (mkTxUnspentOut)
@@ -62,7 +61,7 @@ contract protocolData proposalParams = do
   proposalAddress <- liftContractM "Impossible to get Proposal script address" $ validatorHashBaseAddress networkId proposalValidatorHash
   let govRefScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst govScriptInfo.govRefScriptUtxo) (snd govScriptInfo.govRefScriptUtxo)
   checkProposedValues proposalParams protocolInfo.pDatum
-  now@(POSIXTime now') <- currentTime
+  now <- currentTime
   let deadline = addTimes now (minutesToPosixTime govDatum.duration)
   let
     proposalDatum = toDatum $ PProposalDatum
@@ -76,7 +75,7 @@ contract protocolData proposalParams = do
       , applied: fromInt 0
       }
 
-    createProposalRedeemer = toRedeemer $ PCreateProposal proposalParams proposalAddress threadCs verCs now'
+    createProposalRedeemer = toRedeemer $ PCreateProposal proposalParams proposalAddress threadCs verCs now
     threadValue = Value.singleton threadCs threadTn one
     verValue = Value.singleton verCs verTn one
     proposalCost = Value.lovelaceValueOf govDatum.fee
