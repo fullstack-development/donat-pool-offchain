@@ -18,7 +18,6 @@ import Ext.Contract.Time (addTimes)
 import Ext.Contract.Value (currencySymbolToString)
 import Ext.Data.BigInt (eqBigInt)
 import Governance.Datum (GovernanceDatum(..))
-import Governance.GovernanceScriptInfo (GovernanceScriptInfo(..), getGovernanceScriptInfo)
 import Governance.Redeemer (PGovernanceRedeemer(..))
 import Management.Proposal.UserData (ProposalInfo(..))
 import MintingPolicy.ProposalMinting as Proposal
@@ -36,6 +35,7 @@ import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.RunContract (runContractWithResult)
 import Shared.Tokens (createProposalThreadToken, createProposalVerToken)
 import Shared.Tx (completeTx, toDatum, toRedeemer)
+import Shared.ScriptInfo (ScriptInfo(..), getGovernanceScriptInfo)
 
 runCreateProposal :: (ProposalInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> PProposalParameters -> NetworkParams -> Effect Unit
 runCreateProposal onComplete onError protocolData proposalParams networkParams = runContractWithResult onComplete onError networkParams $ contract protocolData proposalParams
@@ -47,8 +47,8 @@ contract protocolData proposalParams = do
   ownCreds'@(OwnCredentials ownCreds) <- getOwnCreds
 
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
-  GovernanceScriptInfo govScriptInfo <- getGovernanceScriptInfo protocol
-  let (GovernanceDatum govDatum) = govScriptInfo.govDatum
+  ScriptInfo govScriptInfo <- getGovernanceScriptInfo protocol
+  let (GovernanceDatum govDatum) = govScriptInfo.datum
 
   networkId <- getNetworkId
   let policyRef = ownCreds.nonCollateralORef
@@ -59,7 +59,7 @@ contract protocolData proposalParams = do
   let proposal = mkProposal protocol verCs
   proposalValidatorHash <- getProposalValidatorHash proposal
   proposalAddress <- liftContractM "Impossible to get Proposal script address" $ validatorHashBaseAddress networkId proposalValidatorHash
-  let govRefScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst govScriptInfo.govRefScriptUtxo) (snd govScriptInfo.govRefScriptUtxo)
+  let govRefScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst govScriptInfo.refScriptUtxo) (snd govScriptInfo.refScriptUtxo)
   checkProposedValues proposalParams protocolInfo.pDatum
   now <- currentTime
   let deadline = addTimes now (minutesToPosixTime govDatum.duration)
@@ -100,15 +100,15 @@ contract protocolData proposalParams = do
           protocolInfo.references.verTokenInput
 
         <> Constraints.mustSpendScriptOutputUsingScriptRef
-          (fst govScriptInfo.govUtxo)
+          (fst govScriptInfo.utxo)
           createProposalRedeemer
           govRefScriptInput
         <> Constraints.mustPayToScriptAddress
-          govScriptInfo.govValidatorHash
-          (ScriptCredential govScriptInfo.govValidatorHash)
-          (toDatum govScriptInfo.govDatum)
+          govScriptInfo.validatorHash
+          (ScriptCredential govScriptInfo.validatorHash)
+          (toDatum govScriptInfo.datum)
           Constraints.DatumInline
-          govScriptInfo.govValue
+          govScriptInfo.value
         <> Constraints.mustPayToScriptAddress
           proposalValidatorHash
           (ScriptCredential proposalValidatorHash)
@@ -123,7 +123,7 @@ contract protocolData proposalParams = do
     lookups =
       Lookups.mintingPolicy threadMp
         <> Lookups.unspentOutputs ownCreds.ownUtxos
-        <> Lookups.unspentOutputs govScriptInfo.govUtxos
+        <> Lookups.unspentOutputs govScriptInfo.utxos
         <> Lookups.unspentOutputs protocolInfo.pUtxos
 
   completeTx lookups constraints ownCreds'
