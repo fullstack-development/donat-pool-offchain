@@ -11,17 +11,14 @@ import Contract.Prelude
 import Governance.UserData (StartGovernanceData(..))
 import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Config.Protocol (mapFromProtocolData, writeProtocolConfig)
-import Contract.Address (addressToBech32, getNetworkId, getWalletAddressesWithNetworkTag, validatorHashBaseAddress)
-import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
+import Contract.Address (addressToBech32, getNetworkId, validatorHashBaseAddress)
 import Contract.Credential (Credential(..))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, runContract, liftContractM, liftedM, liftedE)
+import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.PlutusData (Datum(Datum), Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
-import Data.Array (head) as Array
 import Data.BigInt (fromInt)
 import Effect.Aff (launchAff_)
 import Ext.Contract.Value (mkCurrencySymbol)
@@ -37,6 +34,7 @@ import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, dataToProtocol
 import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
 import Shared.ScriptRef (mkFundraisingRefScript, mkGovernanceRefScript, mkProposalRefScript, mkProtocolRefScript, mkVerTokenPolicyRef)
+import Shared.Tx (completeTx)
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
 initialProtocolConfigParams = ProtocolConfigParams
@@ -72,9 +70,8 @@ startSystem params = do
 startProtocol :: ProtocolConfigParams -> Contract ProtocolData
 startProtocol params@(ProtocolConfigParams confParams) = do
   logInfo' "Running startDonatPool protocol contract"
-  OwnCredentials ownCreds <- getOwnCreds
-
-  mp /\ cs <- mkCurrencySymbol (NFT.mintingPolicy ownCreds.nonCollateralORef)
+  ownCreds@(OwnCredentials creds) <- getOwnCreds
+  mp /\ cs <- mkCurrencySymbol (NFT.mintingPolicy creds.nonCollateralORef)
   protocolTn <- protocolTokenName
   let
     protocol = Protocol
@@ -91,8 +88,8 @@ startProtocol params@(ProtocolConfigParams confParams) = do
       , minDuration: confParams.minDurationParam
       , maxDuration: confParams.maxDurationParam
       , protocolFee: confParams.protocolFeeParam
-      , managerAddress: (unwrap ownCreds.ownAddressWithNetworkTag).address
-      , tokenOriginRef: ownCreds.nonCollateralORef
+      , managerAddress: (unwrap creds.ownAddressWithNetworkTag).address
+      , tokenOriginRef: creds.nonCollateralORef
       }
     protocolNftValue = Value.singleton cs protocolTn one
     paymentToProtocol = Value.lovelaceValueOf (fromInt 2000000) <> protocolNftValue
@@ -102,7 +99,7 @@ startProtocol params@(ProtocolConfigParams confParams) = do
   let
     constraints :: Constraints.TxConstraints Void Void
     constraints =
-      Constraints.mustSpendPubKeyOutput ownCreds.nonCollateralORef
+      Constraints.mustSpendPubKeyOutput creds.nonCollateralORef
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PMintNft protocolTn)
           protocolNftValue
@@ -117,19 +114,11 @@ startProtocol params@(ProtocolConfigParams confParams) = do
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
-        <> Lookups.unspentOutputs ownCreds.ownUtxos
+        <> Lookups.unspentOutputs creds.ownUtxos
         <> Lookups.validator protocolValidator
         <> govLookups
 
-  unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
-  addressWithNetworkTag <- liftedM "Failed to get own address with Network Tag" $ Array.head <$> getWalletAddressesWithNetworkTag
-  let
-    balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
-  balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
-  balancedSignedTx <- signTransaction balancedTx
-  txId <- submit balancedSignedTx
-  awaitTxConfirmed txId
+  completeTx lookups constraints ownCreds
 
   logInfo' $ "Current protocol: " <> show protocol
   networkId <- getNetworkId

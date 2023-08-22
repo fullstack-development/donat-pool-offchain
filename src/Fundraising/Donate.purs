@@ -2,14 +2,12 @@ module Fundraising.Donate where
 
 import Contract.Prelude
 
-import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftedE)
+import Contract.Monad (Contract)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Ctl.Internal.Types.Datum (Datum(..))
@@ -20,14 +18,15 @@ import Ext.Contract.Value (mkCurrencySymbolFromString, runMkTokenName)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScriptInfo (FundraisingScriptInfo(..), getFundraisingScriptInfo, makeFundraising)
 import Fundraising.Models (Fundraising(..))
-import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Fundraising.Redeemer (PFundraisingRedeemer(..))
 import Fundraising.UserData (FundraisingData(..))
+import Protocol.UserData (ProtocolData)
 import Shared.Utxo (checkTokenInUTxO)
 import Shared.MinAda (minAdaValue)
 import Shared.NetworkData (NetworkParams)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.RunContract (runContractWithResult)
-import Protocol.UserData (ProtocolData)
+import Shared.Tx (completeTx)
 
 runDonate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Int -> Effect Unit
 runDonate onComplete onError pData networkParams fundraisingData amount =
@@ -54,7 +53,7 @@ contract pData (FundraisingData fundraisingData) adaAmount = do
   when (now > deadline) $ throw >>> liftEffect $ "fundraising time is over"
   when (currentDonationsAmount >= amountToRaise) $ throw >>> liftEffect $ "fundraising goal is already completed"
 
-  (OwnCredentials creds) <- getOwnCreds
+  ownCreds@(OwnCredentials creds) <- getOwnCreds
   let newDatum = Datum $ toData frInfo.frDatum
   let donation = Value.singleton Value.adaSymbol Value.adaToken amount
   let newValue = currentFunds <> donation
@@ -82,12 +81,6 @@ contract pData (FundraisingData fundraisingData) adaAmount = do
     lookups :: Lookups.ScriptLookups Void
     lookups = Lookups.unspentOutputs frInfo.frUtxos
 
-  unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
-  let
-    balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress creds.ownAddressWithNetworkTag
-  balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
-  balancedSignedTx <- signTransaction balancedTx
-  txId <- submit balancedSignedTx
-  awaitTxConfirmed txId
+  completeTx lookups constraints ownCreds
+
   logInfo' "Donate finished successfully"
