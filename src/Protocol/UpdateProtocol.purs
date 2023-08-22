@@ -3,18 +3,13 @@ module Protocol.UpdateProtocol where
 import Contract.Prelude
 
 import Config.Protocol (mapToProtocolData, readProtocolConfig)
-import Contract.Address (getWalletAddressesWithNetworkTag, getWalletAddresses, ownPaymentPubKeysHashes)
-import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftContractM, liftedE, liftedM, runContract)
+import Contract.Monad (Contract, runContract)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
-import Contract.Utxos (utxosAt)
 import Ctl.Internal.Types.Datum (Datum(..))
-import Data.Array (head) as Array
 import Data.Lens (view)
 import Effect.Aff (launchAff_)
 import Effect.Exception (throw)
@@ -25,8 +20,8 @@ import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolConfigParams, ProtocolData, dataToProtocol, getConfigFromProtocolDatum, mapToProtocolConfig)
 import Shared.Config (mapToProtocolConfigParams, readDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
-import Shared.OwnCredentials (getPkhSkhFromAddress)
-import Shared.Utxo (getNonCollateralUtxo)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds, getPkhSkhFromAddress)
+import Shared.Tx (completeTx)
 
 runUpdateProtocol :: Effect Unit
 runUpdateProtocol = do
@@ -41,14 +36,10 @@ contract protocolData protocolConfigParams = do
   logInfo' "Running update protocol"
   protocol <- dataToProtocol protocolData
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
-
-  ownHashes <- ownPaymentPubKeysHashes
-  ownPkh <- liftContractM "Impossible to get own PaymentPubkeyHash" $ Array.head ownHashes
-  ownAddress <- liftedM "Failed to get own address" $ Array.head <$> getWalletAddresses
-  walletUtxo <- utxosAt ownAddress >>= getNonCollateralUtxo
+  ownCreds@(OwnCredentials creds) <- getOwnCreds
 
   manager /\ _ <- getPkhSkhFromAddress $ view _managerAddress protocolInfo.pDatum
-  when (manager /= ownPkh) $ liftEffect $ throw "Current user doesn't have permissions to update protocol"
+  when (manager /= creds.ownPkh) $ liftEffect $ throw "Current user doesn't have permissions to update protocol"
 
   let protocolConfig = mapToProtocolConfig protocolConfigParams
   let newDatum = makeDatum protocolInfo.pDatum protocolConfig
@@ -71,22 +62,14 @@ contract protocolData protocolConfigParams = do
           Constraints.DatumInline
           protocolInfo.pValue
         <> Constraints.mustReferenceOutput (fst protocolInfo.references.pScriptRef)
-        <> Constraints.mustBeSignedBy ownPkh
+        <> Constraints.mustBeSignedBy creds.ownPkh
   let
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.unspentOutputs protocolInfo.pUtxos
-        <> Lookups.unspentOutputs walletUtxo
 
-  unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
-  addressWithNetworkTag <- liftedM "Failed to get own address with Network Tag" $ Array.head <$> getWalletAddressesWithNetworkTag
-  let
-    balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress addressWithNetworkTag
-  balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
-  balancedSignedTx <- signTransaction balancedTx
-  txId <- submit balancedSignedTx
-  awaitTxConfirmed txId
+  completeTx lookups constraints ownCreds
+
   pure $ getConfigFromProtocolDatum newDatum
 
 makeDatum ∷ PProtocolDatum -> PProtocolConfig → PProtocolDatum

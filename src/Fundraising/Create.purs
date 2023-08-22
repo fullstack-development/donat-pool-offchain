@@ -3,16 +3,14 @@ module Fundraising.Create where
 import Contract.Prelude
 
 import Contract.Address (addressToBech32, getNetworkId, validatorHashBaseAddress)
-import Contract.BalanceTxConstraints (BalanceTxConstraintsBuilder, mustSendChangeToAddress)
 import Contract.Chain (currentTime)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, liftContractM, liftedE)
+import Contract.Monad (Contract, liftContractM)
 import Contract.PlutusData (Redeemer(Redeemer), Datum(Datum), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Scripts (MintingPolicyHash, mintingPolicyHash)
 import Contract.Time (POSIXTime(..))
-import Contract.Transaction (awaitTxConfirmed, balanceTxWithConstraints, signTransaction, submit)
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Ctl.Internal.Types.ByteArray (byteArrayFromAscii)
@@ -42,6 +40,7 @@ import Shared.MinAda (minAdaValue)
 import Shared.NetworkData (NetworkParams)
 import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.RunContract (runContractWithResult)
+import Shared.Tx (completeTx)
 
 runCreateFundraising
   :: (FundraisingInfo -> Effect Unit)
@@ -58,7 +57,7 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   logInfo' "Running Create Fundraising contract"
   protocol <- dataToProtocol protocolData
 
-  (OwnCredentials creds) <- getOwnCreds
+  ownCreds@(OwnCredentials creds) <- getOwnCreds
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
 
   nftMp /\ nftCs <- mkCurrencySymbol (NFT.mintingPolicy creds.nonCollateralORef)
@@ -166,15 +165,7 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
         <> Lookups.unspentOutputs creds.ownUtxos
         <> Lookups.unspentOutputs protocolInfo.pUtxos
 
-  unbalancedTx <- liftedE $ Lookups.mkUnbalancedTx lookups constraints
-  let
-    balanceTxConstraints :: BalanceTxConstraintsBuilder
-    balanceTxConstraints = mustSendChangeToAddress creds.ownAddressWithNetworkTag
-
-  balancedTx <- liftedE $ balanceTxWithConstraints unbalancedTx balanceTxConstraints
-  balancedSignedTx <- signTransaction balancedTx
-  txId <- submit balancedSignedTx
-  awaitTxConfirmed txId
+  completeTx lookups constraints ownCreds
 
   logInfo' "Fundraising created successfully"
 
