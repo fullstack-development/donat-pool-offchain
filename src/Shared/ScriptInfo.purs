@@ -23,28 +23,30 @@ import Proposal.ProposalScript (getProposalValidatorHash, proposalTokenName, pro
 import Protocol.Models (Protocol)
 import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByNFT, getUtxoByScriptRef)
 
-newtype GetScriptData = GetScriptData {
-  getThreadTokenName :: Contract TokenName,
-  getValidator :: Contract Validator,
-  getValidatoHash :: Contract ValidatorHash
-}
+newtype GetScriptData = GetScriptData
+  { getThreadTokenName :: Contract TokenName
+  , getValidator :: Contract Validator
+  , getValidatoHash :: Contract ValidatorHash
+  }
 
 getGovernanceScriptInfo ∷ Protocol → Contract (ScriptInfo GovernanceDatum)
 getGovernanceScriptInfo protocol = do
-  let getScriptData = GetScriptData {
-      getThreadTokenName: governanceTokenName,
-      getValidator: governanceValidatorScript protocol,
-      getValidatoHash: getGovernanceValidatorHash protocol
-    }
+  let
+    getScriptData = GetScriptData
+      { getThreadTokenName: governanceTokenName
+      , getValidator: governanceValidatorScript protocol
+      , getValidatoHash: getGovernanceValidatorHash protocol
+      }
   getScriptInfo getScriptData (unwrap protocol).protocolCurrency "Governance"
 
 getProposalScriptInfo :: PProposal -> CurrencySymbol -> Contract (ScriptInfo PProposalDatum)
 getProposalScriptInfo proposal threadCs = do
-  let getScriptData = GetScriptData {
-      getThreadTokenName: proposalTokenName,
-      getValidator: proposalValidatorScript proposal,
-      getValidatoHash: getProposalValidatorHash proposal
-    }
+  let
+    getScriptData = GetScriptData
+      { getThreadTokenName: proposalTokenName
+      , getValidator: proposalValidatorScript proposal
+      , getValidatoHash: getProposalValidatorHash proposal
+      }
   getScriptInfo getScriptData threadCs "Proposal"
 
 newtype ScriptInfo datum = ScriptInfo
@@ -60,12 +62,13 @@ newtype ScriptInfo datum = ScriptInfo
   , refScriptInput :: InputWithScriptRef
   }
 
-getScriptInfo 
-  :: forall (datum :: Type) . FromData datum
-   => GetScriptData 
-   ->  CurrencySymbol 
-   -> String 
-   -> Contract (ScriptInfo datum)
+getScriptInfo
+  :: forall (datum :: Type)
+   . FromData datum
+  => GetScriptData
+  -> CurrencySymbol
+  -> String
+  -> Contract (ScriptInfo datum)
 getScriptInfo (GetScriptData getScriptData) cs scriptName = do
   networkId <- getNetworkId
   tn <- getScriptData.getThreadTokenName

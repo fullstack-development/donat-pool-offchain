@@ -55,7 +55,7 @@ contract protocolData (VoteData voteData) = do
 
   proposalValidatorHash <- getProposalValidatorHash proposal
   proposalAddress <- liftContractM "Impossible to get Proposal script address" $ validatorHashBaseAddress networkId proposalValidatorHash
-  ScriptInfo proposalScriptInfo <- getProposalScriptInfo proposal proposalCs 
+  ScriptInfo proposalScriptInfo <- getProposalScriptInfo proposal proposalCs
 
   unless (checkTokenInUTxO (Tuple proposalVerTokenCs proposalVerTn) proposalScriptInfo.utxo) $ liftEffect $ throw "VerificationToken not found in Proposal"
   let proposalDatum = unwrap proposalScriptInfo.datum

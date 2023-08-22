@@ -7,6 +7,7 @@ import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.Address (Address)
 import Ctl.Internal.Types.Interval (POSIXTime)
 import Proposal.Model (PProposalParameters)
+
 type PProposalAddress = Address
 type PProposalThreadCurrency = Value.CurrencySymbol
 type PProposalVerCurrency = Value.CurrencySymbol
