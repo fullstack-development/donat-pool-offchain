@@ -9,7 +9,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 const App = () => {
 
   const protocolData = {
-    protocolCurrency: "15a65aec3f41d0bb55a6fced607e6a0ca79e916d694da044469e70a8",
+    protocolCurrency: "59bde0d066e34bf57457d8f0beb45056d079e371191c42f44256dd01",
     protocolTokenName: "DonatPoolProtocol"
   }
 
@@ -98,6 +98,16 @@ const App = () => {
     a.main.value0.createProposal(onCreateProposalComplete)(console.log)(protocolData)(proposalParams)(testnetNami)();    
   };
 
+  const onVoteForChangeProtocol = () => {
+    const voteData = {
+      proposalThreadCurrency: proposalCurrency, 
+      amount: 2,
+      for: true 
+    }
+  
+    a.main.value0.vote(console.log)(console.log)(protocolData)(voteData)(testnetNami)();    
+  };
+
   return (
     <div>
       <h1>Offchain integration</h1>
@@ -110,8 +120,7 @@ const App = () => {
       <button onClick={onGetAppInfo}>Get app info</button>
       {/* <button onClick={onMintGovernanceClick}>Mint 50000 governance tokens</button> */}
       <button onClick={onCreateProposal}>Propose to change fee</button>
-
-
+      <button onClick={onVoteForChangeProtocol}>Vote for fee change</button>
     </div>
   );
 };
