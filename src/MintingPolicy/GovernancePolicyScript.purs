@@ -9,9 +9,7 @@ import Contract.TextEnvelope (decodeTextEnvelope, plutusScriptV2FromEnvelope)
 import Contract.Transaction (TransactionInput)
 import Contract.Value as Value
 import Control.Monad.Error.Class (liftMaybe)
-import Ctl.Internal.Types.PubKeyHash (PaymentPubKeyHash)
 import Data.Array (singleton) as Array
-import Data.BigInt (BigInt)
 import Effect.Exception (error)
 import Ext.Contract.Value (mkTokenName)
 
@@ -42,7 +40,7 @@ mkMintGovernancePolicy unappliedMintingPolicy param =
 governanceTokenName :: Contract Value.TokenName
 governanceTokenName = liftContractM "Cannot make token name" <<< mkTokenName $ "DonatPool_governance_testnet"
 
-data GovernanceTokensRedeemer = PMintGovernanceTokens BigInt PaymentPubKeyHash
+data GovernanceTokensRedeemer = PMintGovernanceTokens
 
 derive instance Generic GovernanceTokensRedeemer _
 

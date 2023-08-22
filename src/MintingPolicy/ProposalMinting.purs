@@ -46,7 +46,7 @@ type PAmount = BigInt
 data PProposalPolicyRedeemer
   = PMintThreadToken PThreadTokenName
   | PBurnThreadToken PThreadTokenName
-  | PMintVoteToken PVerCs PVote PAmount
+  | PMintVoteToken PVerCs
   | PBurnVoteToken PVoteTokenName PVerCs
 
 derive instance Generic PProposalPolicyRedeemer _

@@ -15,7 +15,7 @@ import Ctl.Internal.Types.Interval (from)
 import Data.BigInt (fromInt)
 import Effect.Exception (throw)
 import Ext.Contract.Value (mkCurrencySymbol)
-import Ext.Seriaization.Token (deserializeCurrency)
+import Ext.Serialization.Token (deserializeCurrency)
 import Governance.Datum (GovernanceDatum(..))
 import Management.Proposal.UserData (VoteData(..))
 import MintingPolicy.ProposalMinting (PProposalPolicyRedeemer(..))
@@ -82,7 +82,7 @@ contract protocolData (VoteData voteData) = do
   voteTokenName <- liftContractM "Impossible to make Vote token name" $ mkVoteTokenName isVoteFor voteData.amount
   voteMp /\ voteCs /\ voteTn <- createProposalVoteToken proposalDatum.policyRef voteTokenName
   when (voteCs /= proposalCs) $ liftEffect $ throw "Unexpected vote token currency"
-  let voteTokenRedeemer = toRedeemer $ PMintVoteToken proposalVerTokenCs isVoteFor voteData.amount
+  let voteTokenRedeemer = toRedeemer $ PMintVoteToken proposalVerTokenCs
 
   let govTokensValue = Value.singleton govDatum.govCurrency govDatum.govTokenName voteData.amount
   let paymentToProposal = proposalScriptInfo.value <> minAdaValue <> govTokensValue

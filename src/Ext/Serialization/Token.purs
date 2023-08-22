@@ -1,4 +1,4 @@
-module Ext.Seriaization.Token where
+module Ext.Serialization.Token where
 
 import Contract.Prelude
 import Contract.Monad (Contract, liftContractM)

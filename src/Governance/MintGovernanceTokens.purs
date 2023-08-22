@@ -4,7 +4,6 @@ import Contract.Prelude
 
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM)
-import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
@@ -14,7 +13,7 @@ import Shared.MintingPolicy.GovernancePolicyScript (GovernanceTokensRedeemer(..)
 import Shared.NetworkData (NetworkParams)
 import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.RunContract (runContractWithResult)
-import Shared.Tx (completeTx)
+import Shared.Tx (completeTx, toRedeemer)
 
 -- NOTE: Dont' forget to copy governance token currency from logs to conf/governance.conf manually
 runMintGovernanceTokens :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> NetworkParams -> Effect Unit
@@ -33,7 +32,7 @@ mintGovernanceTokens amount = do
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustSpendPubKeyOutput ownCreds.nonCollateralORef
-        <> Constraints.mustMintValueWithRedeemer (Redeemer $ toData $ PMintGovernanceTokens amount ownCreds.ownPkh) governanceNft
+        <> Constraints.mustMintValueWithRedeemer (toRedeemer $ PMintGovernanceTokens) governanceNft
         <> Constraints.mustPayToPubKeyAddress ownCreds.ownPkh ownCreds.ownSkh governanceNft
         <> Constraints.mustBeSignedBy ownCreds.ownPkh
 

@@ -8,7 +8,7 @@ import Contract.Value as Value
 import Data.Argonaut.Decode (decodeJson, parseJson)
 import Effect (Effect)
 import Ext.Data.Either (eitherM)
-import Ext.Seriaization.Token (deserializeCurrency, deserializeTokenName)
+import Ext.Serialization.Token (deserializeCurrency, deserializeTokenName)
 import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 
