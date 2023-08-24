@@ -9,7 +9,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 const App = () => {
 
   const protocolData = {
-    protocolCurrency: "620d42a0fd0a9454d82fa273bd09bbad8900f81be47efd359423b1f3",
+    protocolCurrency: "3b9cd2a49b3d715052857b736d2d570bfaa86b1ac33c51a615d9d418",
     protocolTokenName: "DonatPoolProtocol"
   }
 
@@ -34,6 +34,14 @@ const App = () => {
     wallet: "Nami",
     isMainnet: false
   };
+
+  const proposalParams = { 
+    minAmount: 50000000
+    , maxAmount: 1000000000
+    , minDuration: 5
+    , maxDuration: 86400
+    , protocolFee: 5
+    }
 
   const onCreateFundraisingComplete = createdFundraisingResponse => {
     const frData = {
@@ -71,6 +79,31 @@ const App = () => {
     a.main.value0.getAppInfo(console.log)(console.log)(protocolData)(testnetNami)();
   };
 
+  // uncomment if need to mint governance tokens
+  // const onMintGovernanceClick = () => {
+  //   a.main.value0.mintGovernanceTokens(console.log)(console.log)(testnetNami)();
+  // };
+
+  const [proposalCurrency, setProposalCurrency] = useState<{any;}>();
+
+  const onCreateProposalComplete = createdProposalResponse => {
+    setProposalCurrency(createdProposalResponse.threadCurrency);
+  };
+
+  const onCreateProposal = () => {
+    a.main.value0.createProposal(onCreateProposalComplete)(console.log)(protocolData)(proposalParams)(testnetNami)();    
+  };
+
+  const onVoteForChangeProtocol = () => {
+    const voteData = {
+      proposalThreadCurrency: proposalCurrency, 
+      amount: 2,
+      for: true 
+    }
+  
+    a.main.value0.vote(console.log)(console.log)(protocolData)(voteData)(testnetNami)();    
+  };
+
   return (
     <div>
       <h1>Offchain integration</h1>
@@ -80,6 +113,9 @@ const App = () => {
       <button onClick={onGetAllFundraising}>Get All Fundraisings</button>
       <button onClick={onGetUserRelatedFundraisings}>Get User related Fundraisings</button>
       <button onClick={onGetAppInfo}>Get app info</button>
+      {/* <button onClick={onMintGovernanceClick}>Mint 50000 governance tokens</button> */}
+      <button onClick={onCreateProposal}>Propose to change fee</button>
+      <button onClick={onVoteForChangeProtocol}>Vote for fee change</button>
     </div>
   );
 };

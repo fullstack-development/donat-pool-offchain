@@ -2,35 +2,27 @@ module Shared.OwnCredentials where
 
 import Contract.Prelude
 
-import Contract.Address
-  ( Address
-  , AddressWithNetworkTag
-  , PaymentPubKeyHash(..)
-  , PubKeyHash
-  , StakePubKeyHash(..)
-  , addressWithNetworkTagToBech32
-  , getWalletAddressesWithNetworkTag
-  , ownPaymentPubKeysHashes
-  , ownStakePubKeysHashes
-  , toPubKeyHash
-  , toStakingCredential
-  )
+import Contract.Address (Address, AddressWithNetworkTag, PaymentPubKeyHash(..), PubKeyHash, StakePubKeyHash(..), addressWithNetworkTagToBech32, getWalletAddressesWithNetworkTag, ownPaymentPubKeysHashes, ownStakePubKeysHashes, toPubKeyHash, toStakingCredential)
 import Contract.Credential (Credential(..), StakingCredential(..))
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM, liftedM)
 import Contract.Transaction (TransactionInput, TransactionOutputWithRefScript)
 import Contract.Utxos (utxosAt)
+import Contract.Value as Value
 import Data.Array as Array
+import Data.BigInt (BigInt, toString)
 import Data.Map as Map
 import Effect.Exception (throw)
+import Ext.Contract.Value (currencySymbolToString, tokenNameToString)
 import Info.UserData (UserInfo(..))
-import Shared.Utxo (UtxoTuple, getNonCollateralUtxo)
+import Shared.Utxo (UtxoTuple, extractValueFromUTxO, getNonCollateralUtxo)
 
 newtype OwnCredentials = OwnCredentials
   { ownPkh :: PaymentPubKeyHash
   , ownSkh :: StakePubKeyHash
   , ownAddressWithNetworkTag :: AddressWithNetworkTag
   , ownUtxos :: (Map.Map TransactionInput TransactionOutputWithRefScript)
+  , ownValue :: Value.Value
   , nonCollateralORef :: TransactionInput
   }
 
@@ -39,15 +31,21 @@ getOwnCreds = do
   (ownPkh /\ ownAddressWithNetworkTag) <- getOwnPkhAndAddress
   mbOwnSkh <- join <<< Array.head <$> ownStakePubKeysHashes
   ownSkh <- liftContractM "Failed to get own SKH" mbOwnSkh
-  utxos <- utxosAt ownAddressWithNetworkTag >>= getNonCollateralUtxo
+  allUtxos <- utxosAt ownAddressWithNetworkTag
+  nonCollateralUtxos <- getNonCollateralUtxo allUtxos
+
+  let (utxosArray :: Array UtxoTuple) = Map.toUnfoldable allUtxos
+  let ownValue = foldMap extractValueFromUTxO utxosArray
+
   oref <-
     liftContractM "Utxo set is empty"
-      (fst <$> Array.head (Map.toUnfoldable utxos :: Array UtxoTuple))
+      (fst <$> Array.head (Map.toUnfoldable nonCollateralUtxos :: Array UtxoTuple))
   pure $ OwnCredentials
     { ownPkh: ownPkh
     , ownSkh: ownSkh
     , ownAddressWithNetworkTag: ownAddressWithNetworkTag
-    , ownUtxos: utxos
+    , ownUtxos: nonCollateralUtxos
+    , ownValue: ownValue
     , nonCollateralORef: oref
     }
 
@@ -80,3 +78,16 @@ getPkhSkhFromAddress address = do
   pkhFromCreds creds = case creds of
     PubKeyCredential pkh -> Just pkh
     _ -> Nothing
+
+logAllAssets :: Value.Value -> Contract Unit
+logAllAssets val = do
+  let tokens = Value.flattenNonAdaAssets val
+  tokensStr <- foldMap assetToString tokens
+  logInfo' tokensStr
+
+assetToString :: (Value.CurrencySymbol /\ Value.TokenName /\ BigInt) -> Contract String
+assetToString (cs /\ tn /\ quantity) = do
+
+  let csString = currencySymbolToString cs
+  tnStr <- liftContractM "Impossible to encode Token name" $ tokenNameToString tn
+  pure $ "\nCurrency: " <> csString <> ", tokenName: " <> tnStr <> ", quantity: " <> toString quantity
