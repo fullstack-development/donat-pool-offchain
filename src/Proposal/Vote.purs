@@ -1,7 +1,7 @@
 module Proposal.Vote where
 
 import Contract.Prelude
-import Shared.ScriptInfo (ScriptInfo(..), getGovernanceScriptInfo, getProposalScriptInfo)
+
 import Contract.Address (addressToBech32, getNetworkId, validatorHashBaseAddress)
 import Contract.Chain (currentTime)
 import Contract.Credential (Credential(ScriptCredential))
@@ -30,6 +30,7 @@ import Shared.MinAda (minAdaValue)
 import Shared.NetworkData (NetworkParams)
 import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.RunContract (runContractWithResult)
+import Shared.ScriptInfo (ScriptInfo(..), getGovernanceScriptInfo, getProposalScriptInfo)
 import Shared.ScriptRef (getUtxoWithRefScript)
 import Shared.Tokens (createProposalVoteToken)
 import Shared.Tx (completeTx, toDatum, toRedeemer)
@@ -43,10 +44,14 @@ contract protocolData (VoteData voteData) = do
   logInfo' "Running vote endpoint"
   protocol <- dataToProtocol protocolData
   ownCreds'@(OwnCredentials ownCreds) <- getOwnCreds
-  networkId <- getNetworkId
 
+  networkId <- getNetworkId
   ScriptInfo govScriptInfo <- getGovernanceScriptInfo protocol
   let GovernanceDatum govDatum = govScriptInfo.datum
+
+  let govTokensInWallet = Value.valueOf ownCreds.ownValue govDatum.govCurrency govDatum.govTokenName
+  logInfo' $ "govTokensInWallet: " <> show govTokensInWallet
+  when (govTokensInWallet < voteData.amount) $ liftEffect $ throw "Wallet doesn't have enough governance tokens"
 
   proposalCs <- deserializeCurrency voteData.proposalThreadCurrency
   proposalVerTn <- proposalVerTokenName
@@ -59,9 +64,9 @@ contract protocolData (VoteData voteData) = do
 
   unless (checkTokenInUTxO (Tuple proposalVerTokenCs proposalVerTn) proposalScriptInfo.utxo) $ liftEffect $ throw "VerificationToken not found in Proposal"
   let proposalDatum = unwrap proposalScriptInfo.datum
-
+  when (proposalDatum.applied == fromInt 1) $ throw >>> liftEffect $ "Can't vote for the applied proposal"
   now <- currentTime
-  when (now > proposalDatum.deadline) $ throw >>> liftEffect $ "voting time is over"
+  when (now > proposalDatum.deadline) $ throw >>> liftEffect $ "Voting time is over"
   let votingTimeRange = from now
 
   let
