@@ -75,10 +75,6 @@ const App = () => {
     a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)(testnetNami)();
   };
 
-  const onConnectWallet = () => {
-    a.main.value0.connectWallet(console.log)(console.log)(testnetNami)();
-  };
-
   const onGetAppInfo = () => {
     a.main.value0.getAppInfo(console.log)(console.log)(protocolData)(testnetNami)();
   };
@@ -111,7 +107,6 @@ const App = () => {
   return (
     <div>
       <h1>Offchain integration</h1>
-      <button onClick={onConnectWallet}>Connect wallet</button>
       <button onClick={onCreateFundraisingClick}>Create fundraising</button>
       <button onClick={onDonate}>Donate 100 Ada</button>
       <button onClick={onReceiveFunds}>Receive funds</button>

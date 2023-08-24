@@ -4,8 +4,6 @@ module Scaffold.Main (main, Contracts) where
 
 import Contract.Prelude
 
-import Common.ConnectWallet as ConnectWallet
-import Contract.Address (Bech32String)
 import Fundraising.Create as CreateFundraising
 import Fundraising.Donate as Donate
 import Fundraising.ReceiveFunds as ReceiveFunds
@@ -23,8 +21,7 @@ import Protocol.UserData (ProtocolData)
 import Shared.NetworkData (NetworkParams)
 
 data Contracts = Contracts
-  { connectWallet :: (Bech32String -> Effect Unit) -> (String -> Effect Unit) -> NetworkParams -> Effect Unit
-  , getAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
+  { getAppInfo :: (AppInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> Effect Unit
   , createFundraising :: (FundraisingInfo -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> CreateFundraisingParams -> Effect Unit
   , donate :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Int -> Effect Unit
   , receiveFunds :: (Unit -> Effect Unit) -> (String -> Effect Unit) -> ProtocolData -> NetworkParams -> FundraisingData -> Effect Unit
@@ -37,8 +34,7 @@ data Contracts = Contracts
 
 main :: Contracts
 main = Contracts
-  { connectWallet: ConnectWallet.runConnectWallet
-  , getAppInfo: AppInfo.runGetAppInfo
+  { getAppInfo: AppInfo.runGetAppInfo
   , createFundraising: CreateFundraising.runCreateFundraising
   , donate: Donate.runDonate
   , receiveFunds: ReceiveFunds.runReceiveFunds
