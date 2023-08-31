@@ -1,0 +1,40 @@
+module FeePool.Models where
+
+import Contract.Prelude
+
+import Contract.PlutusData (class FromData, class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), I, PNil, Z, genericFromData, genericToData)
+import Contract.Value (CurrencySymbol)
+import Data.Newtype (class Newtype)
+import Protocol.Models (Protocol)
+
+newtype FeePool = FeePool
+  { protocol :: Protocol
+  , verTokenCurrency :: CurrencySymbol
+  }
+
+derive newtype instance Show FeePool
+derive instance Generic FeePool _
+derive instance Newtype FeePool _
+
+instance
+  HasPlutusSchema
+    FeePool
+    ( "FeePool"
+        :=
+          ( "protocol" := I Protocol
+              :+ "verTokenCurrency"
+              := I CurrencySymbol
+              :+ PNil
+          )
+        @@ Z
+        :+ PNil
+    )
+
+derive newtype instance Eq FeePool
+derive newtype instance Ord FeePool
+
+instance ToData FeePool where
+  toData = genericToData
+
+instance FromData FeePool where
+  fromData = genericFromData

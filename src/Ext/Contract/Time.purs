@@ -26,8 +26,8 @@ toEpoch ordDay = ordDay `BigInt.quot` epochSize
 toDayOfEpoch :: OrdinalDay -> DayOfEpoch
 toDayOfEpoch ordDay = ordDay `BigInt.rem` epochSize
 
-posixToEpoch :: POSIXTime -> Epoch 
+posixToEpoch :: POSIXTime -> Epoch
 posixToEpoch posix = toEpoch $ toOrdinalDay posix
 
-posixToDayOfEpoch :: POSIXTime -> DayOfEpoch 
+posixToDayOfEpoch :: POSIXTime -> DayOfEpoch
 posixToDayOfEpoch posix = toDayOfEpoch $ toOrdinalDay posix
