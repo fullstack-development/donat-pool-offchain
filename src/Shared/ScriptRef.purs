@@ -16,6 +16,9 @@ import Data.Array as Array
 import Data.Map as Map
 import Effect.Exception (throw)
 import Ext.Contract.Value (mkCurrencySymbol)
+import FeePool.FeePoolScript (getFeePoolValidatorHash, feePoolValidatorScript)
+import FeePool.Models (mkFeePoolFromProtocol)
+import FeePool.FeePoolInfoScript (feePoolInfoValidatorScript, getFeePoolInfoValidatorHash)
 import Fundraising.FundraisingScript (fundraisingValidatorScript, getFundraisingValidatorHash)
 import Fundraising.FundraisingScriptInfo (makeFundraising)
 import Governance.GovernanceScript (getGovernanceValidatorHash, governanceValidatorScript)
@@ -33,7 +36,7 @@ import Shared.Tx (completeTx)
 createRefScriptUtxo ∷ String -> ScriptRef -> ValidatorHash → Contract Unit
 createRefScriptUtxo _ (NativeScriptRef _) _ = liftEffect $ throw "Unexpected scriptRef type: waiting for PlutusScriptRef"
 createRefScriptUtxo scriptName scriptRef@(PlutusScriptRef _) validatorHash = do
-  logInfo' $ "Start to create " <> scriptName <> " reference script"
+  logInfo' $ "Creating " <> scriptName <> " reference script"
   ownCreds <- getOwnCreds
   let
     constraints :: Constraints.TxConstraints Void Void
@@ -83,6 +86,22 @@ mkGovernanceRefScript protocol = do
   governanceValidator <- governanceValidatorScript protocol
   let scriptRef = PlutusScriptRef (unwrap governanceValidator)
   createRefScriptUtxo "Governance" scriptRef governanceValidatorHash
+
+mkFeePoolRefScript :: Protocol -> Contract Unit
+mkFeePoolRefScript protocol = do
+  feePool <- mkFeePoolFromProtocol protocol
+  feePoolHash <- getFeePoolValidatorHash feePool
+  feePoolValidator <- feePoolValidatorScript feePool
+  let scriptRef = PlutusScriptRef (unwrap feePoolValidator)
+  createRefScriptUtxo "FeePool" scriptRef feePoolHash
+
+mkFeePoolInfoRefScript :: Protocol -> Contract Unit
+mkFeePoolInfoRefScript protocol = do
+  feePool <- mkFeePoolFromProtocol protocol
+  feePoolInfoHash <- getFeePoolInfoValidatorHash feePool
+  feePoolInfoValidator <- feePoolInfoValidatorScript feePool
+  let scriptRef = PlutusScriptRef (unwrap feePoolInfoValidator)
+  createRefScriptUtxo "FeePoolInfo" scriptRef feePoolInfoHash
 
 createPolicyRefUtxo :: String -> MintingPolicy → ValidatorHash → Contract Unit
 createPolicyRefUtxo _ (NativeMintingPolicy _) _ = liftEffect $ throw "Unexpected minting policy type"

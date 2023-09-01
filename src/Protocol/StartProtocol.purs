@@ -22,18 +22,22 @@ import Contract.Value as Value
 import Data.BigInt (fromInt)
 import Effect.Aff (launchAff_)
 import Ext.Contract.Value (mkCurrencySymbol)
+import FeePool.Datum (PFeePoolDatum(..))
+import FeePool.FeePoolScript (getFeePoolTokenName, getFeePoolValidatorHash)
+import FeePool.Models (mkFeePoolFromProtocol)
 import Governance.Config (getGovTokenFromConfig)
 import Governance.Datum (GovernanceDatum(..))
-import Governance.GovernanceScript (getGovernanceValidatorHash, governanceTokenName, governanceValidatorScript)
+import Governance.GovernanceScript (getGovernanceValidatorHash, governanceTokenName)
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Datum (PProtocolDatum(..))
 import Protocol.Models (Protocol(..))
-import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName, protocolValidatorScript)
+import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName)
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, dataToProtocol, protocolToData)
 import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
-import Shared.ScriptRef (mkFundraisingRefScript, mkGovernanceRefScript, mkProposalRefScript, mkProtocolRefScript, mkVerTokenPolicyRef)
+import Shared.MinAda (minAdaValue)
+import Shared.ScriptRef as ScriptRef
 import Shared.Tx (completeTx)
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
@@ -59,12 +63,14 @@ runStartSystem = launchAff_ $ do
 startSystem :: ProtocolConfigParams -> Contract ProtocolData
 startSystem params = do
   protocolData <- startProtocol params
-  mkProtocolRefScript protocolData
-  mkFundraisingRefScript protocolData
+  ScriptRef.mkProtocolRefScript protocolData
+  ScriptRef.mkFundraisingRefScript protocolData
   protocol <- dataToProtocol protocolData
-  mkGovernanceRefScript protocol
-  mkProposalRefScript protocol
-  mkVerTokenPolicyRef protocolData
+  ScriptRef.mkGovernanceRefScript protocol
+  ScriptRef.mkProposalRefScript protocol
+  ScriptRef.mkFeePoolRefScript protocol
+  ScriptRef.mkFeePoolInfoRefScript protocol
+  ScriptRef.mkVerTokenPolicyRef protocolData
   pure protocolData
 
 startProtocol :: ProtocolConfigParams -> Contract ProtocolData
@@ -79,7 +85,6 @@ startProtocol params@(ProtocolConfigParams confParams) = do
       , protocolTokenName: protocolTn
       }
   protocolValidatorHash <- getProtocolValidatorHash protocol
-  protocolValidator <- protocolValidatorScript protocol
 
   let
     initialProtocolDatum = PProtocolDatum
@@ -92,9 +97,10 @@ startProtocol params@(ProtocolConfigParams confParams) = do
       , tokenOriginRef: creds.nonCollateralORef
       }
     protocolNftValue = Value.singleton cs protocolTn one
-    paymentToProtocol = Value.lovelaceValueOf (fromInt 2000000) <> protocolNftValue
+    paymentToProtocol = minAdaValue <> protocolNftValue
 
-  (govConstraints /\ govLookups) <- getGovernanceConstraints protocol
+  govConstraints <- getGovernanceConstraints protocol
+  feePoolConstraints <- getFeePoolConstraints protocol
 
   let
     constraints :: Constraints.TxConstraints Void Void
@@ -110,13 +116,12 @@ startProtocol params@(ProtocolConfigParams confParams) = do
           Constraints.DatumInline
           paymentToProtocol
         <> govConstraints
+        <> feePoolConstraints
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
       Lookups.mintingPolicy mp
         <> Lookups.unspentOutputs creds.ownUtxos
-        <> Lookups.validator protocolValidator
-        <> govLookups
 
   completeTx lookups constraints ownCreds
 
@@ -138,14 +143,13 @@ startProtocol params@(ProtocolConfigParams confParams) = do
 
   pure protocolData
 
-getGovernanceConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void)
+getGovernanceConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void)
 getGovernanceConstraints protocol'@(Protocol protocol) = do
   let StartGovernanceData govData = initialGovernanceConf
   (govCurrency /\ govTokenName) <- getGovTokenFromConfig
   tn <- governanceTokenName
 
   govValidatorHash <- getGovernanceValidatorHash protocol'
-  govValidator <- governanceValidatorScript protocol'
 
   let
     initialGovernanceDatum = GovernanceDatum
@@ -156,7 +160,7 @@ getGovernanceConstraints protocol'@(Protocol protocol) = do
       , duration: govData.duration
       }
     nftValue = Value.singleton protocol.protocolCurrency tn one
-    paymentToGov = Value.lovelaceValueOf (fromInt 2000000) <> nftValue
+    paymentToGov = minAdaValue <> nftValue
 
   let
     constraints :: Constraints.TxConstraints Void Void
@@ -171,14 +175,34 @@ getGovernanceConstraints protocol'@(Protocol protocol) = do
           Constraints.DatumInline
           paymentToGov
 
-    lookups :: Lookups.ScriptLookups Void
-    lookups =
-      Lookups.validator govValidator
-
   networkId <- getNetworkId
   governanceAddress <-
     liftContractM "Impossible to get governance script address" $ validatorHashBaseAddress networkId govValidatorHash
   bech32Address <- addressToBech32 governanceAddress
   logInfo' $ "Current governance address: " <> show bech32Address
 
-  pure (constraints /\ lookups)
+  pure constraints
+
+getFeePoolConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void)
+getFeePoolConstraints protocol'@(Protocol protocol) = do
+  feePoolTn <- getFeePoolTokenName
+  feePool <- mkFeePoolFromProtocol protocol'
+  feePoolHash <- getFeePoolValidatorHash feePool
+  let
+    initDatum = PFeePoolDatum { currentEpoch: fromInt 0 }
+    feePoolTokenValue = Value.singleton protocol.protocolCurrency feePoolTn one
+    payment = minAdaValue <> feePoolTokenValue
+
+    constraints :: Constraints.TxConstraints Void Void
+    constraints =
+      Constraints.mustMintValueWithRedeemer
+        (Redeemer $ toData $ PMintNft feePoolTn)
+        feePoolTokenValue
+        <> Constraints.mustPayToScriptAddress
+          feePoolHash
+          (ScriptCredential feePoolHash)
+          (Datum $ toData initDatum)
+          Constraints.DatumInline
+          payment
+
+  pure constraints

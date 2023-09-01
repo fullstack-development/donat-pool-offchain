@@ -2,9 +2,12 @@ module FeePool.Models where
 
 import Contract.Prelude
 
+import Contract.Monad (Contract)
 import Contract.PlutusData (class FromData, class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), I, PNil, Z, genericFromData, genericToData)
 import Contract.Value (CurrencySymbol)
 import Data.Newtype (class Newtype)
+import Ext.Contract.Value (mkCurrencySymbol)
+import MintingPolicy.VerTokenMinting as VerToken
 import Protocol.Models (Protocol)
 
 newtype FeePool = FeePool
@@ -38,3 +41,8 @@ instance ToData FeePool where
 
 instance FromData FeePool where
   fromData = genericFromData
+
+mkFeePoolFromProtocol :: Protocol -> Contract FeePool
+mkFeePoolFromProtocol protocol = do
+  _ /\ verTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
+  pure $ FeePool { protocol: protocol, verTokenCurrency: verTokenCs }
