@@ -2,7 +2,7 @@ module Info.UserData where
 
 import Contract.Prelude
 
-import Contract.Address (Bech32String)
+import Contract.Address (Bech32String, addressToBech32)
 import Contract.Chain (currentTime)
 import Contract.Monad (Contract, liftContractM)
 import Contract.Time (POSIXTime)
@@ -13,7 +13,6 @@ import Data.BigInt (BigInt)
 import Data.TextDecoder (decodeUtf8)
 import Ext.Contract.Value (getCurrencyByTokenName, currencySymbolToString)
 import Ext.Data.Either (eitherContract)
-import Ext.Seriaization.Key (pkhToBech32M)
 import Fundraising.Datum (PFundraisingDatum(..))
 import Fundraising.FundraisingScript (fundraisingTokenNameString, getFundraisingTokenName)
 import Protocol.UserData (ProtocolConfigParams)
@@ -44,7 +43,7 @@ mapToFundraisingInfo utxo = do
   frTokenName <- getFundraisingTokenName
   cs <- liftContractM "Impossible to get currency by token name" $ getCurrencyByTokenName frVal frTokenName
   now <- currentTime
-  creator <- pkhToBech32M currentDatum.creatorPkh
+  creator <- addressToBech32 currentDatum.creator
   pure $ FundraisingInfo
     { creator: creator
     , title: title
@@ -56,10 +55,10 @@ mapToFundraisingInfo utxo = do
     , isCompleted: now > currentDatum.frDeadline || currentFunds >= currentDatum.frAmount
     }
 
-filterByPkh :: Bech32String -> Array FundraisingInfo -> Array FundraisingInfo
-filterByPkh pkh = Array.filter belongsToUser
+filterByCreatorAddress :: Bech32String -> Array FundraisingInfo -> Array FundraisingInfo
+filterByCreatorAddress address = Array.filter belongsToUser
   where
-  belongsToUser (FundraisingInfo frInfo) = frInfo.creator == pkh
+  belongsToUser (FundraisingInfo frInfo) = frInfo.creator == address
 
 newtype UserInfo = UserInfo
   { address :: Bech32String

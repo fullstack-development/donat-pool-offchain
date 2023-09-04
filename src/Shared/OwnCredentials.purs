@@ -20,6 +20,7 @@ import Shared.Utxo (UtxoTuple, extractValueFromUTxO, getNonCollateralUtxo)
 newtype OwnCredentials = OwnCredentials
   { ownPkh :: PaymentPubKeyHash
   , ownSkh :: StakePubKeyHash
+  , ownAddress :: Address
   , ownAddressWithNetworkTag :: AddressWithNetworkTag
   , ownUtxos :: (Map.Map TransactionInput TransactionOutputWithRefScript)
   , ownValue :: Value.Value
@@ -44,6 +45,7 @@ getOwnCreds = do
     { ownPkh: ownPkh
     , ownSkh: ownSkh
     , ownAddressWithNetworkTag: ownAddressWithNetworkTag
+    , ownAddress: (unwrap ownAddressWithNetworkTag).address
     , ownUtxos: nonCollateralUtxos
     , ownValue: ownValue
     , nonCollateralORef: oref

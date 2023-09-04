@@ -55,7 +55,8 @@ contract pData (FundraisingData fundraisingData) = do
   let
     currentFunds = frInfo.frValue
     (PFundraisingDatum currentDatum) = frInfo.frDatum
-  managerPkh /\ managerSkh <- getPkhSkhFromAddress currentDatum.managerAddress
+  managerPkh /\ managerSkh <- getPkhSkhFromAddress currentDatum.manager
+  creatorPkh /\ _ <- getPkhSkhFromAddress currentDatum.creator
   now <- currentTime
   let donatedAmount = Value.valueOf currentFunds adaSymbol adaToken - minAda - minAda
   when (now <= currentDatum.frDeadline && donatedAmount < currentDatum.frAmount)
@@ -63,7 +64,7 @@ contract pData (FundraisingData fundraisingData) = do
     $ throw "Can't receive funds while fundraising is in progress"
 
   ownCreds@(OwnCredentials creds) <- getOwnCreds
-  when (creds.ownPkh /= currentDatum.creatorPkh) $ liftEffect $ throw "Only fundraising creator can receive funds"
+  when (creds.ownAddress /= currentDatum.creator) $ liftEffect $ throw "Only fundraising creator can receive funds"
 
   let receiveFundsRedeemer = toData >>> Redeemer $ PReceiveFunds threadTokenCurrency threadTokenName
 
@@ -85,7 +86,7 @@ contract pData (FundraisingData fundraisingData) = do
         (fst frInfo.frUtxo)
         receiveFundsRedeemer
         frInfo.frRefScriptInput
-        <> Constraints.mustBeSignedBy currentDatum.creatorPkh
+        <> Constraints.mustBeSignedBy creatorPkh
         <> Constraints.mustMintValueWithRedeemer
           (Redeemer $ toData $ PBurnNft threadTokenName)
           threadTokenToBurnValue

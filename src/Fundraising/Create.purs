@@ -20,7 +20,6 @@ import Data.String (take)
 import Effect.Exception (throw)
 import Ext.Contract.Time (addTimes)
 import Ext.Contract.Value (currencySymbolToString, mkCurrencySymbol)
-import Ext.Seriaization.Key (pkhToBech32M)
 import Fundraising.Datum (PFundraisingDatum(..), titleLength)
 import Fundraising.FundraisingScript (fundraisingTokenNameString, getFundraisingTokenName, getFundraisingValidatorHash)
 import Fundraising.Models (Fundraising(..))
@@ -91,13 +90,13 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
 
   let
     initialFrDatum = PFundraisingDatum
-      { creatorPkh: creds.ownPkh
+      { creator: creds.ownAddress
       , tokenOrigin: creds.nonCollateralORef
       , frTitle: serializedTitle
       , frAmount: targetAmount
       , frDeadline: deadline
       , frFee: view _protocolFee protocolInfo.pDatum
-      , managerAddress: view _managerAddress protocolInfo.pDatum
+      , manager: view _managerAddress protocolInfo.pDatum
       }
 
   let
@@ -172,7 +171,7 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   bech32Address <- addressToBech32 frAddress
   logInfo' $ "Current fundraising address: " <> show bech32Address
 
-  creatorPkh <- pkhToBech32M creds.ownPkh
+  creatorPkh <- addressToBech32 creds.ownAddress
 
   pure $ FundraisingInfo
     { creator: creatorPkh
