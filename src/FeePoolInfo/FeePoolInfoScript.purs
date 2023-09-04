@@ -1,4 +1,4 @@
-module FeePool.FeePoolInfoScript where
+module FeePoolInfo.FeePoolInfoScript where
 
 import Contract.Monad (Contract)
 import Contract.Prelude
