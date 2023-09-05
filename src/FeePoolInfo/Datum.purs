@@ -12,7 +12,7 @@ import Prelude (class Eq, class Ord)
 
 type FeeAmount = BigInt
 
-newtype PFeePoolInfoDatum = PFeePoolInfoDatum 
+newtype PFeePoolInfoDatum = PFeePoolInfoDatum
   { epoch :: Epoch
   , fee :: Map.Map DayOfEpoch FeeAmount
   }
@@ -29,7 +29,8 @@ instance
     ( "PFeePoolInfoDatum"
         :=
           ( "epoch" := I Epoch
-              :+ "fee" := I (Map.Map DayOfEpoch FeeAmount)
+              :+ "fee"
+              := I (Map.Map DayOfEpoch FeeAmount)
               :+ PNil
           )
         @@ Z
