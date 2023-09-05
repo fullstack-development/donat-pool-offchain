@@ -9,7 +9,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 const App = () => {
 
   const protocolData = {
-    protocolCurrency: "3b9cd2a49b3d715052857b736d2d570bfaa86b1ac33c51a615d9d418",
+    protocolCurrency: "8224a01dacaa1b2010b25a255e80e2953f773c3ac842e61175c7b02e",
     protocolTokenName: "DonatPoolProtocol"
   }
 

@@ -175,7 +175,7 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   creatorPkh <- pkhToBech32M creds.ownPkh
 
   pure $ FundraisingInfo
-    { creator: creatorPkh
+    { creator: Just creatorPkh
     , title: title
     , goal: targetAmount
     , raisedAmt: fromInt 0
