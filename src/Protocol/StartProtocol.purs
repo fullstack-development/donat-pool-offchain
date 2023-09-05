@@ -8,8 +8,8 @@ module Protocol.StartProtocol
   ) where
 
 import Contract.Prelude
-import Governance.UserData (StartGovernanceData(..))
-import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
+
+import Config.Fundraising (makeFundraisingConfig, writeFundraisingConfig)
 import Config.Protocol (mapFromProtocolData, writeProtocolConfig)
 import Contract.Address (addressToBech32, getNetworkId, validatorHashBaseAddress)
 import Contract.Credential (Credential(..))
@@ -25,6 +25,7 @@ import Ext.Contract.Value (mkCurrencySymbol)
 import Governance.Config (getGovTokenFromConfig)
 import Governance.Datum (GovernanceDatum(..))
 import Governance.GovernanceScript (getGovernanceValidatorHash, governanceTokenName, governanceValidatorScript)
+import Governance.UserData (StartGovernanceData(..))
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Datum (PProtocolDatum(..))
@@ -33,6 +34,7 @@ import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName, pro
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, dataToProtocol, protocolToData)
 import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.ScriptRef (mkFundraisingRefScript, mkGovernanceRefScript, mkProposalRefScript, mkProtocolRefScript, mkVerTokenPolicyRef)
 import Shared.Tx (completeTx)
 
@@ -65,6 +67,8 @@ startSystem params = do
   mkGovernanceRefScript protocol
   mkProposalRefScript protocol
   mkVerTokenPolicyRef protocolData
+  frConfig <- makeFundraisingConfig protocol
+  liftEffect $ writeFundraisingConfig frConfig
   pure protocolData
 
 startProtocol :: ProtocolConfigParams -> Contract ProtocolData
