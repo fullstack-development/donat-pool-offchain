@@ -11,7 +11,7 @@ type OrdinalDay = BigInt.BigInt
 type Epoch = BigInt.BigInt -- one epoch lasts `epochSize` days
 type DayOfEpoch = BigInt.BigInt
 
-type TimeStamp = {epoch :: Epoch, dayOfEpoch :: DayOfEpoch}
+type TimeStamp = { epoch :: Epoch, dayOfEpoch :: DayOfEpoch }
 
 epochSize :: BigInt.BigInt
 epochSize = BigInt.fromInt 100
@@ -29,6 +29,8 @@ toDayOfEpoch :: OrdinalDay -> DayOfEpoch
 toDayOfEpoch ordDay = ordDay `BigInt.rem` epochSize
 
 posixToTimeStamp :: POSIXTime -> TimeStamp
-posixToTimeStamp posix = 
-  let ordDay = toOrdinalDay posix
-   in { epoch: toEpoch ordDay, dayOfEpoch: toDayOfEpoch ordDay }
+posixToTimeStamp posix =
+  let
+    ordDay = toOrdinalDay posix
+  in
+    { epoch: toEpoch ordDay, dayOfEpoch: toDayOfEpoch ordDay }

@@ -11,7 +11,7 @@ import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Data.BigInt (BigInt)
 import Ext.Contract.Time (posixToTimeStamp)
-import FeePool.Datum  (PFeePoolDatum(..))
+import FeePool.Datum (PFeePoolDatum(..))
 import FeePool.Redeemer (PFeePoolRedeemer(..))
 import Protocol.Models (Protocol)
 import Shared.MinAda (minAda, twoMinAda)
@@ -28,24 +28,26 @@ mkReceiveFundsConstraints protocol now feeAmt
   | otherwise = do
       let timestamp = posixToTimeStamp now
       (ScriptInfo feePoolScriptInfo :: ScriptInfo PFeePoolDatum) <- getFeePoolScriptInfo protocol
-      let 
+      let
         isCurrentEpoch = (unwrap feePoolScriptInfo.datum).currentEpoch == timestamp.epoch
-        amtToDeposit = if isCurrentEpoch  then feeAmt - minAda else feeAmt - minAda - minAda
-        redeemer = if isCurrentEpoch 
-          then PAddFundsWithCurrentEpoch now amtToDeposit
+        amtToDeposit = if isCurrentEpoch then feeAmt - minAda else feeAmt - minAda - minAda
+        redeemer =
+          if isCurrentEpoch then PAddFundsWithCurrentEpoch now amtToDeposit
           else PAddFundsWithNewEpoch now amtToDeposit
-        newDatum = Datum <<< toData $ PFeePoolDatum {currentEpoch: timestamp.epoch}
+        newDatum = Datum <<< toData $ PFeePoolDatum { currentEpoch: timestamp.epoch }
         paymentToFeePool = feePoolScriptInfo.value <> Value.lovelaceValueOf amtToDeposit
-      let constraints = Constraints.mustSpendScriptOutputUsingScriptRef
-                          (fst feePoolScriptInfo.utxo)
-                          (Redeemer $ toData redeemer)
-                          feePoolScriptInfo.refScriptInput
-                        <> Constraints.mustPayToScriptAddress
-                          feePoolScriptInfo.validatorHash
-                          (ScriptCredential feePoolScriptInfo.validatorHash)
-                          newDatum
-                          Constraints.DatumInline
-                          paymentToFeePool
-                        <> Constraints.mustReferenceOutput (fst feePoolScriptInfo.refScriptUtxo)
-      let lookups = Lookups.unspentOutputs feePoolScriptInfo.utxos 
+      let
+        constraints =
+          Constraints.mustSpendScriptOutputUsingScriptRef
+            (fst feePoolScriptInfo.utxo)
+            (Redeemer $ toData redeemer)
+            feePoolScriptInfo.refScriptInput
+            <> Constraints.mustPayToScriptAddress
+              feePoolScriptInfo.validatorHash
+              (ScriptCredential feePoolScriptInfo.validatorHash)
+              newDatum
+              Constraints.DatumInline
+              paymentToFeePool
+            <> Constraints.mustReferenceOutput (fst feePoolScriptInfo.refScriptUtxo)
+      let lookups = Lookups.unspentOutputs feePoolScriptInfo.utxos
       pure $ constraints /\ lookups

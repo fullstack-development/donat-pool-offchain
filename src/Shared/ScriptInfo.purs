@@ -23,7 +23,7 @@ import Governance.GovernanceScript (getGovernanceValidatorHash, governanceTokenN
 import Proposal.Datum (PProposalDatum)
 import Proposal.Model (PProposal)
 import Proposal.ProposalScript (getProposalValidatorHash, proposalTokenName, proposalValidatorScript)
-import Protocol.Models (Protocol(..))
+import Protocol.Models (Protocol)
 import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByNFT, getUtxoByScriptRef)
 
 newtype GetScriptData = GetScriptData
@@ -61,7 +61,7 @@ getFeePoolScriptInfo protocol = do
       , getValidator: feePoolValidatorScript feePool
       , getValidatoHash: getFeePoolValidatorHash feePool
       }
-  getScriptInfo getScriptData (unwrap protocol).protocolCurrency "FeePool" 
+  getScriptInfo getScriptData (unwrap protocol).protocolCurrency "FeePool"
 
 newtype ScriptInfo datum = ScriptInfo
   { tokenName :: TokenName
