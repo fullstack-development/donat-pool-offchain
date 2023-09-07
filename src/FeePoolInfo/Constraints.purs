@@ -28,7 +28,7 @@ import MintingPolicy.VerTokenMinting as VerToken
 import MintingPolicy.VerTokenRedeemers (PVerTokenRedeemer(..))
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
-import Shared.MinAda (minAdaValue, twoMinAda)
+import Shared.MinAda (minAda, minAdaValue, twoMinAda)
 import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, filterByToken, getUtxoByScriptRef)
 
 mkReceiveFundsConstraints :: Protocol -> POSIXTime -> BigInt -> Contract (Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void)
@@ -42,8 +42,12 @@ mkReceiveFundsConstraints protocol now feeAmt
       feePoolInfoValidator <- feePoolInfoValidatorScript feePool
       verPolicy /\ verTokenCs <- mkCurrencySymbol (VerToken.mintingPolicy protocol)
 
-      if timestamp.epoch == currentEpoch then mkCurrentConstraints timestamp feeAmt feePoolInfoHash feePoolInfoValidator verTokenCs
-      else mkNewConstraints protocol timestamp feeAmt feePoolInfoHash verPolicy verTokenCs
+      if timestamp.epoch == currentEpoch then do
+        let fee = feeAmt - minAda
+        mkCurrentConstraints timestamp fee feePoolInfoHash feePoolInfoValidator verTokenCs
+      else do
+        let fee = feeAmt - twoMinAda
+        mkNewConstraints protocol timestamp fee feePoolInfoHash verPolicy verTokenCs
 
 mkCurrentConstraints
   :: TimeStamp
@@ -123,11 +127,8 @@ mkNewConstraints protocol timestamp feeAmt feePoolInfoHash verPolicy verTokenCs 
           (Datum $ toData datum)
           Constraints.DatumInline
           payment
-        <> Constraints.mustReferenceOutput (fst protocolInfo.references.verTokenRef)
 
-    lookups = Lookups.unspentOutputs protocolInfo.pUtxos
-
-  pure $ constraints /\ lookups
+  pure $ constraints /\ mempty
 
 getOneUTxOByEpoch :: BigInt -> Array UtxoTuple -> Maybe UtxoTuple
 getOneUTxOByEpoch currentEpoch utxoArray = do

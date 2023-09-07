@@ -34,3 +34,6 @@ posixToTimeStamp posix =
     ordDay = toOrdinalDay posix
   in
     { epoch: toEpoch ordDay, dayOfEpoch: toDayOfEpoch ordDay }
+
+roundToSecond :: POSIXTime -> POSIXTime
+roundToSecond (POSIXTime time) = POSIXTime ((time `BigInt.quot` BigInt.fromInt 1000) * BigInt.fromInt 1000)

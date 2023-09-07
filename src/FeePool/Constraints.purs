@@ -30,10 +30,10 @@ mkReceiveFundsConstraints protocol now feeAmt
       (ScriptInfo feePoolScriptInfo :: ScriptInfo PFeePoolDatum) <- getFeePoolScriptInfo protocol
       let
         isCurrentEpoch = (unwrap feePoolScriptInfo.datum).currentEpoch == timestamp.epoch
-        amtToDeposit = if isCurrentEpoch then feeAmt - minAda else feeAmt - minAda - minAda
+        amtToDeposit = if isCurrentEpoch then feeAmt - minAda else feeAmt - twoMinAda
         redeemer =
-          if isCurrentEpoch then PAddFundsWithCurrentEpoch now amtToDeposit
-          else PAddFundsWithNewEpoch now amtToDeposit
+          if isCurrentEpoch then PAddFundsWithCurrentEpoch amtToDeposit
+          else PAddFundsWithNewEpoch amtToDeposit
         newDatum = Datum <<< toData $ PFeePoolDatum { currentEpoch: timestamp.epoch }
         paymentToFeePool = feePoolScriptInfo.value <> Value.lovelaceValueOf amtToDeposit
       let
