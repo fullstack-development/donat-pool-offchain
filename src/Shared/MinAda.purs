@@ -10,6 +10,9 @@ minAdaInt = 2_000_000
 minAda :: BigInt
 minAda = fromInt minAdaInt
 
+twoMinAda :: BigInt
+twoMinAda = minAda + minAda
+
 minAdaValue :: Value.Value
 minAdaValue = Value.lovelaceValueOf minAda
 

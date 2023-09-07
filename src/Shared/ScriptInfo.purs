@@ -15,6 +15,9 @@ import Ctl.Internal.Plutus.Types.Address (Address)
 import Ctl.Internal.Types.Scripts (Validator, ValidatorHash)
 import Ctl.Internal.Types.TokenName (TokenName)
 import Data.Map (Map)
+import FeePool.Datum (PFeePoolDatum)
+import FeePool.FeePoolScript (feePoolValidatorScript, getFeePoolTokenName, getFeePoolValidatorHash)
+import FeePool.Models (mkFeePoolFromProtocol)
 import Governance.Datum (GovernanceDatum)
 import Governance.GovernanceScript (getGovernanceValidatorHash, governanceTokenName, governanceValidatorScript)
 import Proposal.Datum (PProposalDatum)
@@ -48,6 +51,17 @@ getProposalScriptInfo proposal threadCs = do
       , getValidatoHash: getProposalValidatorHash proposal
       }
   getScriptInfo getScriptData threadCs "Proposal"
+
+getFeePoolScriptInfo :: Protocol -> Contract (ScriptInfo PFeePoolDatum)
+getFeePoolScriptInfo protocol = do
+  feePool <- mkFeePoolFromProtocol protocol
+  let
+    getScriptData = GetScriptData
+      { getThreadTokenName: getFeePoolTokenName
+      , getValidator: feePoolValidatorScript feePool
+      , getValidatoHash: getFeePoolValidatorHash feePool
+      }
+  getScriptInfo getScriptData (unwrap protocol).protocolCurrency "FeePool"
 
 newtype ScriptInfo datum = ScriptInfo
   { tokenName :: TokenName

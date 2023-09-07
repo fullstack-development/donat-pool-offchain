@@ -2,8 +2,7 @@ module Info.AllFundraisings where
 
 import Contract.Prelude
 
-import Contract.Address (validatorHashBaseAddress)
-import Contract.Config (NetworkId(TestnetId))
+import Contract.Address (getNetworkId, validatorHashBaseAddress)
 import Contract.Log (logInfo')
 import Contract.Monad (Contract, liftContractM)
 import Contract.Utxos (utxosAt)
@@ -36,8 +35,8 @@ getAllFundraisings protocolData = do
       }
 
   frValidatorHash <- getFundraisingValidatorHash fundraising
-
-  frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress TestnetId frValidatorHash
+  networkId <- getNetworkId
+  frAddress <- liftContractM "Impossible to get Fundraising script address" $ validatorHashBaseAddress networkId frValidatorHash
 
   fundraisings <- utxosAt frAddress
   frInfos <- traverse mapToFundraisingInfo <<< filterByToken (verTokenCs /\ verTn) $ Map.toUnfoldable fundraisings

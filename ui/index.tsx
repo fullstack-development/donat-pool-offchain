@@ -9,19 +9,19 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 const App = () => {
 
   const protocolData = {
-    protocolCurrency: "8224a01dacaa1b2010b25a255e80e2953f773c3ac842e61175c7b02e",
+    protocolCurrency: "feeba39b4bc15abd43fc37e32250b8d0b4b74294db3717b30758ef82",
     protocolTokenName: "DonatPoolProtocol"
   }
 
   const fundraisingDuration = {
     days: 0,
     hours: 0,
-    minutes: 6
+    minutes: 5
   };
   
   const createFundraisingParams = {
     title: 'Donate to feed stray cats',
-    amount: 150,
+    amount: 80,
     duration: fundraisingDuration
   };
 
@@ -60,7 +60,7 @@ const App = () => {
   };
 
   const onDonate = () => {   
-    a.main.value0.donate(console.log)(console.log)(protocolData)(testnetNami)(fundraisingData)(100)();
+    a.main.value0.donate(console.log)(console.log)(protocolData)(testnetNami)(fundraisingData)(80)();
   };
 
   const onReceiveFunds = () => {
@@ -108,7 +108,7 @@ const App = () => {
     <div>
       <h1>Offchain integration</h1>
       <button onClick={onCreateFundraisingClick}>Create fundraising</button>
-      <button onClick={onDonate}>Donate 100 Ada</button>
+      <button onClick={onDonate}>Donate 80 Ada</button>
       <button onClick={onReceiveFunds}>Receive funds</button>
       <button onClick={onGetAllFundraising}>Get All Fundraisings</button>
       <button onClick={onGetUserRelatedFundraisings}>Get User related Fundraisings</button>

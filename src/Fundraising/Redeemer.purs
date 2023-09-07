@@ -8,7 +8,9 @@ import Contract.Value (CurrencySymbol, TokenName)
 
 data PFundraisingRedeemer
   = PDonate CurrencySymbol TokenName BigInt
-  | PReceiveFunds CurrencySymbol TokenName
+  | PReceiveFundsCurrentEpoch CurrencySymbol TokenName
+  | PReceiveFundsNewEpoch CurrencySymbol TokenName
+  | PReceiveFundsWithoutFee CurrencySymbol TokenName
 
 derive instance Generic PFundraisingRedeemer _
 
@@ -16,9 +18,15 @@ instance
   HasPlutusSchema
     PFundraisingRedeemer
     ( "PDonate" := PNil @@ Z
-        :+ "PReceiveFunds"
+        :+ "PReceiveFundsCurrentEpoch"
         := PNil
         @@ (S Z)
+        :+ "PReceiveFundsNewEpoch"
+        := PNil
+        @@ (S (S Z))
+        :+ "PReceiveFundsWithoutFee"
+        := PNil
+        @@ (S (S (S Z)))
         :+ PNil
     )
 

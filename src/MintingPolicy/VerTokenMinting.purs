@@ -36,5 +36,8 @@ mkMintVerTokenPolicy unappliedPolicy protocol =
   in
     applyArgs unappliedPolicy mintingPolicyArgs
 
-verTokenName :: forall (r :: Row Type). Contract Value.TokenName
+verTokenName :: Contract Value.TokenName
 verTokenName = runMkTokenName "VerificationToken"
+
+feePoolVerTokenName :: Contract Value.TokenName
+feePoolVerTokenName = runMkTokenName "FeePoolVerToken"
