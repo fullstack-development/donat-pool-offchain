@@ -8,8 +8,8 @@ module Protocol.StartProtocol
   ) where
 
 import Contract.Prelude
-import Governance.UserData (StartGovernanceData(..))
-import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
+
+import Config.Fundraising (makeFundraisingConfig, writeFundraisingConfig)
 import Config.Protocol (mapFromProtocolData, writeProtocolConfig)
 import Contract.Address (addressToBech32, getNetworkId, validatorHashBaseAddress)
 import Contract.Credential (Credential(..))
@@ -28,6 +28,7 @@ import FeePool.Models (mkFeePoolFromProtocol)
 import Governance.Config (getGovTokenFromConfig)
 import Governance.Datum (GovernanceDatum(..))
 import Governance.GovernanceScript (getGovernanceValidatorHash, governanceTokenName)
+import Governance.UserData (StartGovernanceData(..))
 import MintingPolicy.NftMinting as NFT
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Datum (PProtocolDatum(..))
@@ -36,6 +37,7 @@ import Protocol.ProtocolScript (getProtocolValidatorHash, protocolTokenName)
 import Protocol.UserData (ProtocolConfigParams(..), ProtocolData, dataToProtocol, protocolToData)
 import Shared.Config (mapFromProtocolConfigParams, writeDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
+import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.MinAda (minAdaValue)
 import Shared.ScriptRef as ScriptRef
 import Shared.Tx (completeTx)
@@ -71,6 +73,8 @@ startSystem params = do
   ScriptRef.mkFeePoolRefScript protocol
   ScriptRef.mkFeePoolInfoRefScript protocol
   ScriptRef.mkVerTokenPolicyRef protocolData
+  frConfig <- makeFundraisingConfig protocol
+  liftEffect $ writeFundraisingConfig frConfig
   pure protocolData
 
 startProtocol :: ProtocolConfigParams -> Contract ProtocolData

@@ -21,7 +21,7 @@ import Shared.MinAda (minAdaValue)
 import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO)
 
 newtype FundraisingInfo = FundraisingInfo
-  { creator :: Bech32String
+  { creator :: Maybe Bech32String
   , title :: String
   , goal :: BigInt -- Goal in lovelaces
   , raisedAmt :: BigInt -- Raised amount in lovelaces
@@ -46,7 +46,7 @@ mapToFundraisingInfo utxo = do
   now <- currentTime
   creator <- pkhToBech32M currentDatum.creatorPkh
   pure $ FundraisingInfo
-    { creator: creator
+    { creator: Just creator
     , title: title
     , goal: currentDatum.frAmount
     , raisedAmt: currentFunds
@@ -59,7 +59,9 @@ mapToFundraisingInfo utxo = do
 filterByPkh :: Bech32String -> Array FundraisingInfo -> Array FundraisingInfo
 filterByPkh pkh = Array.filter belongsToUser
   where
-  belongsToUser (FundraisingInfo frInfo) = frInfo.creator == pkh
+  belongsToUser (FundraisingInfo frInfo) = isCreatorsPkh frInfo.creator
+  isCreatorsPkh Nothing = false
+  isCreatorsPkh (Just creator) = creator == pkh
 
 newtype UserInfo = UserInfo
   { address :: Bech32String
