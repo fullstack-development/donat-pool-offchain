@@ -72,7 +72,7 @@ contract protocolData proposalParams = do
       , quorum: govDatum.quorum
       , initiator: (unwrap ownCreds.ownAddressWithNetworkTag).address
       , deadline: deadline
-      , applied: fromInt 0
+      , processed: fromInt 0
       }
 
     createProposalRedeemer = toRedeemer $ PCreateProposal proposalParams proposalAddress threadCs verCs now

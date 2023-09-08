@@ -64,7 +64,7 @@ contract protocolData (VoteData voteData) = do
 
   unless (checkTokenInUTxO (Tuple proposalVerTokenCs proposalVerTn) proposalScriptInfo.utxo) $ liftEffect $ throw "VerificationToken not found in Proposal"
   let proposalDatum = unwrap proposalScriptInfo.datum
-  when (proposalDatum.applied == fromInt 1) $ throw >>> liftEffect $ "Can't vote for the applied proposal"
+  when (proposalDatum.processed == fromInt 1) $ throw >>> liftEffect $ "Can't vote for the processed proposal"
   now <- currentTime
   when (now > proposalDatum.deadline) $ throw >>> liftEffect $ "Voting time is over"
   let votingTimeRange = from now
@@ -78,7 +78,7 @@ contract protocolData (VoteData voteData) = do
       , quorum: proposalDatum.quorum
       , initiator: proposalDatum.initiator
       , deadline: proposalDatum.deadline
-      , applied: proposalDatum.applied
+      , processed: proposalDatum.processed
       }
   let isVoteFor = if voteData.for then (fromInt 1) else (fromInt 0)
   let voter = (unwrap ownCreds.ownAddressWithNetworkTag).address

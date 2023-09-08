@@ -5,8 +5,7 @@ import Contract.Prelude
 import Contract.Address (getNetworkId, validatorHashBaseAddress)
 import Contract.Monad (Contract, liftContractM)
 import Contract.Utxos (utxosAt)
-import Ctl.Internal.Contract.WaitUntilSlot (currentTime)
-import Ctl.Internal.Types.Interval (POSIXTime(..))
+import Ctl.Internal.Types.Interval (POSIXTime)
 import Data.Map as Map
 import Ext.Contract.Value (mkCurrencySymbol)
 import Ext.Data.Boolean (bigIntToBoolean)
@@ -35,9 +34,9 @@ isFinished now proposalUtxo  =
     let mbDatum = extractDatumFromUTxO proposalUtxo in 
     case mbDatum of
         (Just (PProposalDatum currentDatum)) -> 
-            let (votingIsFinished :: Boolean) = currentDatum.deadline < now
-                (proposalIsNotApplied :: Boolean) = not $ bigIntToBoolean currentDatum.applied
-            in  votingIsFinished && proposalIsNotApplied
+            let votingIsFinished = currentDatum.deadline < now
+                proposalIsNotProcessed = not $ bigIntToBoolean currentDatum.processed
+            in  votingIsFinished && proposalIsNotProcessed
         Nothing -> false
 
 hasReachedQuorum :: UtxoTuple -> Boolean

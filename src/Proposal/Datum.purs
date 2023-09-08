@@ -20,7 +20,7 @@ newtype PProposalDatum = PProposalDatum
   , quorum :: BigInt
   , initiator :: Address
   , deadline :: POSIXTime
-  , applied :: BigInt -- 0 or 1
+  , processed :: BigInt -- 0 or 1
   }
 
 derive instance Generic PProposalDatum _
@@ -44,7 +44,7 @@ instance
               := I Address
               :+ "deadline"
               := I POSIXTime
-              :+ "applied"
+              :+ "processed"
               := I BigInt
               :+ PNil
           )
