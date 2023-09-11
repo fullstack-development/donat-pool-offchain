@@ -77,6 +77,7 @@ contract protocolData (VoteData voteData) = do
       , policyRef: proposalDatum.policyRef
       , quorum: proposalDatum.quorum
       , initiator: proposalDatum.initiator
+      , cost: proposalDatum.cost
       , deadline: proposalDatum.deadline
       , processed: proposalDatum.processed
       }

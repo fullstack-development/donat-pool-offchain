@@ -5,13 +5,14 @@ import Contract.Prelude
 import Contract.Address (getNetworkId, validatorHashBaseAddress)
 import Contract.Monad (Contract, liftContractM)
 import Contract.Utxos (utxosAt)
+import Contract.Value as Value
 import Ctl.Internal.Types.Interval (POSIXTime)
 import Data.Map as Map
 import Ext.Contract.Value (mkCurrencySymbol)
 import Ext.Data.Boolean (bigIntToBoolean)
 import MintingPolicy.VerTokenMinting as VerToken
 import Proposal.Datum (PProposalDatum(..))
-import Proposal.Model (mkProposal)
+import Proposal.Model (PProposal(..), mkProposal)
 import Proposal.ProposalScript (getProposalValidatorHash, proposalVerTokenName)
 import Protocol.Models (Protocol)
 import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, filterByToken)

@@ -71,6 +71,7 @@ contract protocolData proposalParams = do
       , policyRef: policyRef
       , quorum: govDatum.quorum
       , initiator: (unwrap ownCreds.ownAddressWithNetworkTag).address
+      , cost: govDatum.fee
       , deadline: deadline
       , processed: fromInt 0
       }

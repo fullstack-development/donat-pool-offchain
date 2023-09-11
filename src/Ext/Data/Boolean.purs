@@ -10,4 +10,6 @@ bigIntToBoolean b =
         then false
         else true
 
-
+booleanToBigInt :: Boolean -> BigInt
+booleanToBigInt true = fromInt 1
+booleanToBigInt false = fromInt 0

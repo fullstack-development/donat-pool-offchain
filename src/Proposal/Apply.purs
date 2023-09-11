@@ -6,26 +6,36 @@ import Info.AllProposals
 import Config.Protocol (mapToProtocolData, readProtocolConfig)
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Log (logInfo')
-import Contract.Monad (Contract, runContract)
+import Contract.Monad (Contract, liftContractM, runContract)
 import Contract.PlutusData (Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.TxConstraints as Constraints
+import Contract.Value as Value
+import Ctl.Internal.Cardano.Types.Value (CurrencySymbol)
 import Ctl.Internal.Contract.WaitUntilSlot (currentTime)
+import Ctl.Internal.Plutus.Types.Transaction (_amount, _output)
+import Ctl.Internal.Plutus.Types.Value (flattenNonAdaAssets)
 import Ctl.Internal.Types.Datum (Datum(..))
-import Data.Array (filter, partition) as Array
+import Data.Array as Array
+import Data.BigInt (fromInt)
 import Data.Lens (view)
+import Data.Lens.Getter ((^.))
 import Effect.Aff (launchAff_)
 import Effect.Exception (throw)
+import Ext.Data.Boolean (booleanToBigInt)
+import Proposal.Datum (PProposalDatum(..))
+import Proposal.ProposalScript (proposalTokenName, proposalValidatorScript)
+import Proposal.Redeemer (PProposalRedeemer(..))
 import Protocol.Datum (PProtocolDatum(..), _managerAddress, _tokenOriginRef)
-import Protocol.Models (PProtocolConfig(..))
+import Protocol.Models (PProtocolConfig(..), Protocol(..))
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Protocol.Redeemer (PProtocolRedeemer(..))
 import Protocol.UserData (ProtocolConfigParams, ProtocolData, dataToProtocol, getConfigFromProtocolDatum, mapToProtocolConfig)
 import Shared.Config (mapToProtocolConfigParams, readDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
 import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds, getPkhSkhFromAddress)
-import Shared.Tx (completeTx)
-import Shared.Utxo (UtxoTuple, filterByToken)
+import Shared.Tx (completeTx, toDatum, toRedeemer)
+import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, filterByToken)
 
 -- runUpdateProtocol :: Effect Unit
 -- runUpdateProtocol = do
@@ -51,8 +61,78 @@ contract protocolData = do
   traverse_ rejectProposal rejectList
   logInfo' "Finished to process proposals"
 
+getThreadCsByTn :: UtxoTuple -> Value.TokenName -> Maybe Value.CurrencySymbol
+getThreadCsByTn (_ /\ txOutWithRef) tn = do
+  let value = (txOutWithRef ^. _output) ^. _amount
+  let tokensArray = flattenNonAdaAssets value
+  let tokensWithTn = Array.filter haveTn tokensArray
+  getCs tokensWithTn
+  where
+    haveTn (_ /\ tokenName /\ amount) = tokenName == tn && amount == fromInt 1
+    getCs arr = case Array.uncons arr of
+      Just { head: (cs /\ _ /\ _), tail: [] } -> Just cs
+      Just { head: _, tail: xs } -> Nothing
+      Nothing -> Nothing
+
+
+
+-- utxoTupleToScriptInfo proposal utxo = do
+--   proposalThreadTn <- proposalTokenName
+--   proposalThreadCs <- liftContractM "Impossible to get threadTokenCs from proposal UTXO" $ getThreadCsByTn utxo proposalThreadTn
+--   proposalDatum <-  liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO utxo
+--   let proposalValue = extractValueFromUTxO utxo
+--   proposalValidator <- proposalValidatorScript proposal
+--   proposalValidarHash <- getProposalValidatorHash proposal
+--   proposalAddress <-
+--     liftContractM ("Impossible to get Proposal script address") $ validatorHashBaseAddress networkId validatorHash
+--   utxos <- utxosAt address
+--   let scriptRef = PlutusScriptRef (unwrap validator)
+--   refScriptUtxo <- getUtxoByScriptRef scriptName scriptRef utxos
+--   let refScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst refScriptUtxo) (snd refScriptUtxo)
+--   pure $ ScriptInfo
+--           { tokenName: proposalThreadTn
+--           , validator: proposalValidator
+--           , validatorHash: proposalValidarHash
+--           , address: proposalAddress
+--           , utxos: utxos
+--           , utxo: utxo
+--           , datum: proposalDatum
+--           , value: proposalValue
+--           , refScriptUtxo: refScriptUtxo
+--           , refScriptInput: refScriptInput
+--           }
+
+
+markAsProcessed :: Protocol -> UtxoTuple -> Boolean -> Contract Unit
+markAsProcessed protocol utxo isQuorumReached = do
+  -- TODO: pass ScriptInfo instead of UtxoTuple
+  ownCreds@(OwnCredentials creds) <- getOwnCreds
+  proposalThreadTn <- proposalTokenName
+  proposalThreadCs <- liftContractM "Impossible to get threadTokenCs from proposal UTXO" $ getThreadCsByTn utxo proposalThreadTn
+  (PProposalDatum proposalDatum) <-  liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO utxo
+  let proposalValue = extractValueFromUTxO utxo
+
+  let redeemer = toRedeemer $ PRejectProposal proposalThreadCs (booleanToBigInt isQuorumReached)
+  let newDatum = toDatum $ PProposalDatum
+        { proposal: proposalDatum.proposal
+        , for: proposalDatum.for
+        , against: proposalDatum.against
+        , policyRef: proposalDatum.policyRef
+        , quorum: proposalDatum.quorum
+        , initiator: proposalDatum.initiator
+        , cost: proposalDatum.cost
+        , deadline: proposalDatum.deadline
+        , processed: fromInt 1
+        }
+  -- let newValue = if isQuorumReached then proposalValue else proposalValue - proposalDatum.cost
+  -- let payToManager = 
+  --   if isQuorumReached 
+  --     then Constraints.mustPayToPubKeyAddress ownCreds.ownPkh ownCreds.ownSkh paymentToVoter
+  logInfo' "Proposal is rejected"
+
 rejectProposal :: UtxoTuple -> Contract Unit
 rejectProposal utxo = do
+  
   -- just mark proposal as processed
   logInfo' "Proposal is rejected"
 

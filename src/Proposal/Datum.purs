@@ -19,6 +19,7 @@ newtype PProposalDatum = PProposalDatum
   , policyRef :: TransactionInput
   , quorum :: BigInt
   , initiator :: Address
+  , cost :: BigInt
   , deadline :: POSIXTime
   , processed :: BigInt -- 0 or 1
   }
@@ -42,6 +43,8 @@ instance
               := I BigInt
               :+ "initiator"
               := I Address
+              :+ "cost"
+              := I BigInt
               :+ "deadline"
               := I POSIXTime
               :+ "processed"
