@@ -11,6 +11,7 @@ import Protocol.Models (Protocol(..))
 
 newtype PProposal = PProposal
   { protocolCurrency :: Value.CurrencySymbol
+  , protocolTokenName :: Value.TokenName
   , verTokenCurrency :: Value.CurrencySymbol
   }
 
@@ -24,6 +25,7 @@ instance
     ( "PProposal"
         :=
           ( "protocolCurrency" := I Value.CurrencySymbol
+            :+  "protocolTokenName" := I Value.TokenName
               :+ "verTokenCurrency"
               := I Value.CurrencySymbol
               :+ PNil
@@ -86,5 +88,6 @@ mkProposal :: Protocol -> Value.CurrencySymbol -> PProposal
 mkProposal (Protocol protocol) verCurrency = do
   PProposal
     { protocolCurrency: protocol.protocolCurrency
+    , protocolTokenName: protocol.protocolTokenName
     , verTokenCurrency: verCurrency
     }

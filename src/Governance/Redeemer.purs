@@ -2,7 +2,7 @@ module Governance.Redeemer where
 
 import Contract.Prelude
 
-import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, Z, genericToData)
+import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, S, Z, genericToData)
 import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.Address (Address)
 import Ctl.Internal.Types.Interval (POSIXTime)
@@ -13,7 +13,9 @@ type PProposalThreadCurrency = Value.CurrencySymbol
 type PProposalVerCurrency = Value.CurrencySymbol
 type PProposalStartedAt = POSIXTime
 
-data PGovernanceRedeemer = PCreateProposal PProposalParameters PProposalAddress PProposalThreadCurrency PProposalVerCurrency PProposalStartedAt
+data PGovernanceRedeemer = 
+  PCreateProposal PProposalParameters PProposalAddress PProposalThreadCurrency PProposalVerCurrency PProposalStartedAt
+  | PMarkAsProcessed PProposalThreadCurrency
 
 derive instance Generic PGovernanceRedeemer _
 
@@ -23,6 +25,9 @@ instance
     ( "PCreateProposal"
         := PNil
         @@ Z
+        :+ "PMarkAsProcessed"
+        := PNil
+        @@ (S Z)
         :+ PNil
     )
 

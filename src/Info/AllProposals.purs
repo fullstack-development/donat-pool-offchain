@@ -47,4 +47,10 @@ hasReachedQuorum proposalUtxo =
      (Just (PProposalDatum currentDatum)) -> currentDatum.quorum <= currentDatum.for + currentDatum.against
      Nothing -> false
 
-
+votedToApply :: UtxoTuple -> Boolean
+votedToApply proposalUtxo = 
+    let mbDatum = extractDatumFromUTxO proposalUtxo
+    in 
+    case mbDatum of
+     (Just (PProposalDatum currentDatum)) -> currentDatum.against < currentDatum.for 
+     Nothing -> false

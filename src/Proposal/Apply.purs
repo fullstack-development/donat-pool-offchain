@@ -44,12 +44,59 @@ contract protocolData = do
   now <- currentTime
   proposalsUtxos <- getAllProposalUtxos protocol
   let finished = Array.filter (isFinished now) proposalsUtxos
-  let reachedQuorum = Array.partition hasReachedQuorum finished
-
+  let {yes: reachedQuorumList, no: notReachedQuorumList} = Array.partition hasReachedQuorum finished
+  traverse_ processFailedToAchiveQuorumProposal notReachedQuorumList
+  let {yes: applyList, no: rejectList} = Array.partition votedToApply reachedQuorumList
+  traverse_ applyProposal applyList
+  traverse_ rejectProposal rejectList
   logInfo' "Finished to process proposals"
 
--- markAsFailedToAchiveQuorum :: 
--- applyProposal ::
+rejectProposal :: UtxoTuple -> Contract Unit
+rejectProposal utxo = do
+  -- just mark proposal as processed
+  logInfo' "Proposal is rejected"
+
+processFailedToAchiveQuorumProposal :: UtxoTuple -> Contract Unit
+processFailedToAchiveQuorumProposal utxo = do
+  -- seize proposal fee from the script, because the quorum is not reached
+  -- mark Proposal as processed
+
+  -- ownCreds@(OwnCredentials creds) <- getOwnCreds
+  -- let
+  --   constraints :: Constraints.TxConstraints Void Void
+  --   constraints =
+  --     Constraints.mustSpendPubKeyOutput ownCreds.nonCollateralORef
+  --       <> Constraints.mustMintValueWithRedeemer
+  --         voteTokenRedeemer
+  --         voteTokensValue
+
+  --       <> Constraints.mustSpendScriptOutputUsingScriptRef
+  --         (fst proposalScriptInfo.utxo)
+  --         voteRedeemer
+  --         proposalRefScriptInput
+  --       <> Constraints.mustPayToScriptAddress
+  --         proposalScriptInfo.validatorHash
+  --         (ScriptCredential proposalScriptInfo.validatorHash)
+  --         newProposalDatum
+  --         Constraints.DatumInline
+  --         paymentToProposal
+  --       <> Constraints.mustPayToPubKeyAddress ownCreds.ownPkh ownCreds.ownSkh paymentToVoter
+  --       <> Constraints.mustBeSignedBy ownCreds.ownPkh
+  --       <> Constraints.mustValidateIn votingTimeRange
+  --       <> Constraints.mustReferenceOutput (fst proposalRefScriptUtxo)
+  --       <> Constraints.mustReferenceOutput (fst govScriptInfo.utxo)
+
+  --   lookups :: Lookups.ScriptLookups Void
+  --   lookups =
+  --     Lookups.mintingPolicy voteMp
+  --       <> Lookups.unspentOutputs ownCreds.ownUtxos
+  --       <> Lookups.unspentOutputs proposalScriptInfo.utxos
+  --       <> Lookups.unspentOutputs govScriptInfo.utxos
+
+  logInfo' "Proposal is failed to archive a qourum, marked as processed"
+
+applyProposal ::  UtxoTuple -> Contract Unit
+applyProposal utxo = do
 
 --   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
 --   ownCreds@(OwnCredentials creds) <- getOwnCreds
@@ -99,3 +146,4 @@ contract protocolData = do
 --     , managerAddress: view _managerAddress currentDatum
 --     , tokenOriginRef: view _tokenOriginRef currentDatum
 --     }
+  logInfo' "Proposal is applied"
