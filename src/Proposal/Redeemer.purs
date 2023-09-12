@@ -13,8 +13,8 @@ type Voter = Address
 type ProposalThreadCs = CurrencySymbol
 type QuorumReached = BigInt -- "against" = 0, "for" = 1
 
-data PProposalRedeemer =
-  PVote IsVoteFor PAmount Voter ProposalThreadCs
+data PProposalRedeemer
+  = PVote IsVoteFor PAmount Voter ProposalThreadCs
   | PRejectProposal ProposalThreadCs QuorumReached
 
 derive instance Generic PProposalRedeemer _

@@ -13,7 +13,7 @@ type PProposalThreadCurrency = Value.CurrencySymbol
 type PProposalVerCurrency = Value.CurrencySymbol
 type PProposalStartedAt = POSIXTime
 
-data PGovernanceRedeemer = 
+data PGovernanceRedeemer =
   PCreateProposal PProposalParameters PProposalAddress PProposalThreadCurrency PProposalVerCurrency PProposalStartedAt
 
 derive instance Generic PGovernanceRedeemer _

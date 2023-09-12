@@ -34,6 +34,7 @@ import Protocol.UserData (ProtocolConfigParams, ProtocolData, dataToProtocol, ge
 import Shared.Config (mapToProtocolConfigParams, readDonatPoolConfig)
 import Shared.KeyWalletConfig (testnetKeyWalletConfig)
 import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds, getPkhSkhFromAddress)
+import Shared.ScriptInfo (ScriptInfo(..))
 import Shared.Tx (completeTx, toDatum, toRedeemer)
 import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, filterByToken)
 
@@ -47,34 +48,19 @@ import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, filte
 
 contract :: ProtocolData -> Contract Unit
 contract protocolData = do
-  
+
   logInfo' "Running process proposals"
   protocol <- dataToProtocol protocolData
 
   now <- currentTime
-  proposalsUtxos <- getAllProposalUtxos protocol
-  let finished = Array.filter (isFinished now) proposalsUtxos
-  let {yes: reachedQuorumList, no: notReachedQuorumList} = Array.partition hasReachedQuorum finished
+  allProposalsInfo <- getAllProposalUtxos protocol
+  let finished = Array.filter (isFinished now) allProposalsInfo
+  let { yes: reachedQuorumList, no: notReachedQuorumList } = Array.partition hasReachedQuorum finished
   traverse_ processFailedToAchiveQuorumProposal notReachedQuorumList
-  let {yes: applyList, no: rejectList} = Array.partition votedToApply reachedQuorumList
+  let { yes: applyList, no: rejectList } = Array.partition votedToApply reachedQuorumList
   traverse_ applyProposal applyList
   traverse_ rejectProposal rejectList
   logInfo' "Finished to process proposals"
-
-getThreadCsByTn :: UtxoTuple -> Value.TokenName -> Maybe Value.CurrencySymbol
-getThreadCsByTn (_ /\ txOutWithRef) tn = do
-  let value = (txOutWithRef ^. _output) ^. _amount
-  let tokensArray = flattenNonAdaAssets value
-  let tokensWithTn = Array.filter haveTn tokensArray
-  getCs tokensWithTn
-  where
-    haveTn (_ /\ tokenName /\ amount) = tokenName == tn && amount == fromInt 1
-    getCs arr = case Array.uncons arr of
-      Just { head: (cs /\ _ /\ _), tail: [] } -> Just cs
-      Just { head: _, tail: xs } -> Nothing
-      Nothing -> Nothing
-
-
 
 -- utxoTupleToScriptInfo proposal utxo = do
 --   proposalThreadTn <- proposalTokenName
@@ -102,42 +88,41 @@ getThreadCsByTn (_ /\ txOutWithRef) tn = do
 --           , refScriptInput: refScriptInput
 --           }
 
-
 markAsProcessed :: Protocol -> UtxoTuple -> Boolean -> Contract Unit
 markAsProcessed protocol utxo isQuorumReached = do
   -- TODO: pass ScriptInfo instead of UtxoTuple
-  ownCreds@(OwnCredentials creds) <- getOwnCreds
-  proposalThreadTn <- proposalTokenName
-  proposalThreadCs <- liftContractM "Impossible to get threadTokenCs from proposal UTXO" $ getThreadCsByTn utxo proposalThreadTn
-  (PProposalDatum proposalDatum) <-  liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO utxo
-  let proposalValue = extractValueFromUTxO utxo
+  -- ownCreds@(OwnCredentials creds) <- getOwnCreds
+  -- proposalThreadTn <- proposalTokenName
+  -- proposalThreadCs <- liftContractM "Impossible to get threadTokenCs from proposal UTXO" $ getThreadCsByTn utxo proposalThreadTn
+  -- (PProposalDatum proposalDatum) <-  liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO utxo
+  -- let proposalValue = extractValueFromUTxO utxo
 
-  let redeemer = toRedeemer $ PRejectProposal proposalThreadCs (booleanToBigInt isQuorumReached)
-  let newDatum = toDatum $ PProposalDatum
-        { proposal: proposalDatum.proposal
-        , for: proposalDatum.for
-        , against: proposalDatum.against
-        , policyRef: proposalDatum.policyRef
-        , quorum: proposalDatum.quorum
-        , initiator: proposalDatum.initiator
-        , cost: proposalDatum.cost
-        , deadline: proposalDatum.deadline
-        , processed: fromInt 1
-        }
+  -- let redeemer = toRedeemer $ PRejectProposal proposalThreadCs (booleanToBigInt isQuorumReached)
+  -- let newDatum = toDatum $ PProposalDatum
+  --       { proposal: proposalDatum.proposal
+  --       , for: proposalDatum.for
+  --       , against: proposalDatum.against
+  --       , policyRef: proposalDatum.policyRef
+  --       , quorum: proposalDatum.quorum
+  --       , initiator: proposalDatum.initiator
+  --       , cost: proposalDatum.cost
+  --       , deadline: proposalDatum.deadline
+  --       , processed: fromInt 1
+  --       }
   -- let newValue = if isQuorumReached then proposalValue else proposalValue - proposalDatum.cost
   -- let payToManager = 
   --   if isQuorumReached 
   --     then Constraints.mustPayToPubKeyAddress ownCreds.ownPkh ownCreds.ownSkh paymentToVoter
   logInfo' "Proposal is rejected"
 
-rejectProposal :: UtxoTuple -> Contract Unit
-rejectProposal utxo = do
-  
+rejectProposal :: ScriptInfo PProposalDatum -> Contract Unit
+rejectProposal (ScriptInfo proposalScriptInfo) = do
+
   -- just mark proposal as processed
   logInfo' "Proposal is rejected"
 
-processFailedToAchiveQuorumProposal :: UtxoTuple -> Contract Unit
-processFailedToAchiveQuorumProposal utxo = do
+processFailedToAchiveQuorumProposal :: ScriptInfo PProposalDatum -> Contract Unit
+processFailedToAchiveQuorumProposal (ScriptInfo proposalScriptInfo) = do
   -- seize proposal fee from the script, because the quorum is not reached
   -- mark Proposal as processed
 
@@ -175,55 +160,55 @@ processFailedToAchiveQuorumProposal utxo = do
 
   logInfo' "Proposal is failed to archive a qourum, marked as processed"
 
-applyProposal ::  UtxoTuple -> Contract Unit
-applyProposal utxo = do
+applyProposal :: ScriptInfo PProposalDatum -> Contract Unit
+applyProposal (ScriptInfo proposalScriptInfo) = do
 
---   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
---   ownCreds@(OwnCredentials creds) <- getOwnCreds
+  --   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
+  --   ownCreds@(OwnCredentials creds) <- getOwnCreds
 
---   manager /\ _ <- getPkhSkhFromAddress $ view _managerAddress protocolInfo.pDatum
---   when (manager /= creds.ownPkh) $ liftEffect $ throw "Current user doesn't have permissions to update protocol"
+  --   manager /\ _ <- getPkhSkhFromAddress $ view _managerAddress protocolInfo.pDatum
+  --   when (manager /= creds.ownPkh) $ liftEffect $ throw "Current user doesn't have permissions to update protocol"
 
---   let protocolConfig = mapToProtocolConfig protocolConfigParams
---   let newDatum = makeDatum protocolInfo.pDatum protocolConfig
---   logInfo' $ "New datum: " <> show newDatum
---   let newPDatum = Datum $ toData $ newDatum
+  --   let protocolConfig = mapToProtocolConfig protocolConfigParams
+  --   let newDatum = makeDatum protocolInfo.pDatum protocolConfig
+  --   logInfo' $ "New datum: " <> show newDatum
+  --   let newPDatum = Datum $ toData $ newDatum
 
---   let updateProtocolRedeemer = Redeemer $ toData $ PUpdateProtocolConfig protocolConfig
+  --   let updateProtocolRedeemer = Redeemer $ toData $ PUpdateProtocolConfig protocolConfig
 
---   let
---     constraints :: Constraints.TxConstraints Void Void
---     constraints =
---       Constraints.mustSpendScriptOutputUsingScriptRef
---         (fst protocolInfo.pUtxo)
---         updateProtocolRedeemer
---         protocolInfo.references.pRefScriptInput
---         <> Constraints.mustPayToScriptAddress
---           protocolInfo.pValidatorHash
---           (ScriptCredential protocolInfo.pValidatorHash)
---           newPDatum
---           Constraints.DatumInline
---           protocolInfo.pValue
---         <> Constraints.mustReferenceOutput (fst protocolInfo.references.pScriptRef)
---         <> Constraints.mustBeSignedBy creds.ownPkh
---   let
---     lookups :: Lookups.ScriptLookups Void
---     lookups =
---       Lookups.unspentOutputs protocolInfo.pUtxos
+  --   let
+  --     constraints :: Constraints.TxConstraints Void Void
+  --     constraints =
+  --       Constraints.mustSpendScriptOutputUsingScriptRef
+  --         (fst protocolInfo.pUtxo)
+  --         updateProtocolRedeemer
+  --         protocolInfo.references.pRefScriptInput
+  --         <> Constraints.mustPayToScriptAddress
+  --           protocolInfo.pValidatorHash
+  --           (ScriptCredential protocolInfo.pValidatorHash)
+  --           newPDatum
+  --           Constraints.DatumInline
+  --           protocolInfo.pValue
+  --         <> Constraints.mustReferenceOutput (fst protocolInfo.references.pScriptRef)
+  --         <> Constraints.mustBeSignedBy creds.ownPkh
+  --   let
+  --     lookups :: Lookups.ScriptLookups Void
+  --     lookups =
+  --       Lookups.unspentOutputs protocolInfo.pUtxos
 
---   completeTx lookups constraints ownCreds
+  --   completeTx lookups constraints ownCreds
 
---   pure $ getConfigFromProtocolDatum newDatum
+  --   pure $ getConfigFromProtocolDatum newDatum
 
--- makeDatum ∷ PProtocolDatum -> PProtocolConfig → PProtocolDatum
--- makeDatum currentDatum (PProtocolConfig { minAmount, maxAmount, minDuration, maxDuration, protocolFee }) =
---   PProtocolDatum
---     { minAmount: minAmount
---     , maxAmount: maxAmount
---     , minDuration: minDuration
---     , maxDuration: maxDuration
---     , protocolFee: protocolFee
---     , managerAddress: view _managerAddress currentDatum
---     , tokenOriginRef: view _tokenOriginRef currentDatum
---     }
+  -- makeDatum ∷ PProtocolDatum -> PProtocolConfig → PProtocolDatum
+  -- makeDatum currentDatum (PProtocolConfig { minAmount, maxAmount, minDuration, maxDuration, protocolFee }) =
+  --   PProtocolDatum
+  --     { minAmount: minAmount
+  --     , maxAmount: maxAmount
+  --     , minDuration: minDuration
+  --     , maxDuration: maxDuration
+  --     , protocolFee: protocolFee
+  --     , managerAddress: view _managerAddress currentDatum
+  --     , tokenOriginRef: view _tokenOriginRef currentDatum
+  --     }
   logInfo' "Proposal is applied"

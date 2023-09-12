@@ -14,6 +14,7 @@ import Data.Map as Map
 
 type TokenTuple = Tuple Value.CurrencySymbol Value.TokenName
 type UtxoTuple = Tuple TransactionInput TransactionOutputWithRefScript
+type UtxosMap = Map.Map TransactionInput TransactionOutputWithRefScript
 
 -- NOTE: Nami wallet doesn't allow to spend the collateral UTxO - a special UTxO with 5 Ada balance.
 -- As this UTxO doesn't have any special flags, we get the first UTxO with balance non equal to 5 Ada

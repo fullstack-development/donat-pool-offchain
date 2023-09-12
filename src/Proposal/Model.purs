@@ -25,7 +25,8 @@ instance
     ( "PProposal"
         :=
           ( "protocolCurrency" := I Value.CurrencySymbol
-            :+  "protocolTokenName" := I Value.TokenName
+              :+ "protocolTokenName"
+              := I Value.TokenName
               :+ "verTokenCurrency"
               := I Value.CurrencySymbol
               :+ PNil
