@@ -9,6 +9,7 @@ import Contract.Value as Value
 import Ctl.Internal.Plutus.Types.CurrencySymbol as CurrencySymbol
 import Ctl.Internal.Types.ByteArray (ByteArray(..), byteArrayToHex, hexToByteArray)
 import Data.Array (filter) as Array
+import Data.BigInt (BigInt)
 import Data.TextDecoder (decodeUtf8)
 
 mkTokenName :: String -> Maybe Value.TokenName
@@ -50,3 +51,12 @@ tokenNameToString tn =
     (ByteArray tnBytes) = Value.getTokenName tn
   in
     either (const Nothing) Just $ decodeUtf8 tnBytes
+
+adaValue ∷ BigInt → Value.Value
+adaValue = Value.singleton Value.adaSymbol Value.adaToken
+
+addAdaToValue ∷ Value.Value → BigInt → Value.Value
+addAdaToValue val amount = val <> adaValue amount
+
+subtractAdaFromValue ∷ Value.Value → BigInt → Value.Value
+subtractAdaFromValue val amount = val <> adaValue (- amount)

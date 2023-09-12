@@ -1,7 +1,13 @@
-module Proposal.Apply where
+module Proposal.Apply
+  ( applyProposal
+  , contract
+  , processNoQuorum
+  , rejectProposal
+  )
+  where
 
 import Contract.Prelude
-import Info.AllProposals
+import Info.AllProposals (getAllProposalUtxos, getThreadCsByTn, hasReachedQuorum, isFinished, votedToApply)
 
 import Config.Protocol (mapToProtocolData, readProtocolConfig)
 import Contract.Credential (Credential(ScriptCredential))
@@ -22,6 +28,7 @@ import Data.Lens (view)
 import Data.Lens.Getter ((^.))
 import Effect.Aff (launchAff_)
 import Effect.Exception (throw)
+import Ext.Contract.Value (addAdaToValue, subtractAdaFromValue)
 import Ext.Data.Boolean (booleanToBigInt)
 import Proposal.Datum (PProposalDatum(..))
 import Proposal.ProposalScript (proposalTokenName, proposalValidatorScript)
@@ -37,6 +44,7 @@ import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds, getPkhSkhFromAddr
 import Shared.ScriptInfo (ScriptInfo(..))
 import Shared.Tx (completeTx, toDatum, toRedeemer)
 import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, filterByToken)
+import Ctl.Internal.Types.Interval (from)
 
 -- runUpdateProtocol :: Effect Unit
 -- runUpdateProtocol = do
@@ -56,112 +64,84 @@ contract protocolData = do
   allProposalsInfo <- getAllProposalUtxos protocol
   let finished = Array.filter (isFinished now) allProposalsInfo
   let { yes: reachedQuorumList, no: notReachedQuorumList } = Array.partition hasReachedQuorum finished
-  traverse_ processFailedToAchiveQuorumProposal notReachedQuorumList
+  traverse_ (processNoQuorum protocol) notReachedQuorumList
   let { yes: applyList, no: rejectList } = Array.partition votedToApply reachedQuorumList
-  traverse_ applyProposal applyList
-  traverse_ rejectProposal rejectList
+  traverse_ (applyProposal protocol) applyList
+  traverse_ (rejectProposal protocol) rejectList
   logInfo' "Finished to process proposals"
 
--- utxoTupleToScriptInfo proposal utxo = do
---   proposalThreadTn <- proposalTokenName
---   proposalThreadCs <- liftContractM "Impossible to get threadTokenCs from proposal UTXO" $ getThreadCsByTn utxo proposalThreadTn
---   proposalDatum <-  liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO utxo
---   let proposalValue = extractValueFromUTxO utxo
---   proposalValidator <- proposalValidatorScript proposal
---   proposalValidarHash <- getProposalValidatorHash proposal
---   proposalAddress <-
---     liftContractM ("Impossible to get Proposal script address") $ validatorHashBaseAddress networkId validatorHash
---   utxos <- utxosAt address
---   let scriptRef = PlutusScriptRef (unwrap validator)
---   refScriptUtxo <- getUtxoByScriptRef scriptName scriptRef utxos
---   let refScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst refScriptUtxo) (snd refScriptUtxo)
---   pure $ ScriptInfo
---           { tokenName: proposalThreadTn
---           , validator: proposalValidator
---           , validatorHash: proposalValidarHash
---           , address: proposalAddress
---           , utxos: utxos
---           , utxo: utxo
---           , datum: proposalDatum
---           , value: proposalValue
---           , refScriptUtxo: refScriptUtxo
---           , refScriptInput: refScriptInput
---           }
-
-markAsProcessed :: Protocol -> UtxoTuple -> Boolean -> Contract Unit
-markAsProcessed protocol utxo isQuorumReached = do
-  -- TODO: pass ScriptInfo instead of UtxoTuple
-  -- ownCreds@(OwnCredentials creds) <- getOwnCreds
-  -- proposalThreadTn <- proposalTokenName
-  -- proposalThreadCs <- liftContractM "Impossible to get threadTokenCs from proposal UTXO" $ getThreadCsByTn utxo proposalThreadTn
-  -- (PProposalDatum proposalDatum) <-  liftContractM "Impossible to get Protocol Datum" $ extractDatumFromUTxO utxo
-  -- let proposalValue = extractValueFromUTxO utxo
-
-  -- let redeemer = toRedeemer $ PRejectProposal proposalThreadCs (booleanToBigInt isQuorumReached)
-  -- let newDatum = toDatum $ PProposalDatum
-  --       { proposal: proposalDatum.proposal
-  --       , for: proposalDatum.for
-  --       , against: proposalDatum.against
-  --       , policyRef: proposalDatum.policyRef
-  --       , quorum: proposalDatum.quorum
-  --       , initiator: proposalDatum.initiator
-  --       , cost: proposalDatum.cost
-  --       , deadline: proposalDatum.deadline
-  --       , processed: fromInt 1
-  --       }
-  -- let newValue = if isQuorumReached then proposalValue else proposalValue - proposalDatum.cost
-  -- let payToManager = 
-  --   if isQuorumReached 
-  --     then Constraints.mustPayToPubKeyAddress ownCreds.ownPkh ownCreds.ownSkh paymentToVoter
+rejectProposal :: Protocol -> ScriptInfo PProposalDatum -> Contract Unit
+rejectProposal protocol proposalScriptInfo = do
+  markAsProcessed protocol proposalScriptInfo true
   logInfo' "Proposal is rejected"
 
-rejectProposal :: ScriptInfo PProposalDatum -> Contract Unit
-rejectProposal (ScriptInfo proposalScriptInfo) = do
-
-  -- just mark proposal as processed
-  logInfo' "Proposal is rejected"
-
-processFailedToAchiveQuorumProposal :: ScriptInfo PProposalDatum -> Contract Unit
-processFailedToAchiveQuorumProposal (ScriptInfo proposalScriptInfo) = do
-  -- seize proposal fee from the script, because the quorum is not reached
-  -- mark Proposal as processed
-
-  -- ownCreds@(OwnCredentials creds) <- getOwnCreds
-  -- let
-  --   constraints :: Constraints.TxConstraints Void Void
-  --   constraints =
-  --     Constraints.mustSpendPubKeyOutput ownCreds.nonCollateralORef
-  --       <> Constraints.mustMintValueWithRedeemer
-  --         voteTokenRedeemer
-  --         voteTokensValue
-
-  --       <> Constraints.mustSpendScriptOutputUsingScriptRef
-  --         (fst proposalScriptInfo.utxo)
-  --         voteRedeemer
-  --         proposalRefScriptInput
-  --       <> Constraints.mustPayToScriptAddress
-  --         proposalScriptInfo.validatorHash
-  --         (ScriptCredential proposalScriptInfo.validatorHash)
-  --         newProposalDatum
-  --         Constraints.DatumInline
-  --         paymentToProposal
-  --       <> Constraints.mustPayToPubKeyAddress ownCreds.ownPkh ownCreds.ownSkh paymentToVoter
-  --       <> Constraints.mustBeSignedBy ownCreds.ownPkh
-  --       <> Constraints.mustValidateIn votingTimeRange
-  --       <> Constraints.mustReferenceOutput (fst proposalRefScriptUtxo)
-  --       <> Constraints.mustReferenceOutput (fst govScriptInfo.utxo)
-
-  --   lookups :: Lookups.ScriptLookups Void
-  --   lookups =
-  --     Lookups.mintingPolicy voteMp
-  --       <> Lookups.unspentOutputs ownCreds.ownUtxos
-  --       <> Lookups.unspentOutputs proposalScriptInfo.utxos
-  --       <> Lookups.unspentOutputs govScriptInfo.utxos
-
+processNoQuorum :: Protocol -> ScriptInfo PProposalDatum -> Contract Unit
+processNoQuorum protocol proposalScriptInfo = do
+  markAsProcessed protocol proposalScriptInfo false
   logInfo' "Proposal is failed to archive a qourum, marked as processed"
 
-applyProposal :: ScriptInfo PProposalDatum -> Contract Unit
-applyProposal (ScriptInfo proposalScriptInfo) = do
+markAsProcessed :: Protocol -> ScriptInfo PProposalDatum -> Boolean -> Contract Unit
+markAsProcessed protocol (ScriptInfo proposalScriptInfo) isQuorumReached = do
+
+  ProtocolScriptInfo protocolScriptInfo <- getProtocolScriptInfo protocol
+  ownCreds@(OwnCredentials creds) <- getOwnCreds
+  proposalThreadCs <- liftContractM "Impossible to get threadTokenCs from proposal UTXO" $ getThreadCsByTn proposalScriptInfo.utxo proposalScriptInfo.tokenName
+  let PProposalDatum currentDatum = proposalScriptInfo.datum
+  let currentValue = proposalScriptInfo.value
+
+  now <- currentTime
+  let redeemer = toRedeemer $ PRejectProposal proposalThreadCs (booleanToBigInt isQuorumReached)
+  let newDatum = toDatum $ PProposalDatum
+        { proposal: currentDatum.proposal
+        , for: currentDatum.for
+        , against: currentDatum.against
+        , policyRef: currentDatum.policyRef
+        , quorum: currentDatum.quorum
+        , initiator: currentDatum.initiator
+        , cost: currentDatum.cost
+        , deadline: currentDatum.deadline
+        , processed: fromInt 1
+        }
+  let newValue = 
+        if isQuorumReached 
+        then currentValue 
+        else subtractAdaFromValue currentValue currentDatum.cost
+
+  let payToManager = 
+        if isQuorumReached 
+        then Constraints.mustPayToPubKeyAddress creds.ownPkh creds.ownSkh (addAdaToValue currentValue currentDatum.cost)
+        else mempty
+
+  let
+    constraints :: Constraints.TxConstraints Void Void
+    constraints =
+      Constraints.mustSpendScriptOutputUsingScriptRef
+        (fst proposalScriptInfo.utxo)
+        redeemer
+        proposalScriptInfo.refScriptInput
+        <> Constraints.mustPayToScriptAddress
+          proposalScriptInfo.validatorHash
+          (ScriptCredential proposalScriptInfo.validatorHash)
+          newDatum
+          Constraints.DatumInline
+          newValue
+        <> Constraints.mustBeSignedBy creds.ownPkh
+        
+        <> Constraints.mustValidateIn (from now)
+        <> Constraints.mustReferenceOutput (fst proposalScriptInfo.refScriptUtxo)
+        <> Constraints.mustReferenceOutput (fst protocolScriptInfo.references.verTokenRef)
+        <> payToManager
+
+  let
+    lookups :: Lookups.ScriptLookups Void
+    lookups = Lookups.unspentOutputs proposalScriptInfo.utxos
+  
+
+  completeTx lookups constraints ownCreds  
+  logInfo' "Proposal is marked as processed"
+
+applyProposal :: Protocol -> ScriptInfo PProposalDatum -> Contract Unit
+applyProposal protocol (ScriptInfo proposalScriptInfo) = do
 
   --   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
   --   ownCreds@(OwnCredentials creds) <- getOwnCreds
