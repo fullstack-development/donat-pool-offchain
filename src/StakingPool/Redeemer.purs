@@ -4,10 +4,9 @@ import Contract.Prelude
 
 import Contract.Address (PaymentPubKeyHash)
 import Contract.PlutusData (class HasPlutusSchema, class ToData, type (:+), type (:=), type (@@), PNil, S, Z, genericToData)
-import Data.BigInt (BigInt)
+import StakingPoolInfo.Datum (DaoTokensAmt)
 
 type ProviderPkh = PaymentPubKeyHash
-type DaoTokensAmt = BigInt
 
 data PStakingPoolRedeemer
   = PDepositWithCurrentEpoch DaoTokensAmt ProviderPkh
