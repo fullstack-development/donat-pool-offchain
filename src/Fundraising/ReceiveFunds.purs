@@ -76,8 +76,11 @@ contract pData (FundraisingData fundraisingData) = do
   let isCurrentEpoch = timestamp.epoch == feePoolEpoch
   let
     amountToReceiver = Value.lovelaceValueOf $ (Value.valueOf currentFunds adaSymbol adaToken - feeAmount)
-    amountToManager = if feeAmount <= twoMinAda then feeAmount else minAda
-  frConstraints /\ frLookups <- mkFundraisingConsctraints protocol feeAmount threadTokenCurrency threadTokenName isCurrentEpoch frInfo'
+    -- we need the fee amount greater than two minAda: one minAda goes to manager's wallet, one minAda may go to 
+    -- the new FeePoolInfo UTxO (if it's a new epoch) and the rest goes to FeePool
+    feeTooSmallToUseFeePool = feeAmount <= twoMinAda
+    amountToManager = if feeTooSmallToUseFeePool then feeAmount else minAda
+  frConstraints /\ frLookups <- mkFundraisingConstraints protocol feeAmount threadTokenCurrency threadTokenName isCurrentEpoch frInfo'
   feePoolConstraints /\ feePoolLookups <- FeePool.mkReceiveFundsConstraints protocol now feeAmount
   logInfo' $ "FeePool constraints: " <> show feePoolConstraints
   logInfo' $ "FeePool lookups: " <> show feePoolLookups
@@ -107,7 +110,7 @@ contract pData (FundraisingData fundraisingData) = do
 
   logInfo' "Receive funds finished successfully"
 
-mkFundraisingConsctraints
+mkFundraisingConstraints
   :: Protocol
   -> BigInt
   -> Value.CurrencySymbol
@@ -115,7 +118,7 @@ mkFundraisingConsctraints
   -> Boolean
   -> FundraisingScriptInfo
   -> Contract (Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void)
-mkFundraisingConsctraints protocol feeAmount threadTokenCurrency threadTokenName isCurrentEpoch (FundraisingScriptInfo frInfo) = do
+mkFundraisingConstraints protocol feeAmount threadTokenCurrency threadTokenName isCurrentEpoch (FundraisingScriptInfo frInfo) = do
   verTokenMintingPolicy <- VerToken.mintingPolicy protocol
   (ProtocolScriptInfo protocolInfo) <- getProtocolScriptInfo protocol
   verTokenName <- VerToken.verTokenName

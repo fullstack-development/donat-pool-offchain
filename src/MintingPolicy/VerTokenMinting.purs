@@ -40,4 +40,4 @@ verTokenName :: Contract Value.TokenName
 verTokenName = runMkTokenName "VerificationToken"
 
 feePoolVerTokenName :: Contract Value.TokenName
-feePoolVerTokenName = runMkTokenName "FeePoolVerToken"
+feePoolVerTokenName = runMkTokenName "FeePoolInfoVerToken"
