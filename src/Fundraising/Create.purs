@@ -14,7 +14,8 @@ import Contract.Time (POSIXTime(..))
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Ctl.Internal.Types.ByteArray (byteArrayFromAscii)
-import Data.BigInt (fromInt, toString)
+import Data.BigInt (fromInt, toNumber, toString)
+import Data.Int as Int
 import Data.Lens (view)
 import Data.String (take)
 import Effect.Exception (throw)
@@ -177,9 +178,9 @@ contract protocolData (CreateFundraisingParams { title, amount, duration }) = do
   pure $ FundraisingInfo
     { creator: Just creatorPkh
     , title: title
-    , goal: targetAmount
-    , raisedAmt: fromInt 0
-    , deadline: deadline
+    , goal: toNumber targetAmount
+    , raisedAmt: Int.toNumber 0
+    , deadline: toNumber <<< unwrap $ deadline
     , threadTokenCurrency: currencySymbolToString nftCs
     , threadTokenName: fundraisingTokenNameString
     , isCompleted: false

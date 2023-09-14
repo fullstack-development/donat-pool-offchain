@@ -5,11 +5,10 @@ import Contract.Prelude
 import Contract.Address (Bech32String)
 import Contract.Chain (currentTime)
 import Contract.Monad (Contract, liftContractM)
-import Contract.Time (POSIXTime)
 import Contract.Value as Value
 import Ctl.Internal.Types.ByteArray (ByteArray(..))
 import Data.Array as Array
-import Data.BigInt (BigInt)
+import Data.BigInt (toNumber)
 import Data.TextDecoder (decodeUtf8)
 import Ext.Contract.Value (getCurrencyByTokenName, currencySymbolToString)
 import Ext.Data.Either (eitherContract)
@@ -23,9 +22,9 @@ import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO)
 newtype FundraisingInfo = FundraisingInfo
   { creator :: Maybe Bech32String
   , title :: String
-  , goal :: BigInt -- Goal in lovelaces
-  , raisedAmt :: BigInt -- Raised amount in lovelaces
-  , deadline :: POSIXTime
+  , goal :: Number -- Goal in lovelaces
+  , raisedAmt :: Number -- Raised amount in lovelaces
+  , deadline :: Number
   , threadTokenCurrency :: String
   , threadTokenName :: String
   , isCompleted :: Boolean
@@ -48,9 +47,9 @@ mapToFundraisingInfo utxo = do
   pure $ FundraisingInfo
     { creator: Just creator
     , title: title
-    , goal: currentDatum.frAmount
-    , raisedAmt: currentFunds
-    , deadline: currentDatum.frDeadline
+    , goal: toNumber currentDatum.frAmount
+    , raisedAmt: toNumber currentFunds
+    , deadline: toNumber <<< unwrap $ currentDatum.frDeadline
     , threadTokenCurrency: currencySymbolToString cs
     , threadTokenName: fundraisingTokenNameString
     , isCompleted: now > currentDatum.frDeadline || currentFunds >= currentDatum.frAmount
