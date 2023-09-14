@@ -21,6 +21,7 @@ data PVerTokenRedeemer
   | PBurnVerToken Value.TokenName
   | PMintProposalVerToken Value.TokenName
   | PMintFeePoolVerToken
+  | PMintWithStakingPool Value.TokenName
 
 derive instance Generic PVerTokenRedeemer _
 
@@ -37,6 +38,9 @@ instance
         :+ "PMintFeePoolVerToken"
         := PNil
         @@ (S (S (S Z)))
+        :+ "PMintWithStakingPool"
+        := PNil
+        @@ (S (S (S (S Z))))
         :+ PNil
     )
 

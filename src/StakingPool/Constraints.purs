@@ -4,15 +4,19 @@ import Contract.Prelude
 
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Monad (Contract)
-import Contract.PlutusData (Datum(Datum), Redeemer(Redeemer), toData)
+import Contract.ScriptLookups as Lookups
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
 import Data.BigInt (fromInt)
+import Ext.Contract.Time (Epoch)
 import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Models (Protocol(..))
 import Shared.MinAda (minAdaValue)
+import Shared.ScriptInfo (ScriptInfo(..))
+import Shared.Tx (toDatum, toRedeemer)
 import StakingPool.Datum (PStakingPoolDatum(..))
 import StakingPool.Models (mkStakingPoolFromProtocol)
+import StakingPool.Redeemer (PStakingPoolRedeemer(..))
 import StakingPool.StakingPoolScript (getStakingPoolTokenName, getStakingPoolValidatorHash)
 
 mkStartSystemConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void)
@@ -29,13 +33,34 @@ mkStartSystemConstraints protocol'@(Protocol protocol) = do
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustMintValueWithRedeemer
-        (Redeemer $ toData $ PMintNft stakingPoolTn)
+        (toRedeemer $ PMintNft stakingPoolTn)
         stakingPoolTokenValue
         <> Constraints.mustPayToScriptAddress
           stakingPoolHash
           (ScriptCredential stakingPoolHash)
-          (Datum $ toData initDatum)
+          (toDatum initDatum)
           Constraints.DatumInline
           payment
 
   pure constraints
+
+mkOpenNewEpochConstraints :: ScriptInfo PStakingPoolDatum -> Epoch -> Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void
+mkOpenNewEpochConstraints (ScriptInfo stakingPoolScriptInfo) newEpoch =
+  let
+    spDatum = toDatum $ PStakingPoolDatum { currentEpoch: newEpoch }
+    spRedeemer = toRedeemer POpenNewEpoch
+    constraints =
+      Constraints.mustSpendScriptOutputUsingScriptRef
+        (fst stakingPoolScriptInfo.utxo)
+        spRedeemer
+        stakingPoolScriptInfo.refScriptInput
+        <> Constraints.mustPayToScriptAddress
+          stakingPoolScriptInfo.validatorHash
+          (ScriptCredential stakingPoolScriptInfo.validatorHash)
+          spDatum
+          Constraints.DatumInline
+          stakingPoolScriptInfo.value
+        <> Constraints.mustReferenceOutput (fst stakingPoolScriptInfo.refScriptUtxo)
+    lookups = Lookups.unspentOutputs stakingPoolScriptInfo.utxos
+  in
+    (constraints /\ lookups)

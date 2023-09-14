@@ -25,6 +25,9 @@ import Proposal.Model (PProposal)
 import Proposal.ProposalScript (getProposalValidatorHash, proposalTokenName, proposalValidatorScript)
 import Protocol.Models (Protocol)
 import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByNFT, getUtxoByScriptRef)
+import StakingPool.Datum (PStakingPoolDatum)
+import StakingPool.Models (mkStakingPoolFromProtocol)
+import StakingPool.StakingPoolScript (getStakingPoolTokenName, getStakingPoolValidatorHash, stakingPoolValidatorScript)
 
 newtype GetScriptData = GetScriptData
   { getThreadTokenName :: Contract TokenName
@@ -62,6 +65,17 @@ getFeePoolScriptInfo protocol = do
       , getValidatoHash: getFeePoolValidatorHash feePool
       }
   getScriptInfo getScriptData (unwrap protocol).protocolCurrency "FeePool"
+
+getStakingPoolScriptInfo :: Protocol -> Contract (ScriptInfo PStakingPoolDatum)
+getStakingPoolScriptInfo protocol = do
+  stakingPool <- mkStakingPoolFromProtocol protocol
+  let
+    getScriptData = GetScriptData
+      { getThreadTokenName: getStakingPoolTokenName
+      , getValidator: stakingPoolValidatorScript stakingPool
+      , getValidatoHash: getStakingPoolValidatorHash stakingPool
+      }
+  getScriptInfo getScriptData (unwrap protocol).protocolCurrency "StakingPool"
 
 newtype ScriptInfo datum = ScriptInfo
   { tokenName :: TokenName

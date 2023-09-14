@@ -4,7 +4,6 @@ import Contract.Prelude
 
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Monad (Contract)
-import Contract.PlutusData (Datum(Datum), Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Time (POSIXTime)
 import Contract.TxConstraints as Constraints
@@ -19,6 +18,7 @@ import MintingPolicy.NftRedeemer (PNftRedeemer(..))
 import Protocol.Models (Protocol(..))
 import Shared.MinAda (minAda, minAdaValue, twoMinAda)
 import Shared.ScriptInfo (ScriptInfo(..), getFeePoolScriptInfo)
+import Shared.Tx (toDatum, toRedeemer)
 
 getFeePoolEpoch :: Protocol -> Contract BigInt
 getFeePoolEpoch protocol = do
@@ -37,13 +37,13 @@ mkReceiveFundsConstraints protocol now feeAmt
         redeemer =
           if isCurrentEpoch then PAddFundsWithCurrentEpoch amtToDeposit
           else PAddFundsWithNewEpoch amtToDeposit
-        newDatum = Datum <<< toData $ PFeePoolDatum { currentEpoch: timestamp.epoch }
+        newDatum = toDatum $ PFeePoolDatum { currentEpoch: timestamp.epoch }
         paymentToFeePool = feePoolScriptInfo.value <> Value.lovelaceValueOf amtToDeposit
       let
         constraints =
           Constraints.mustSpendScriptOutputUsingScriptRef
             (fst feePoolScriptInfo.utxo)
-            (Redeemer $ toData redeemer)
+            (toRedeemer redeemer)
             feePoolScriptInfo.refScriptInput
             <> Constraints.mustPayToScriptAddress
               feePoolScriptInfo.validatorHash
@@ -68,12 +68,12 @@ mkStartSystemConstraints protocol'@(Protocol protocol) = do
     constraints :: Constraints.TxConstraints Void Void
     constraints =
       Constraints.mustMintValueWithRedeemer
-        (Redeemer $ toData $ PMintNft feePoolTn)
+        (toRedeemer $ PMintNft feePoolTn)
         feePoolTokenValue
         <> Constraints.mustPayToScriptAddress
           feePoolHash
           (ScriptCredential feePoolHash)
-          (Datum $ toData initDatum)
+          (toDatum initDatum)
           Constraints.DatumInline
           payment
 

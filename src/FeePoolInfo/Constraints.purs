@@ -6,7 +6,6 @@ import Contract.Address (getNetworkId, validatorHashBaseAddress)
 import Contract.AssocMap as Map
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Monad (Contract, liftContractM)
-import Contract.PlutusData (Datum(Datum), Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Scripts (MintingPolicy, MintingPolicyHash, Validator, ValidatorHash, mintingPolicyHash)
 import Contract.Time (POSIXTime)
@@ -64,7 +63,7 @@ mkCurrentEpochConstraints timestamp feeAmt feePoolInfoHash feePoolInfoValidator 
 
   let feePoolScriptRef = PlutusScriptRef $ unwrap feePoolInfoValidator
   feePoolRefScriptUtxo <- getUtxoByScriptRef "FeePoolInfo" feePoolScriptRef feePoolUTxOs
-  feePoolVerTokenName <- VerToken.feePoolVerTokenName
+  feePoolVerTokenName <- VerToken.feePoolInfoVerTokenName
 
   let filteredUTxOs = filterByToken (verTokenCs /\ feePoolVerTokenName) $ DataMap.toUnfoldable feePoolUTxOs
   utxo <- liftContractM "FeePoolInfo UTxO for the current epoch not found" $ getOneUTxOByEpoch timestamp.epoch filteredUTxOs
@@ -102,7 +101,7 @@ mkNewEpochConstraints
   -> Value.CurrencySymbol
   -> Contract (Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void)
 mkNewEpochConstraints protocol timestamp feeAmt feePoolInfoHash verPolicy verTokenCs = do
-  feePoolVerTokenName <- VerToken.feePoolVerTokenName
+  feePoolVerTokenName <- VerToken.feePoolInfoVerTokenName
   let
     verTokenPolicyHash :: MintingPolicyHash
     verTokenPolicyHash = mintingPolicyHash verPolicy
@@ -118,14 +117,14 @@ mkNewEpochConstraints protocol timestamp feeAmt feePoolInfoHash verPolicy verTok
     constraints =
       Constraints.mustMintCurrencyWithRedeemerUsingScriptRef
         verTokenPolicyHash
-        (Redeemer $ toData PMintFeePoolVerToken)
+        (toRedeemer PMintFeePoolVerToken)
         feePoolVerTokenName
         one
         protocolInfo.references.verTokenInput
         <> Constraints.mustPayToScriptAddress
           feePoolInfoHash
           (ScriptCredential feePoolInfoHash)
-          (Datum $ toData datum)
+          (toDatum datum)
           Constraints.DatumInline
           payment
 

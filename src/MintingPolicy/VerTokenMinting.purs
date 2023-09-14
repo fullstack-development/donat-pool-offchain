@@ -39,5 +39,8 @@ mkMintVerTokenPolicy unappliedPolicy protocol =
 verTokenName :: Contract Value.TokenName
 verTokenName = runMkTokenName "VerificationToken"
 
-feePoolVerTokenName :: Contract Value.TokenName
-feePoolVerTokenName = runMkTokenName "FeePoolInfoVerToken"
+feePoolInfoVerTokenName :: Contract Value.TokenName
+feePoolInfoVerTokenName = runMkTokenName "FeePoolInfoVerToken"
+
+stakingPoolInfoVerTokenName :: Contract Value.TokenName
+stakingPoolInfoVerTokenName = runMkTokenName "StakingPoolInfoVerToken"
