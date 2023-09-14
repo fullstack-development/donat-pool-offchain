@@ -9,7 +9,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 const App = () => {
 
   const protocolData = {
-    protocolCurrency: "feeba39b4bc15abd43fc37e32250b8d0b4b74294db3717b30758ef82",
+    protocolCurrency: "e121953e5d883038b829a9f3fb6d5aba223bde1a4f69a3a31c44f052",
     protocolTokenName: "DonatPoolProtocol"
   }
 
@@ -31,7 +31,7 @@ const App = () => {
   }>();
  
   const testnetNami = { 
-    wallet: "Nami",
+    wallet: "Flint",
     isMainnet: false
   };
 

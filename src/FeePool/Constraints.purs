@@ -9,12 +9,15 @@ import Contract.ScriptLookups as Lookups
 import Contract.Time (POSIXTime)
 import Contract.TxConstraints as Constraints
 import Contract.Value as Value
-import Data.BigInt (BigInt)
+import Data.BigInt (BigInt, fromInt)
 import Ext.Contract.Time (posixToTimeStamp)
 import FeePool.Datum (PFeePoolDatum(..))
+import FeePool.FeePoolScript (getFeePoolTokenName, getFeePoolValidatorHash)
+import FeePool.Models (mkFeePoolFromProtocol)
 import FeePool.Redeemer (PFeePoolRedeemer(..))
-import Protocol.Models (Protocol)
-import Shared.MinAda (minAda, twoMinAda)
+import MintingPolicy.NftRedeemer (PNftRedeemer(..))
+import Protocol.Models (Protocol(..))
+import Shared.MinAda (minAda, minAdaValue, twoMinAda)
 import Shared.ScriptInfo (ScriptInfo(..), getFeePoolScriptInfo)
 
 getFeePoolEpoch :: Protocol -> Contract BigInt
@@ -51,3 +54,27 @@ mkReceiveFundsConstraints protocol now feeAmt
             <> Constraints.mustReferenceOutput (fst feePoolScriptInfo.refScriptUtxo)
       let lookups = Lookups.unspentOutputs feePoolScriptInfo.utxos
       pure $ constraints /\ lookups
+
+mkStartSystemConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void)
+mkStartSystemConstraints protocol'@(Protocol protocol) = do
+  feePoolTn <- getFeePoolTokenName
+  feePool <- mkFeePoolFromProtocol protocol'
+  feePoolHash <- getFeePoolValidatorHash feePool
+  let
+    initDatum = PFeePoolDatum { currentEpoch: fromInt 0 }
+    feePoolTokenValue = Value.singleton protocol.protocolCurrency feePoolTn one
+    payment = minAdaValue <> feePoolTokenValue
+
+    constraints :: Constraints.TxConstraints Void Void
+    constraints =
+      Constraints.mustMintValueWithRedeemer
+        (Redeemer $ toData $ PMintNft feePoolTn)
+        feePoolTokenValue
+        <> Constraints.mustPayToScriptAddress
+          feePoolHash
+          (ScriptCredential feePoolHash)
+          (Datum $ toData initDatum)
+          Constraints.DatumInline
+          payment
+
+  pure constraints
