@@ -30,7 +30,7 @@ const App = () => {
     frThreadTokenName: any;
   }>();
  
-  const testnetNami = { 
+  const testnetWallet = { 
     wallet: "Flint",
     isMainnet: false
   };
@@ -56,32 +56,32 @@ const App = () => {
   const onCreateFundraisingClick = () => {
     a.main.value0.createFundraising(onCreateFundraisingComplete)(console.log)(
       protocolData
-    )(testnetNami)(createFundraisingParams)();
+    )(testnetWallet)(createFundraisingParams)();
   };
 
   const onDonate = () => {   
-    a.main.value0.donate(console.log)(console.log)(protocolData)(testnetNami)(fundraisingData)(80)();
+    a.main.value0.donate(console.log)(console.log)(protocolData)(testnetWallet)(fundraisingData)(80)();
   };
 
   const onReceiveFunds = () => {
-    a.main.value0.receiveFunds(console.log)(console.log)(protocolData)(testnetNami)(fundraisingData)();
+    a.main.value0.receiveFunds(console.log)(console.log)(protocolData)(testnetWallet)(fundraisingData)();
   }
   
   const onGetAllFundraising = () => {
-    a.main.value0.getAllFundraisings(console.log)(console.log)(protocolData)(testnetNami)();
+    a.main.value0.getAllFundraisings(console.log)(console.log)(protocolData)(testnetWallet)();
   };
 
   const onGetUserRelatedFundraisings = () => {
-    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)(testnetNami)();
+    a.main.value0.getUserRelatedFundraisings(console.log)(console.log)(protocolData)(testnetWallet)();
   };
 
   const onGetAppInfo = () => {
-    a.main.value0.getAppInfo(console.log)(console.log)(protocolData)(testnetNami)();
+    a.main.value0.getAppInfo(console.log)(console.log)(protocolData)(testnetWallet)();
   };
 
   // uncomment if need to mint governance tokens
   // const onMintGovernanceClick = () => {
-  //   a.main.value0.mintGovernanceTokens(console.log)(console.log)(testnetNami)();
+  //   a.main.value0.mintGovernanceTokens(console.log)(console.log)(testnetWallet)();
   // };
 
   const [proposalCurrency, setProposalCurrency] = useState<{any;}>();
@@ -91,7 +91,7 @@ const App = () => {
   };
 
   const onCreateProposal = () => {
-    a.main.value0.createProposal(onCreateProposalComplete)(console.log)(protocolData)(proposalParams)(testnetNami)();    
+    a.main.value0.createProposal(onCreateProposalComplete)(console.log)(protocolData)(proposalParams)(testnetWallet)();    
   };
 
   const onVoteForChangeProtocol = () => {
@@ -101,7 +101,7 @@ const App = () => {
       for: true 
     }
   
-    a.main.value0.vote(console.log)(console.log)(protocolData)(voteData)(testnetNami)();    
+    a.main.value0.vote(console.log)(console.log)(protocolData)(voteData)(testnetWallet)();    
   };
 
   return (
