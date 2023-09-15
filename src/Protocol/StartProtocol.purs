@@ -39,7 +39,8 @@ import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.MinAda (minAdaValue)
 import Shared.ScriptRef as ScriptRef
 import Shared.Tx (completeTx)
-import StakingPool.Constraints as StakingPool
+import StakingPool.Constraints (mkStartSystemConstraints) as StakingPool
+import StakingPool.OpenNewEpoch (openNewEpoch) as StakingPool
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
 initialProtocolConfigParams = ProtocolConfigParams
@@ -74,6 +75,7 @@ startSystem params = do
   ScriptRef.mkStakingPoolRefScript protocol
   ScriptRef.mkStakingPoolInfoRefScript protocol
   ScriptRef.mkVerTokenPolicyRef protocolData
+  StakingPool.openNewEpoch protocolData
   frConfig <- makeFundraisingConfig protocol
   liftEffect $ writeFundraisingConfig frConfig
   pure protocolData
