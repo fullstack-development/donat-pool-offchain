@@ -12,6 +12,7 @@ import Effect.Aff (Aff, cancelWith, effectCanceler, launchAff)
 import Test.Spec.Runner (defaultConfig)
 import Test.Unit.CalcFee as CalcFee
 import Test.Unit.Serialization as Serialization
+import Test.Unit.StakingTokenName as StakingTokenName
 
 -- Run with `spago test --main Test.UnitTests`
 main :: Effect Unit
@@ -25,3 +26,4 @@ testPlan :: TestPlanM (Aff Unit) Unit
 testPlan = do
   CalcFee.suite
   Serialization.suite
+  StakingTokenName.suite
