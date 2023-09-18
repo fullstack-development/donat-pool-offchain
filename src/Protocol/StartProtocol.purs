@@ -22,9 +22,7 @@ import Contract.Value as Value
 import Data.BigInt (fromInt)
 import Effect.Aff (launchAff_)
 import Ext.Contract.Value (mkCurrencySymbol)
-import FeePool.Datum (PFeePoolDatum(..))
-import FeePool.FeePoolScript (getFeePoolTokenName, getFeePoolValidatorHash)
-import FeePool.Models (mkFeePoolFromProtocol)
+import FeePool.Constraints as FeePool
 import Governance.Config (getGovTokenFromConfig)
 import Governance.Datum (GovernanceDatum(..))
 import Governance.GovernanceScript (getGovernanceValidatorHash, governanceTokenName)
@@ -41,6 +39,8 @@ import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.MinAda (minAdaValue)
 import Shared.ScriptRef as ScriptRef
 import Shared.Tx (completeTx)
+import StakingPool.Constraints (mkStartConstraints) as StakingPool
+import StakingPool.CheckEpoch (checkEpoch) as StakingPool
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
 initialProtocolConfigParams = ProtocolConfigParams
@@ -72,7 +72,10 @@ startSystem params = do
   ScriptRef.mkProposalRefScript protocol
   ScriptRef.mkFeePoolRefScript protocol
   ScriptRef.mkFeePoolInfoRefScript protocol
+  ScriptRef.mkStakingPoolRefScript protocol
+  ScriptRef.mkStakingPoolInfoRefScript protocol
   ScriptRef.mkVerTokenPolicyRef protocolData
+  StakingPool.checkEpoch protocolData
   frConfig <- makeFundraisingConfig protocol
   liftEffect $ writeFundraisingConfig frConfig
   pure protocolData
@@ -104,7 +107,8 @@ startProtocol params@(ProtocolConfigParams confParams) = do
     paymentToProtocol = minAdaValue <> protocolNftValue
 
   govConstraints <- getGovernanceConstraints protocol
-  feePoolConstraints <- getFeePoolConstraints protocol
+  feePoolConstraints <- FeePool.mkStartConstraints protocol
+  stakingPoolConstraints <- StakingPool.mkStartConstraints protocol
 
   let
     constraints :: Constraints.TxConstraints Void Void
@@ -121,6 +125,7 @@ startProtocol params@(ProtocolConfigParams confParams) = do
           paymentToProtocol
         <> govConstraints
         <> feePoolConstraints
+        <> stakingPoolConstraints
 
     lookups :: Lookups.ScriptLookups Void
     lookups =
@@ -187,26 +192,3 @@ getGovernanceConstraints protocol'@(Protocol protocol) = do
 
   pure constraints
 
-getFeePoolConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void)
-getFeePoolConstraints protocol'@(Protocol protocol) = do
-  feePoolTn <- getFeePoolTokenName
-  feePool <- mkFeePoolFromProtocol protocol'
-  feePoolHash <- getFeePoolValidatorHash feePool
-  let
-    initDatum = PFeePoolDatum { currentEpoch: fromInt 0 }
-    feePoolTokenValue = Value.singleton protocol.protocolCurrency feePoolTn one
-    payment = minAdaValue <> feePoolTokenValue
-
-    constraints :: Constraints.TxConstraints Void Void
-    constraints =
-      Constraints.mustMintValueWithRedeemer
-        (Redeemer $ toData $ PMintNft feePoolTn)
-        feePoolTokenValue
-        <> Constraints.mustPayToScriptAddress
-          feePoolHash
-          (ScriptCredential feePoolHash)
-          (Datum $ toData initDatum)
-          Constraints.DatumInline
-          payment
-
-  pure constraints

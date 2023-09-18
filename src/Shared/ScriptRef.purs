@@ -32,6 +32,9 @@ import Shared.MinAda (sevenMinAdaValue)
 import Shared.OwnCredentials (getOwnCreds)
 import Shared.Utxo (UtxoTuple)
 import Shared.Tx (completeTx)
+import StakingPoolInfo.StakingPoolInfoScript (getStakingPoolInfoValidatorHash, stakingPoolInfoValidatorScript)
+import StakingPool.Models (mkStakingPoolFromProtocol)
+import StakingPool.StakingPoolScript (getStakingPoolValidatorHash, stakingPoolValidatorScript)
 
 createRefScriptUtxo ∷ String -> ScriptRef -> ValidatorHash → Contract Unit
 createRefScriptUtxo _ (NativeScriptRef _) _ = liftEffect $ throw "Unexpected scriptRef type: waiting for PlutusScriptRef"
@@ -102,6 +105,22 @@ mkFeePoolInfoRefScript protocol = do
   feePoolInfoValidator <- feePoolInfoValidatorScript feePool
   let scriptRef = PlutusScriptRef (unwrap feePoolInfoValidator)
   createRefScriptUtxo "FeePoolInfo" scriptRef feePoolInfoHash
+
+mkStakingPoolRefScript :: Protocol -> Contract Unit
+mkStakingPoolRefScript protocol = do
+  stakingPool <- mkStakingPoolFromProtocol protocol
+  stakingPoolHash <- getStakingPoolValidatorHash stakingPool
+  stakingPoolValidator <- stakingPoolValidatorScript stakingPool
+  let scriptRef = PlutusScriptRef (unwrap stakingPoolValidator)
+  createRefScriptUtxo "StakingPool" scriptRef stakingPoolHash
+
+mkStakingPoolInfoRefScript :: Protocol -> Contract Unit
+mkStakingPoolInfoRefScript protocol = do
+  stakingPool <- mkStakingPoolFromProtocol protocol
+  stakingPoolInfoHash <- getStakingPoolInfoValidatorHash stakingPool
+  stakingPoolInfoValidator <- stakingPoolInfoValidatorScript stakingPool
+  let scriptRef = PlutusScriptRef (unwrap stakingPoolInfoValidator)
+  createRefScriptUtxo "StakingPoolInfo" scriptRef stakingPoolInfoHash
 
 createPolicyRefUtxo :: String -> MintingPolicy → ValidatorHash → Contract Unit
 createPolicyRefUtxo _ (NativeMintingPolicy _) _ = liftEffect $ throw "Unexpected minting policy type"

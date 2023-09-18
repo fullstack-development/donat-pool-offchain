@@ -19,7 +19,7 @@ getFeePoolValidatorHash feePool = do
   pure $ validatorHash validator
 
 getFeePoolTokenName :: forall (r :: Row Type). Contract Value.TokenName
-getFeePoolTokenName = liftContractM "Cannot make Fundraising token name" $ feePoolTokenName
+getFeePoolTokenName = liftContractM "Cannot make FeePool token name" $ feePoolTokenName
 
 feePoolTokenNameString :: String
 feePoolTokenNameString = "DonatPoolFeePool"

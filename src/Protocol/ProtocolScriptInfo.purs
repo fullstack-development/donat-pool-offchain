@@ -2,7 +2,7 @@ module Protocol.ProtocolScriptInfo where
 
 import Contract.Prelude
 
-import Contract.Address (Address, getNetworkId, validatorHashBaseAddress)
+import Contract.Address (Address, PaymentPubKeyHash, getNetworkId, validatorHashBaseAddress)
 import Contract.Monad (Contract, liftContractM)
 import Contract.Scripts (MintingPolicy(..))
 import Contract.Transaction (ScriptRef(..), TransactionInput, TransactionOutputWithRefScript, mkTxUnspentOut)
@@ -19,6 +19,7 @@ import Protocol.Datum (PProtocolDatum)
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScript (getProtocolValidatorHash, protocolValidatorScript)
 import Shared.Utxo (extractDatumFromUTxO, extractValueFromUTxO, getUtxoByScriptRef)
+import Shared.OwnCredentials (getPkhSkhFromAddress)
 
 type References =
   { pScriptRef :: Tuple TransactionInput TransactionOutputWithRefScript
@@ -77,3 +78,9 @@ getProtocolScriptInfo protocol = do
     , pValue: value
     , references: refs
     }
+
+getProtocolManagerPkh :: ProtocolScriptInfo -> Contract PaymentPubKeyHash
+getProtocolManagerPkh (ProtocolScriptInfo info) = do
+  let managerAddress = (unwrap info.pDatum).managerAddress
+  pkh /\ _ <- getPkhSkhFromAddress managerAddress
+  pure pkh

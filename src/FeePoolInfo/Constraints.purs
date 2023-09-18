@@ -6,7 +6,6 @@ import Contract.Address (getNetworkId, validatorHashBaseAddress)
 import Contract.AssocMap as Map
 import Contract.Credential (Credential(ScriptCredential))
 import Contract.Monad (Contract, liftContractM)
-import Contract.PlutusData (Datum(Datum), Redeemer(Redeemer), toData)
 import Contract.ScriptLookups as Lookups
 import Contract.Scripts (MintingPolicy, MintingPolicyHash, Validator, ValidatorHash, mintingPolicyHash)
 import Contract.Time (POSIXTime)
@@ -29,11 +28,12 @@ import MintingPolicy.VerTokenRedeemers (PVerTokenRedeemer(..))
 import Protocol.Models (Protocol)
 import Protocol.ProtocolScriptInfo (ProtocolScriptInfo(..), getProtocolScriptInfo)
 import Shared.MinAda (minAda, minAdaValue, twoMinAda)
+import Shared.Tx (toDatum, toRedeemer)
 import Shared.Utxo (UtxoTuple, extractDatumFromUTxO, extractValueFromUTxO, filterByToken, getUtxoByScriptRef)
 
 mkReceiveFundsConstraints :: Protocol -> POSIXTime -> BigInt -> Contract (Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void)
 mkReceiveFundsConstraints protocol now feeAmt
-  | feeAmt <= twoMinAda = pure $ mempty /\ mempty
+  | feeAmt <= twoMinAda = pure $ mempty /\ mempty -- fee too small to use FeePool
   | otherwise = do
       let timestamp = posixToTimeStamp now
       currentEpoch <- FeePool.getFeePoolEpoch protocol
@@ -44,26 +44,26 @@ mkReceiveFundsConstraints protocol now feeAmt
 
       if timestamp.epoch == currentEpoch then do
         let fee = feeAmt - minAda
-        mkCurrentConstraints timestamp fee feePoolInfoHash feePoolInfoValidator verTokenCs
+        mkCurrentEpochConstraints timestamp fee feePoolInfoHash feePoolInfoValidator verTokenCs
       else do
         let fee = feeAmt - twoMinAda
-        mkNewConstraints protocol timestamp fee feePoolInfoHash verPolicy verTokenCs
+        mkNewEpochConstraints protocol timestamp fee feePoolInfoHash verPolicy verTokenCs
 
-mkCurrentConstraints
+mkCurrentEpochConstraints
   :: TimeStamp
   -> BigInt
   -> ValidatorHash
   -> Validator
   -> Value.CurrencySymbol
   -> Contract (Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void)
-mkCurrentConstraints timestamp feeAmt feePoolInfoHash feePoolInfoValidator verTokenCs = do
+mkCurrentEpochConstraints timestamp feeAmt feePoolInfoHash feePoolInfoValidator verTokenCs = do
   networkId <- getNetworkId
   feePoolAddress <- liftContractM "Impossible to get FeePoolInfo script address" $ validatorHashBaseAddress networkId feePoolInfoHash
   feePoolUTxOs <- utxosAt feePoolAddress
 
   let feePoolScriptRef = PlutusScriptRef $ unwrap feePoolInfoValidator
   feePoolRefScriptUtxo <- getUtxoByScriptRef "FeePoolInfo" feePoolScriptRef feePoolUTxOs
-  feePoolVerTokenName <- VerToken.feePoolVerTokenName
+  feePoolVerTokenName <- VerToken.feePoolInfoVerTokenName
 
   let filteredUTxOs = filterByToken (verTokenCs /\ feePoolVerTokenName) $ DataMap.toUnfoldable feePoolUTxOs
   utxo <- liftContractM "FeePoolInfo UTxO for the current epoch not found" $ getOneUTxOByEpoch timestamp.epoch filteredUTxOs
@@ -73,15 +73,15 @@ mkCurrentConstraints timestamp feeAmt feePoolInfoHash feePoolInfoValidator verTo
       Just amt -> Map.insert timestamp.dayOfEpoch (amt + feeAmt) datum.fee
       _ -> Map.insert timestamp.dayOfEpoch feeAmt datum.fee
 
-    updatedDatum = Datum <<< toData $ PFeePoolInfoDatum (datum { fee = updatedFee })
+    updatedDatum = toDatum $ PFeePoolInfoDatum (datum { fee = updatedFee })
 
-    feePoolefScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst feePoolRefScriptUtxo) (snd feePoolRefScriptUtxo)
+    feePoolScriptInput = Constraints.RefInput $ mkTxUnspentOut (fst feePoolRefScriptUtxo) (snd feePoolRefScriptUtxo)
 
     constraints =
       Constraints.mustSpendScriptOutputUsingScriptRef
         (fst utxo)
-        (Redeemer $ toData PAddRecord)
-        feePoolefScriptInput
+        (toRedeemer PAddRecord)
+        feePoolScriptInput
         <> Constraints.mustPayToScriptAddress
           feePoolInfoHash
           (ScriptCredential feePoolInfoHash)
@@ -92,7 +92,7 @@ mkCurrentConstraints timestamp feeAmt feePoolInfoHash feePoolInfoValidator verTo
     lookups = Lookups.unspentOutputs feePoolUTxOs
   pure $ constraints /\ lookups
 
-mkNewConstraints
+mkNewEpochConstraints
   :: Protocol
   -> TimeStamp
   -> BigInt
@@ -100,8 +100,8 @@ mkNewConstraints
   -> MintingPolicy
   -> Value.CurrencySymbol
   -> Contract (Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void)
-mkNewConstraints protocol timestamp feeAmt feePoolInfoHash verPolicy verTokenCs = do
-  feePoolVerTokenName <- VerToken.feePoolVerTokenName
+mkNewEpochConstraints protocol timestamp feeAmt feePoolInfoHash verPolicy verTokenCs = do
+  feePoolVerTokenName <- VerToken.feePoolInfoVerTokenName
   let
     verTokenPolicyHash :: MintingPolicyHash
     verTokenPolicyHash = mintingPolicyHash verPolicy
@@ -117,14 +117,14 @@ mkNewConstraints protocol timestamp feeAmt feePoolInfoHash verPolicy verTokenCs 
     constraints =
       Constraints.mustMintCurrencyWithRedeemerUsingScriptRef
         verTokenPolicyHash
-        (Redeemer $ toData PMintFeePoolVerToken)
+        (toRedeemer PMintFeePoolVerToken)
         feePoolVerTokenName
         one
         protocolInfo.references.verTokenInput
         <> Constraints.mustPayToScriptAddress
           feePoolInfoHash
           (ScriptCredential feePoolInfoHash)
-          (Datum $ toData datum)
+          (toDatum datum)
           Constraints.DatumInline
           payment
 
