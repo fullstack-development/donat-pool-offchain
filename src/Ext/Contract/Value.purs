@@ -11,6 +11,9 @@ import Ctl.Internal.Types.ByteArray (ByteArray(..), byteArrayToHex, hexToByteArr
 import Data.Array (filter) as Array
 import Data.TextDecoder (decodeUtf8)
 
+tokenNameSizeLimit :: Int
+tokenNameSizeLimit = 32
+
 mkTokenName :: String -> Maybe Value.TokenName
 mkTokenName = Value.mkTokenName <=< byteArrayFromAscii
 
