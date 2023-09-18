@@ -14,8 +14,8 @@ import Protocol.Models (Protocol)
 newtype StakingPool = StakingPool
   { protocol :: Protocol
   , verTokenCurrency :: CurrencySymbol
-  , daoCurrency :: CurrencySymbol
-  , daoTokenName :: TokenName
+  , govCurrency :: CurrencySymbol
+  , govTokenName :: TokenName
   }
 
 derive newtype instance Show StakingPool
@@ -30,9 +30,9 @@ instance
           ( "protocol" := I Protocol
               :+ "verTokenCurrency"
               := I CurrencySymbol
-              :+ "daoCurrency"
+              :+ "govCurrency"
               := I CurrencySymbol
-              :+ "daoTokenName"
+              :+ "govTokenName"
               := I TokenName
               :+ PNil
           )
@@ -56,6 +56,6 @@ mkStakingPoolFromProtocol protocol = do
   pure $ StakingPool
     { protocol: protocol
     , verTokenCurrency: verTokenCs
-    , daoCurrency: govCurrency
-    , daoTokenName: govTokenName
+    , govCurrency: govCurrency
+    , govTokenName: govTokenName
     }
