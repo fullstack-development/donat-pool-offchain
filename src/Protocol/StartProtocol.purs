@@ -39,8 +39,8 @@ import Shared.OwnCredentials (OwnCredentials(..), getOwnCreds)
 import Shared.MinAda (minAdaValue)
 import Shared.ScriptRef as ScriptRef
 import Shared.Tx (completeTx)
-import StakingPool.Constraints (mkStartSystemConstraints) as StakingPool
-import StakingPool.OpenNewEpoch (openNewEpoch) as StakingPool
+import StakingPool.Constraints (mkStartConstraints) as StakingPool
+import StakingPool.CheckEpoch (checkEpoch) as StakingPool
 
 initialProtocolConfigParams ∷ ProtocolConfigParams
 initialProtocolConfigParams = ProtocolConfigParams
@@ -75,7 +75,7 @@ startSystem params = do
   ScriptRef.mkStakingPoolRefScript protocol
   ScriptRef.mkStakingPoolInfoRefScript protocol
   ScriptRef.mkVerTokenPolicyRef protocolData
-  StakingPool.openNewEpoch protocolData
+  StakingPool.checkEpoch protocolData
   frConfig <- makeFundraisingConfig protocol
   liftEffect $ writeFundraisingConfig frConfig
   pure protocolData
@@ -107,8 +107,8 @@ startProtocol params@(ProtocolConfigParams confParams) = do
     paymentToProtocol = minAdaValue <> protocolNftValue
 
   govConstraints <- getGovernanceConstraints protocol
-  feePoolConstraints <- FeePool.mkStartSystemConstraints protocol
-  stakingPoolConstraints <- StakingPool.mkStartSystemConstraints protocol
+  feePoolConstraints <- FeePool.mkStartConstraints protocol
+  stakingPoolConstraints <- StakingPool.mkStartConstraints protocol
 
   let
     constraints :: Constraints.TxConstraints Void Void

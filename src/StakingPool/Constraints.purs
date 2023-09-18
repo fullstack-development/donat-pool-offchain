@@ -19,8 +19,8 @@ import StakingPool.Models (mkStakingPoolFromProtocol)
 import StakingPool.Redeemer (PStakingPoolRedeemer(..))
 import StakingPool.StakingPoolScript (getStakingPoolTokenName, getStakingPoolValidatorHash)
 
-mkStartSystemConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void)
-mkStartSystemConstraints protocol'@(Protocol protocol) = do
+mkStartConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void)
+mkStartConstraints protocol'@(Protocol protocol) = do
   stakingPoolTn <- getStakingPoolTokenName
   stakingPool <- mkStakingPoolFromProtocol protocol'
   stakingPoolHash <- getStakingPoolValidatorHash stakingPool
@@ -44,8 +44,8 @@ mkStartSystemConstraints protocol'@(Protocol protocol) = do
 
   pure constraints
 
-mkOpenNewEpochConstraints :: ScriptInfo PStakingPoolDatum -> Epoch -> Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void
-mkOpenNewEpochConstraints (ScriptInfo stakingPoolScriptInfo) newEpoch =
+mkUpdateEpochConstraints :: ScriptInfo PStakingPoolDatum -> Epoch -> Constraints.TxConstraints Void Void /\ Lookups.ScriptLookups Void
+mkUpdateEpochConstraints (ScriptInfo stakingPoolScriptInfo) newEpoch =
   let
     spDatum = toDatum $ PStakingPoolDatum { currentEpoch: newEpoch }
     spRedeemer = toRedeemer POpenNewEpoch

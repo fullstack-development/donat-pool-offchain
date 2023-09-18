@@ -55,8 +55,8 @@ mkReceiveFundsConstraints protocol now feeAmt
       let lookups = Lookups.unspentOutputs feePoolScriptInfo.utxos
       pure $ constraints /\ lookups
 
-mkStartSystemConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void)
-mkStartSystemConstraints protocol'@(Protocol protocol) = do
+mkStartConstraints :: Protocol -> Contract (Constraints.TxConstraints Void Void)
+mkStartConstraints protocol'@(Protocol protocol) = do
   feePoolTn <- getFeePoolTokenName
   feePool <- mkFeePoolFromProtocol protocol'
   feePoolHash <- getFeePoolValidatorHash feePool

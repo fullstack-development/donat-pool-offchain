@@ -1,4 +1,4 @@
-module StakingPool.OpenNewEpoch where
+module StakingPool.CheckEpoch where
 
 import Contract.Prelude
 
@@ -24,15 +24,15 @@ import StakingPool.Constraints as StakingPool
 import StakingPool.Datum (PStakingPoolDatum)
 import StakingPoolInfo.Constraints as StakingPoolInfo
 
-runOpenNewEpochFromCli :: Effect Unit
-runOpenNewEpochFromCli = do
+runCheckEpochFromCli :: Effect Unit
+runCheckEpochFromCli = do
   protocolConfig <- readProtocolConfig
   let protocolData = mapToProtocolData protocolConfig
-  launchAff_ $ runContract testnetKeyWalletConfig (openNewEpoch protocolData)
+  launchAff_ $ runContract testnetKeyWalletConfig (checkEpoch protocolData)
 
-openNewEpoch :: ProtocolData -> Contract Unit
-openNewEpoch protocolData = do
-  logInfo' "Checking the need to open a new StakingPool epoch"
+checkEpoch :: ProtocolData -> Contract Unit
+checkEpoch protocolData = do
+  logInfo' "Checking the need to update StakingPool epoch"
   protocol <- dataToProtocol protocolData
 
   now' <- currentTime
@@ -42,23 +42,24 @@ openNewEpoch protocolData = do
   info'@(ScriptInfo info) <- getStakingPoolScriptInfo protocol
   let currentEpoch = (unwrap info.datum).currentEpoch
   if currentEpoch == timestamp.epoch then
-    logInfo' "No need to open a new epoch"
+    logInfo' "Current epoch is up to date"
   else
-    openNewEpoch' protocol now info'
+    updateEpoch protocol now info'
 
-openNewEpoch' :: Protocol -> POSIXTime -> ScriptInfo PStakingPoolDatum -> Contract Unit
-openNewEpoch' protocol now spScriptInfo = do
-  logInfo' "Opening a new StakingPool epoch..."
+updateEpoch :: Protocol -> POSIXTime -> ScriptInfo PStakingPoolDatum -> Contract Unit
+updateEpoch protocol now spScriptInfo = do
+  logInfo' "Updating StakingPool epoch..."
   ownCreds@(OwnCredentials creds) <- getOwnCreds
   protocolInfo@(ProtocolScriptInfo protocolInfo') <- getProtocolScriptInfo protocol
   managerPkh <- getProtocolManagerPkh protocolInfo
-  when (creds.ownPkh /= managerPkh) $ liftEffect $ throw "No permissions to open a new epoch"
+  when (creds.ownPkh /= managerPkh) $ liftEffect $ throw "No permissions to update epoch"
 
   let
     timestamp = posixToTimeStamp now
     timeRange = from now
-  spiConstraints <- StakingPoolInfo.mkOpenNewEpochConstraints protocol timestamp.epoch protocolInfo
-  let spConstraints /\ spLookups = StakingPool.mkOpenNewEpochConstraints spScriptInfo timestamp.epoch
+  -- we need to create a new UTxO on StakingPoolInfo script to store a new bunch of data
+  spiConstraints <- StakingPoolInfo.mkUpdateEpochConstraints protocol timestamp.epoch protocolInfo
+  let spConstraints /\ spLookups = StakingPool.mkUpdateEpochConstraints spScriptInfo timestamp.epoch
 
   let
     constraints =
@@ -73,4 +74,4 @@ openNewEpoch' protocol now spScriptInfo = do
 
   completeTx lookups constraints ownCreds
 
-  logInfo' "The new StakingPool epoch opened successfully"
+  logInfo' "StakingPool epoch updated successfully"

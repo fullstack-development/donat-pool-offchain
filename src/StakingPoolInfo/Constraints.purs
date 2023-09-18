@@ -20,8 +20,8 @@ import StakingPool.Models (mkStakingPoolFromProtocol)
 import StakingPoolInfo.Datum (PStakingPoolInfoDatum(..))
 import StakingPoolInfo.StakingPoolInfoScript (getStakingPoolInfoValidatorHash)
 
-mkOpenNewEpochConstraints :: Protocol -> Epoch -> ProtocolScriptInfo -> Contract (Constraints.TxConstraints Void Void)
-mkOpenNewEpochConstraints protocol currentEpoch (ProtocolScriptInfo protocolInfo) = do
+mkUpdateEpochConstraints :: Protocol -> Epoch -> ProtocolScriptInfo -> Contract (Constraints.TxConstraints Void Void)
+mkUpdateEpochConstraints protocol currentEpoch (ProtocolScriptInfo protocolInfo) = do
   spiVerTokenName <- VerToken.stakingPoolInfoVerTokenName
   stakingPool <- mkStakingPoolFromProtocol protocol
   spiHash <- getStakingPoolInfoValidatorHash stakingPool

@@ -17,7 +17,7 @@
     "start-protocol": "spago run --main CLI.StartProtocol.Main",
     "update-protocol": "spago run --main CLI.UpdateProtocol.Main",
     "close-protocol": "spago run --main CLI.CloseProtocol.Main",
-    "open-new-epoch": "spago run --main CLI.OpenNewEpoch.Main"
+    "check-epoch": "spago run --main CLI.CheckEpoch.Main"
   },
   "author": "",
   "license": "MIT",
